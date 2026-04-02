@@ -30,10 +30,7 @@ export default async function DashboardPage() {
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase.from('round_members').select('round_id, role').eq('user_id', user.id),
     isAdmin
-      ? supabase
-          .from('profiles')
-          .select('id')
-          .eq('is_approved', false)
+      ? supabase.from('profiles').select('id').eq('is_approved', false)
       : Promise.resolve({ data: [] }),
   ])
 
@@ -45,21 +42,49 @@ export default async function DashboardPage() {
     (profile as Profile | null)?.display_name ?? user.email ?? 'Golfspelare'
 
   const pendingCount = pendingUsers?.length ?? 0
+  const allRounds = (rounds as Round[] | null) ?? []
+  const allCourses = (courses as Course[] | null) ?? []
+
+  const activeRoundsCount = allRounds.filter((r) => r.status === 'active').length
+  const sharedRoundsCount = allRounds.filter(
+    (r) => membershipByRoundId.get(r.id) === 'player'
+  ).length
 
   return (
-    <main>
-      <div className="container">
-        <div className="nav">
+    <main style={{ width: '100%', overflowX: 'hidden' }}>
+      <div
+        className="container"
+        style={{
+          width: '100%',
+          maxWidth: '100%',
+          overflowX: 'hidden',
+          boxSizing: 'border-box',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+            marginBottom: 16,
+          }}
+        >
           <div>
             <span className="badge">👋 Inloggad som {displayName}</span>
-            <h1>Dashboard</h1>
-            <p className="muted">
+            <h1 style={{ marginTop: 12, marginBottom: 10 }}>Dashboard</h1>
+            <p className="muted" style={{ marginBottom: 0 }}>
               Starta en ny runda eller fortsätt en delad runda med dina golfvänner.
               Ditt sparade HCP används som standard.
             </p>
           </div>
 
-          <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+          <div
+            className="row"
+            style={{
+              gap: 10,
+              flexWrap: 'wrap',
+            }}
+          >
             {isAdmin ? (
               <Link href="/admin/users" className="button secondary">
                 Admin
@@ -85,9 +110,16 @@ export default async function DashboardPage() {
             style={{
               background: '#fff7ed',
               border: '1px solid #fed7aa',
+              marginBottom: 16,
             }}
           >
-            <div className="header-line">
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+              }}
+            >
               <div>
                 <h2 style={{ marginBottom: 6 }}>⏳ Väntande användare</h2>
                 <p className="muted" style={{ marginBottom: 0 }}>
@@ -95,98 +127,175 @@ export default async function DashboardPage() {
                 </p>
               </div>
 
-              <Link href="/admin/users" className="button">
-                Öppna admin
-              </Link>
+              <div>
+                <Link href="/admin/users" className="button">
+                  Öppna admin
+                </Link>
+              </div>
             </div>
           </div>
         ) : null}
 
-        <div className="grid grid-3">
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr',
+            gap: 12,
+            marginBottom: 16,
+          }}
+        >
           <div className="kpi">
-            <strong>{(courses as Course[] | null)?.length ?? 0}</strong>
+            <strong>{allCourses.length}</strong>
             <div className="muted">Banor i systemet</div>
           </div>
 
           <div className="kpi">
-            <strong>
-              {(rounds as Round[] | null)?.filter((r) => r.status === 'active').length ?? 0}
-            </strong>
+            <strong>{activeRoundsCount}</strong>
             <div className="muted">Aktiva rundor du ser</div>
           </div>
 
           <div className="kpi">
-            <strong>
-              {(rounds as Round[] | null)?.filter(
-                (r) => membershipByRoundId.get(r.id) === 'player'
-              ).length ?? 0}
-            </strong>
+            <strong>{sharedRoundsCount}</strong>
             <div className="muted">Delade rundor</div>
           </div>
         </div>
 
-        <div className="card header-line">
-          <div>
-            <h2>Ny runda</h2>
-            <p className="muted">Välj bana, spelare och scoring mode.</p>
+        <div
+          className="card"
+          style={{
+            marginBottom: 16,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+            }}
+          >
+            <div>
+              <h2 style={{ marginBottom: 6 }}>Ny runda</h2>
+              <p className="muted" style={{ marginBottom: 0 }}>
+                Välj bana, spelare och scoring mode.
+              </p>
+            </div>
+
+            <div>
+              <Link href="/rounds/new" className="button">
+                Starta ny runda
+              </Link>
+            </div>
           </div>
-          <Link href="/rounds/new" className="button">
-            Starta ny runda
-          </Link>
         </div>
 
         <div className="card">
-          <h2>Mina och delade rundor</h2>
-          {!rounds || rounds.length === 0 ? (
+          <h2 style={{ marginBottom: 12 }}>Mina och delade rundor</h2>
+
+          {!allRounds || allRounds.length === 0 ? (
             <p className="muted">
               Inga rundor ännu. Starta en ny för att komma igång.
             </p>
           ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Namn</th>
-                  <th>Roll</th>
-                  <th>Status</th>
-                  <th>Scoring</th>
-                  <th>Aktuellt hål</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {(rounds as Round[]).map((round) => (
-                  <tr key={round.id}>
-                    <td>{round.title}</td>
-                    <td>
-                      {membershipByRoundId.get(round.id) === 'owner'
-                        ? 'Ägare'
-                        : 'Spelare'}
-                    </td>
-                    <td>{round.status === 'active' ? 'Pågår' : 'Klar'}</td>
-                    <td>
-                      {round.scoring_mode === 'stableford'
-                        ? 'Stableford'
-                        : 'Slagspel'}
-                    </td>
-                    <td>{round.current_hole}</td>
-                    <td>
+            <div
+              style={{
+                display: 'grid',
+                gap: 12,
+              }}
+            >
+              {allRounds.map((round) => {
+                const role =
+                  membershipByRoundId.get(round.id) === 'owner' ? 'Ägare' : 'Spelare'
+
+                const status = round.status === 'active' ? 'Pågår' : 'Klar'
+                const scoring =
+                  round.scoring_mode === 'stableford' ? 'Stableford' : 'Slagspel'
+
+                const href =
+                  round.status === 'active'
+                    ? `/rounds/${round.id}?hole=${round.current_hole}`
+                    : `/rounds/${round.id}/summary`
+
+                const buttonText =
+                  round.status === 'active' ? 'Öppna runda' : 'Visa summary'
+
+                return (
+                  <div
+                    key={round.id}
+                    style={{
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 18,
+                      padding: 14,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 12,
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 18,
+                          fontWeight: 800,
+                          marginBottom: 8,
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {round.title}
+                      </div>
+
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr',
+                          gap: 10,
+                        }}
+                      >
+                        <div>
+                          <div className="muted" style={{ fontSize: 13 }}>
+                            Roll
+                          </div>
+                          <div style={{ fontWeight: 700 }}>{role}</div>
+                        </div>
+
+                        <div>
+                          <div className="muted" style={{ fontSize: 13 }}>
+                            Status
+                          </div>
+                          <div style={{ fontWeight: 700 }}>{status}</div>
+                        </div>
+
+                        <div>
+                          <div className="muted" style={{ fontSize: 13 }}>
+                            Scoring
+                          </div>
+                          <div style={{ fontWeight: 700 }}>{scoring}</div>
+                        </div>
+
+                        <div>
+                          <div className="muted" style={{ fontSize: 13 }}>
+                            Aktuellt hål
+                          </div>
+                          <div style={{ fontWeight: 700 }}>{round.current_hole}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
                       <Link
                         className="button secondary"
-                        href={
-                          round.status === 'active'
-                            ? `/rounds/${round.id}?hole=${round.current_hole}`
-                            : `/rounds/${round.id}/summary`
-                        }
+                        href={href}
+                        style={{
+                          width: '100%',
+                          textAlign: 'center',
+                          boxSizing: 'border-box',
+                        }}
                       >
-                        {round.status === 'active'
-                          ? 'Öppna runda'
-                          : 'Visa summary'}
+                        {buttonText}
                       </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           )}
         </div>
       </div>
