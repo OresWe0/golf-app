@@ -24,7 +24,7 @@ function getMarkerStyle(marker: string | null): React.CSSProperties {
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    fontWeight: 600,
+    fontWeight: 700,
   }
 
   if (marker === 'circle') {
@@ -166,29 +166,62 @@ export default async function SummaryPage({
 
   const winner = summary[0]
 
+  const roundTypeLabel =
+    round.scoring_mode === 'stableford' ? 'Stableford' : 'Slagspel'
+
+  const holesLabel =
+    round.holes_mode === 18
+      ? '18 hål'
+      : startHole === 1
+      ? '9 hål · Främre 9'
+      : '9 hål · Bakre 9'
+
   return (
     <main>
       <div className="container">
-        <div className="nav">
+        <div
+          style={{
+            display: 'grid',
+            gap: 16,
+            marginBottom: 16,
+          }}
+        >
           <div>
-            <span className="badge">📊 Summary</span>
-            <h1>{round.title}</h1>
-            <p className="muted">
-              {course.name} ·{' '}
-              {round.scoring_mode === 'stableford' ? 'Stableford' : 'Slagspel'} ·{' '}
-              {round.holes_mode === 18
-                ? '18 hål'
-                : startHole === 1
-                ? '9 hål · Främre 9'
-                : '9 hål · Bakre 9'}
+            <h1 style={{ marginBottom: 10 }}>{round.title}</h1>
+            <p className="muted" style={{ margin: 0, fontSize: 18, lineHeight: 1.5 }}>
+              {course.name} · {roundTypeLabel} · {holesLabel}
             </p>
           </div>
 
-          <div className="row">
-            <Link className="button secondary" href={`/rounds/${id}?hole=${startHole}`}>
+          <div
+            style={{
+              display: 'grid',
+              gap: 10,
+            }}
+          >
+            <Link
+              className="button"
+              href={`/rounds/${id}?hole=${startHole}`}
+              style={{
+                width: '100%',
+                minHeight: 56,
+                fontSize: 18,
+                fontWeight: 800,
+              }}
+            >
               Till rundan
             </Link>
-            <Link className="button secondary" href="/dashboard">
+
+            <Link
+              className="button secondary"
+              href="/dashboard"
+              style={{
+                width: '100%',
+                minHeight: 56,
+                fontSize: 18,
+                fontWeight: 800,
+              }}
+            >
               Till dashboard
             </Link>
           </div>
@@ -198,66 +231,220 @@ export default async function SummaryPage({
           <div
             className="card"
             style={{
-              background: '#f8fbf7',
+              background: 'linear-gradient(180deg, #f8fbf7 0%, #f2f9f3 100%)',
               border: '2px solid #dbeedc',
+              marginBottom: 16,
             }}
           >
-            <h2 style={{ marginBottom: 8 }}>🏆 Vinnare</h2>
-            <p style={{ margin: 0 }}>
-              <strong>{winner.name}</strong>{' '}
-              {round.scoring_mode === 'stableford'
-                ? `vinner på ${winner.points} poäng`
-                : `vinner på ${winner.strokes} slag`}
-            </p>
-            <p className="muted" style={{ marginBottom: 0 }}>
-              Mot par: {winner.vsPar > 0 ? `+${winner.vsPar}` : winner.vsPar}
-            </p>
+            <div
+              style={{
+                display: 'grid',
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 16,
+                  fontWeight: 800,
+                  color: '#166534',
+                }}
+              >
+                🏆 Vinnare
+              </div>
+
+              <div
+                style={{
+                  fontSize: 36,
+                  fontWeight: 900,
+                  lineHeight: 1.05,
+                  color: '#0f172a',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {winner.name}
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 12,
+                }}
+              >
+                <div
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 16,
+                    padding: 14,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: '#64748b',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.6,
+                      marginBottom: 6,
+                    }}
+                  >
+                    Resultat
+                  </div>
+                  <div style={{ fontSize: 26, fontWeight: 900 }}>
+                    {round.scoring_mode === 'stableford'
+                      ? `${winner.points} p`
+                      : `${winner.strokes} slag`}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 16,
+                    padding: 14,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: '#64748b',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.6,
+                      marginBottom: 6,
+                    }}
+                  >
+                    Mot par
+                  </div>
+                  <div style={{ fontSize: 26, fontWeight: 900 }}>
+                    {winner.vsPar > 0 ? `+${winner.vsPar}` : winner.vsPar}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         ) : null}
 
-        <div className="card">
-          <h3>Slutställning</h3>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Placering</th>
-                <th>Spelare</th>
-                <th>Tee</th>
-                <th>Exakt HCP</th>
-                <th>Spel-HCP</th>
-                <th>Slag</th>
-                <th>Mot par</th>
-                <th>Poäng</th>
-              </tr>
-            </thead>
-            <tbody>
-              {summary.map((player, index) => (
-                <tr
-                  key={player.id}
-                  style={
-                    index === 0
-                      ? { background: '#f8fbf7', fontWeight: 600 }
-                      : undefined
-                  }
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h2 style={{ marginTop: 0, marginBottom: 14 }}>Leaderboard</h2>
+
+          <div style={{ display: 'grid', gap: 12 }}>
+            {summary.map((player, index) => (
+              <div
+                key={player.id}
+                style={{
+                  border: index === 0 ? '2px solid #cce9d1' : '1px solid #e5e7eb',
+                  background: index === 0 ? '#f8fbf7' : '#ffffff',
+                  borderRadius: 18,
+                  padding: 14,
+                  display: 'grid',
+                  gap: 12,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    alignItems: 'flex-start',
+                  }}
                 >
-                  <td>{index === 0 ? '👑 1' : index + 1}</td>
-                  <td>{player.name}</td>
-                  <td>{player.teeKey === 'red' ? 'Röd' : 'Gul'}</td>
-                  <td>{player.exactHandicap ?? '-'}</td>
-                  <td>{player.playingHandicap ?? 0}</td>
-                  <td>{player.strokes}</td>
-                  <td>{player.vsPar > 0 ? `+${player.vsPar}` : player.vsPar}</td>
-                  <td>{player.points}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 22,
+                        fontWeight: 900,
+                        lineHeight: 1.1,
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      {index === 0 ? '👑 ' : ''}
+                      {index + 1}. {player.name}
+                    </div>
+
+                    <div className="muted" style={{ marginTop: 6 }}>
+                      {player.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Exakt HCP{' '}
+                      {player.exactHandicap ?? '-'} · Spel-HCP {player.playingHandicap ?? 0}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: 999,
+                      background: index === 0 ? '#e8f5e9' : '#f3f4f6',
+                      fontSize: 13,
+                      fontWeight: 800,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    #{index + 1}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr 1fr',
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      background: '#f8fafc',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 14,
+                      padding: 12,
+                    }}
+                  >
+                    <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
+                      Slag
+                    </div>
+                    <div style={{ fontSize: 24, fontWeight: 900 }}>{player.strokes}</div>
+                  </div>
+
+                  <div
+                    style={{
+                      background: '#f8fafc',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 14,
+                      padding: 12,
+                    }}
+                  >
+                    <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
+                      Mot par
+                    </div>
+                    <div style={{ fontSize: 24, fontWeight: 900 }}>
+                      {player.vsPar > 0 ? `+${player.vsPar}` : player.vsPar}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      background: '#f8fafc',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 14,
+                      padding: 12,
+                    }}
+                  >
+                    <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
+                      Poäng
+                    </div>
+                    <div style={{ fontSize: 24, fontWeight: 900 }}>{player.points}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="card">
-          <h3>Scorekort</h3>
-          <p className="muted" style={{ marginTop: 0 }}>
-            Birdie = cirkel · Eagle eller bättre = dubbel cirkel · Bogey = fyrkant · Double bogey+ = dubbel fyrkant
+          <h2 style={{ marginTop: 0, marginBottom: 8 }}>Scorekort</h2>
+          <p className="muted" style={{ marginTop: 0, marginBottom: 16, lineHeight: 1.5 }}>
+            Birdie = cirkel · Eagle eller bättre = dubbel cirkel · Bogey = fyrkant ·
+            Double bogey+ = dubbel fyrkant
           </p>
 
           <div style={{ overflowX: 'auto' }}>
