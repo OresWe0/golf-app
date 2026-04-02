@@ -543,7 +543,7 @@ export function HolePlay({
             boxShadow: '0 6px 16px rgba(22, 101, 52, 0.08)',
           }}
         >
-          🗺️ Se banan
+          ⛳ Se banan
         </button>
       </div>
 
