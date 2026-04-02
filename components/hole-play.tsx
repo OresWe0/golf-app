@@ -17,15 +17,18 @@ export function HolePlay({
   const router = useRouter()
   const touchStartX = useRef<number | null>(null)
 
-  const [values, setValues] = useState<Record<string, string>>(
-    Object.fromEntries(
-      players.map((p: any) => {
-        const existing = scores.find((s: any) => s.round_player_id === p.id)
-        return [p.id, existing?.strokes?.toString() ?? '']
+  const emptyValues = Object.fromEntries(players.map((player: any) => [player.id, '']))
+
+  const buildValuesFromScores = () => {
+    return Object.fromEntries(
+      players.map((player: any) => {
+        const existing = scores.find((score: any) => score.round_player_id === player.id)
+        return [player.id, existing?.strokes?.toString() ?? '']
       })
     )
-  )
+  }
 
+  const [values, setValues] = useState<Record<string, string>>(buildValuesFromScores())
   const [loading, setLoading] = useState(false)
   const [showHoleImage, setShowHoleImage] = useState(false)
   const [holeImageError, setHoleImageError] = useState(false)
@@ -33,9 +36,10 @@ export function HolePlay({
   const [previewHoleNumber, setPreviewHoleNumber] = useState<number>(hole.hole_number)
 
   useEffect(() => {
+    setValues(buildValuesFromScores())
     setPreviewHoleNumber(hole.hole_number)
     setHoleImageError(false)
-  }, [hole.hole_number])
+  }, [hole.hole_number, scores])
 
   const quickScores = useMemo(() => {
     const base = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -67,7 +71,7 @@ export function HolePlay({
   const saveScores = async () => {
     setLoading(true)
 
-    await fetch(`/api/rounds/${roundId}/scores`, {
+    const response = await fetch(`/api/rounds/${roundId}/scores`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -79,14 +83,27 @@ export function HolePlay({
       }),
     })
 
-    setLoading(false)
+    if (!response.ok) {
+      setLoading(false)
+      alert('Det gick inte att spara score. Prova igen.')
+      return
+    }
+
     setSavedFlash(true)
     setTimeout(() => setSavedFlash(false), 900)
+
+    // Viktigt: nollställ lokalt innan vi går vidare,
+    // så nästa hål inte råkar visa föregående håls värden.
+    setValues(emptyValues)
+
+    setLoading(false)
     goNext()
   }
 
   const setScore = (playerId: string, score: number) => {
-    if (navigator.vibrate) navigator.vibrate(10)
+    if (typeof window !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(20)
+    }
 
     setValues((prev) => ({
       ...prev,
