@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { receivedStrokesOnHole } from '@/lib/scoring'
 
 export function HolePlay({
@@ -14,21 +13,21 @@ export function HolePlay({
   players,
   scores,
 }: any) {
-  const router = useRouter()
   const touchStartX = useRef<number | null>(null)
 
-  const emptyValues = Object.fromEntries(players.map((player: any) => [player.id, '']))
-
-  const buildValuesFromScores = () => {
-    return Object.fromEntries(
+  const createValuesFromScores = () =>
+    Object.fromEntries(
       players.map((player: any) => {
         const existing = scores.find((score: any) => score.round_player_id === player.id)
         return [player.id, existing?.strokes?.toString() ?? '']
       })
     )
-  }
 
-  const [values, setValues] = useState<Record<string, string>>(buildValuesFromScores())
+  const emptyValues = Object.fromEntries(
+    players.map((player: any) => [player.id, ''])
+  )
+
+  const [values, setValues] = useState<Record<string, string>>(createValuesFromScores())
   const [loading, setLoading] = useState(false)
   const [showHoleImage, setShowHoleImage] = useState(false)
   const [holeImageError, setHoleImageError] = useState(false)
@@ -36,7 +35,7 @@ export function HolePlay({
   const [previewHoleNumber, setPreviewHoleNumber] = useState<number>(hole.hole_number)
 
   useEffect(() => {
-    setValues(buildValuesFromScores())
+    setValues(createValuesFromScores())
     setPreviewHoleNumber(hole.hole_number)
     setHoleImageError(false)
   }, [hole.hole_number, scores])
@@ -47,25 +46,24 @@ export function HolePlay({
     return Array.from(new Set([...base, extra])).sort((a, b) => a - b)
   }, [hole.par])
 
-  const progressPercent =
-    totalHoles <= 1 ? 100 : Math.round(((currentHole - startHole + 1) / totalHoles) * 100)
-
   const holeImageSrc = `/course-images/karsta/${previewHoleNumber}.jpg`
 
   const goPrevious = () => {
-    if (currentHole > startHole) {
-      router.push(`/rounds/${roundId}?hole=${currentHole - 1}`)
-    } else {
-      router.push('/dashboard')
-    }
+    const target =
+      currentHole > startHole
+        ? `/rounds/${roundId}?hole=${currentHole - 1}`
+        : '/dashboard'
+
+    window.location.href = target
   }
 
   const goNext = () => {
-    if (currentHole === endHole) {
-      router.push(`/rounds/${roundId}/summary`)
-    } else {
-      router.push(`/rounds/${roundId}?hole=${currentHole + 1}`)
-    }
+    const target =
+      currentHole === endHole
+        ? `/rounds/${roundId}/summary`
+        : `/rounds/${roundId}?hole=${currentHole + 1}`
+
+    window.location.href = target
   }
 
   const saveScores = async () => {
@@ -90,14 +88,16 @@ export function HolePlay({
     }
 
     setSavedFlash(true)
-    setTimeout(() => setSavedFlash(false), 900)
-
-    // Viktigt: nollställ lokalt innan vi går vidare,
-    // så nästa hål inte råkar visa föregående håls värden.
     setValues(emptyValues)
 
-    setLoading(false)
-    goNext()
+    setTimeout(() => {
+      const target =
+        currentHole === endHole
+          ? `/rounds/${roundId}/summary`
+          : `/rounds/${roundId}?hole=${currentHole + 1}`
+
+      window.location.href = target
+    }, 450)
   }
 
   const setScore = (playerId: string, score: number) => {
@@ -421,43 +421,108 @@ export function HolePlay({
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            gap: 12,
-            alignItems: 'flex-start',
-          }}
-        >
-          <div>
-            <div className="badge">Hål {hole.hole_number}</div>
-            <h2 style={{ margin: '10px 0 6px 0', fontSize: 24 }}>Par {hole.par}</h2>
-            <div className="muted" style={{ fontSize: 15 }}>
-              Index {hole.hcp_index}
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontWeight: 800, fontSize: 16 }}>{progressPercent}%</div>
-            <div className="muted" style={{ fontSize: 15 }}>
-              {currentHole - startHole + 1} / {totalHoles}
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: 14,
-            height: 10,
-            background: '#e5e7eb',
-            borderRadius: 999,
-            overflow: 'hidden',
+            gap: 16,
+            alignItems: 'stretch',
           }}
         >
           <div
             style={{
-              width: `${progressPercent}%`,
-              height: '100%',
-              background: '#166534',
-              borderRadius: 999,
+              flex: 1.2,
+              background: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: 20,
+              padding: 16,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
             }}
-          />
+          >
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: '#166534',
+                textTransform: 'uppercase',
+                letterSpacing: 0.6,
+                marginBottom: 8,
+              }}
+            >
+              Aktuellt hål
+            </div>
+            <div
+              style={{
+                fontSize: 36,
+                fontWeight: 900,
+                lineHeight: 1,
+                color: '#0f172a',
+              }}
+            >
+              Hål {hole.hole_number}
+            </div>
+          </div>
+
+          <div
+            style={{
+              flex: 1,
+              background: '#f8fafc',
+              border: '1px solid #e5e7eb',
+              borderRadius: 20,
+              padding: 16,
+              display: 'grid',
+              gap: 10,
+              alignContent: 'center',
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: '#64748b',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.6,
+                  marginBottom: 4,
+                }}
+              >
+                Par
+              </div>
+              <div
+                style={{
+                  fontSize: 28,
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  color: '#0f172a',
+                }}
+              >
+                {hole.par}
+              </div>
+            </div>
+
+            <div>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: '#64748b',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.6,
+                  marginBottom: 4,
+                }}
+              >
+                Index
+              </div>
+              <div
+                style={{
+                  fontSize: 24,
+                  fontWeight: 800,
+                  lineHeight: 1,
+                  color: '#0f172a',
+                }}
+              >
+                {hole.hcp_index}
+              </div>
+            </div>
+          </div>
         </div>
 
         <button
