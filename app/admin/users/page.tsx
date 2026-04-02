@@ -1,9 +1,12 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-const ADMIN_EMAIL = 'sigge@dufvander.se'
-
-export default async function AdminUsersPage() {
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ message?: string }>
+}) {
+  const { message } = await searchParams
   const supabase = await createClient()
 
   const {
@@ -14,77 +17,118 @@ export default async function AdminUsersPage() {
     redirect('/login')
   }
 
-  if (user.email !== ADMIN_EMAIL) {
+  const { data: me } = await supabase
+    .from('profiles')
+    .select('id, is_admin, is_approved, email, display_name')
+    .eq('id', user.id)
+    .single()
+
+  if (!me?.is_admin) {
     redirect('/dashboard')
   }
 
-  const { data: users, error } = await supabase
+  const { data: pendingUsers, error } = await supabase
     .from('profiles')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    return (
-      <main>
-        <div className="container">
-          <div className="card">
-            <h1>Admin – användare</h1>
-            <p className="notice">Kunde inte läsa användare: {error.message}</p>
-          </div>
-        </div>
-      </main>
-    )
-  }
-
-  const pendingCount = users?.filter((u) => !u.is_approved).length ?? 0
+    .select('id, email, display_name, is_approved, is_admin')
+    .eq('is_approved', false)
+    .order('created_at', { ascending: true })
 
   return (
-    <main>
-      <div className="container">
-        <div className="nav">
-          <div>
-            <span className="badge">🛠 Admin</span>
-            <h1>Användare</h1>
-            <p className="muted">
-              Godkänn nya användare innan de får tillgång till appen.
-            </p>
-          </div>
-          <div className="notice">
-            Väntande: {pendingCount}
-          </div>
-        </div>
+    <main className="container" style={{ paddingTop: 24, paddingBottom: 80 }}>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="badge">Admin</div>
+        <h1 style={{ marginTop: 12 }}>Godkänn användare</h1>
+        <p className="muted" style={{ marginTop: 8 }}>
+          Här kan du godkänna nya användare som registrerat sig.
+        </p>
 
-        <div className="stack">
-          {users?.map((profile) => (
-            <div className="card" key={profile.id}>
-              <div className="header-line">
+        {message ? (
+          <div
+            style={{
+              marginTop: 14,
+              padding: '12px 14px',
+              borderRadius: 14,
+              background: '#f8fafc',
+              border: '1px solid #e5e7eb',
+              color: '#0f172a',
+              fontWeight: 600,
+            }}
+          >
+            {message}
+          </div>
+        ) : null}
+
+        {error ? (
+          <div
+            style={{
+              marginTop: 14,
+              padding: '12px 14px',
+              borderRadius: 14,
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              color: '#991b1b',
+              fontWeight: 600,
+            }}
+          >
+            Kunde inte läsa användare: {error.message}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="card">
+        <h2 style={{ marginTop: 0, marginBottom: 12 }}>
+          Väntande användare ({pendingUsers?.length ?? 0})
+        </h2>
+
+        {!pendingUsers || pendingUsers.length === 0 ? (
+          <div className="muted">Inga användare väntar på godkännande 🎉</div>
+        ) : (
+          <div style={{ display: 'grid', gap: 12 }}>
+            {pendingUsers.map((profile) => (
+              <div
+                key={profile.id}
+                style={{
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 16,
+                  padding: 14,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                }}
+              >
                 <div>
-                  <strong>{profile.display_name || 'Ingen namn angivet'}</strong>
-                  <div className="muted">{profile.email}</div>
-                  <div className="muted">
-                    HCP: {profile.handicap_index ?? '-'} · Standardtee:{' '}
-                    {profile.default_tee === 'red' ? 'Röd' : 'Gul'}
+                  <div style={{ fontWeight: 800, fontSize: 16 }}>
+                    {profile.display_name || 'Ingen namnuppgift'}
                   </div>
-                  <div className="muted">
-                    Status:{' '}
-                    {profile.is_approved ? '✅ Godkänd' : '⏳ Väntar på godkännande'}
+                  <div className="muted" style={{ marginTop: 4 }}>
+                    {profile.email}
                   </div>
                 </div>
 
-                <div className="row">
-                  {!profile.is_approved ? (
-                    <form action="/api/admin/approve-user" method="post">
-                      <input type="hidden" name="userId" value={profile.id} />
-                      <button type="submit">Godkänn</button>
-                    </form>
-                  ) : (
-                    <span className="badge">Godkänd</span>
-                  )}
-                </div>
+                <form action="/api/admin/approve-user" method="POST">
+                  <input type="hidden" name="userId" value={profile.id} />
+                  <button
+                    type="submit"
+                    style={{
+                      minHeight: 46,
+                      padding: '10px 16px',
+                      borderRadius: 14,
+                      border: '1px solid #166534',
+                      background: '#166534',
+                      color: '#fff',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Godkänn
+                  </button>
+                </form>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   )

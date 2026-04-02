@@ -1,34 +1,77 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
-const ADMIN_EMAIL = 'sigge@dufvander.se'
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://golf-app-hk79.onrender.com'
 
-export async function POST(request: Request) {
-  const supabase = await createClient()
+export async function POST(req: Request) {
+  try {
+    const formData = await req.formData()
+    const userId = String(formData.get('userId') || '')
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    if (!userId) {
+      return NextResponse.redirect(
+        `${SITE_URL}/admin/users?message=${encodeURIComponent('Saknar userId.')}`
+      )
+    }
 
-  if (!user) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    const supabase = await createClient()
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.redirect(`${SITE_URL}/login`)
+    }
+
+    const { data: me, error: meError } = await supabase
+      .from('profiles')
+      .select('id, is_admin, is_approved')
+      .eq('id', user.id)
+      .single()
+
+    if (meError || !me?.is_admin) {
+      return NextResponse.redirect(
+        `${SITE_URL}/admin/users?message=${encodeURIComponent('Du har inte behörighet att godkänna användare.')}`
+      )
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      return NextResponse.redirect(
+        `${SITE_URL}/admin/users?message=${encodeURIComponent(
+          'Saknar SUPABASE_SERVICE_ROLE_KEY i Render.'
+        )}`
+      )
+    }
+
+    const admin = createAdminClient(supabaseUrl, serviceRoleKey)
+
+    const { error: updateError } = await admin
+      .from('profiles')
+      .update({ is_approved: true })
+      .eq('id', userId)
+
+    if (updateError) {
+      return NextResponse.redirect(
+        `${SITE_URL}/admin/users?message=${encodeURIComponent(
+          `Kunde inte godkänna användaren: ${updateError.message}`
+        )}`
+      )
+    }
+
+    return NextResponse.redirect(
+      `${SITE_URL}/admin/users?message=${encodeURIComponent('Användaren är nu godkänd.')}`
+    )
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Okänt fel i approve-route.'
+    return NextResponse.redirect(
+      `${SITE_URL}/admin/users?message=${encodeURIComponent(message)}`
+    )
   }
-
-  if (user.email !== ADMIN_EMAIL) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
-  const formData = await request.formData()
-  const userId = String(formData.get('userId') || '')
-
-  if (!userId) {
-    return NextResponse.redirect(new URL('/admin/users', request.url))
-  }
-
-  await supabase
-    .from('profiles')
-    .update({ is_approved: true })
-    .eq('id', userId)
-
-  return NextResponse.redirect(new URL('/admin/users', request.url))
 }
