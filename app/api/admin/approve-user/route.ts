@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || 'https://golf-app-hk79.onrender.com'
@@ -14,27 +14,11 @@ export async function POST(req: Request) {
     )
   }
 
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.redirect(`${SITE_URL}/login`)
-  }
-
-  const { data: me, error: meError } = await supabase
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single()
-
-  if (meError || !me?.is_admin) {
-    return NextResponse.redirect(
-      `${SITE_URL}/admin/users?message=${encodeURIComponent('Du har inte behörighet att godkänna användare.')}`
-    )
-  }
+  // 🔥 VIKTIGT: använd SERVICE ROLE
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
 
   const { error } = await supabase
     .from('profiles')
@@ -48,6 +32,8 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.redirect(
-    `${SITE_URL}/admin/users?message=${encodeURIComponent('Användaren är godkänd.')}`
+    `${SITE_URL}/admin/users?message=${encodeURIComponent(
+      'Användaren är godkänd'
+    )}`
   )
 }
