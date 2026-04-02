@@ -18,13 +18,15 @@ function getScoreMarker(strokes: number | null, par: number) {
 
 function getMarkerStyle(marker: string | null): React.CSSProperties {
   const base: React.CSSProperties = {
-    minWidth: 36,
-    height: 36,
+    minWidth: 40,
+    height: 40,
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    fontWeight: 700,
+    fontWeight: 800,
+    fontSize: 18,
+    background: '#fff',
   }
 
   if (marker === 'circle') {
@@ -48,7 +50,7 @@ function getMarkerStyle(marker: string | null): React.CSSProperties {
     return {
       ...base,
       border: '2px solid #b45309',
-      borderRadius: 6,
+      borderRadius: 8,
       background: '#fff7ed',
     }
   }
@@ -57,13 +59,23 @@ function getMarkerStyle(marker: string | null): React.CSSProperties {
     return {
       ...base,
       border: '2px solid #991b1b',
-      borderRadius: 6,
+      borderRadius: 8,
       boxShadow: '0 0 0 4px #fee2e2',
       background: '#fff5f5',
     }
   }
 
   return base
+}
+
+function sumStrokes(scores: { strokes: number | null }[]) {
+  return scores.reduce((sum, item) => sum + (item.strokes ?? 0), 0)
+}
+
+function sumVsPar(scores: { strokes: number | null; par: number }[]) {
+  return scores.reduce((sum, item) => {
+    return sum + (scoreVsPar(item.strokes, item.par) ?? 0)
+  }, 0)
 }
 
 export default async function SummaryPage({
@@ -101,6 +113,9 @@ export default async function SummaryPage({
   const visibleHoles = holes.filter(
     (hole) => hole.hole_number >= startHole && hole.hole_number <= endHole
   )
+
+  const firstHalf = visibleHoles.slice(0, Math.ceil(visibleHoles.length / 2))
+  const secondHalf = visibleHoles.slice(Math.ceil(visibleHoles.length / 2))
 
   const summary = players
     .map((player) => {
@@ -143,6 +158,7 @@ export default async function SummaryPage({
         return {
           holeNumber: hole.hole_number,
           par: hole.par,
+          hcpIndex: hole.hcp_index,
           strokes,
           marker: getScoreMarker(strokes, hole.par),
         }
@@ -175,6 +191,10 @@ export default async function SummaryPage({
       : startHole === 1
       ? '9 hål · Främre 9'
       : '9 hål · Bakre 9'
+
+  const totalPar = visibleHoles.reduce((sum, hole) => sum + hole.par, 0)
+  const frontPar = firstHalf.reduce((sum, hole) => sum + hole.par, 0)
+  const backPar = secondHalf.reduce((sum, hole) => sum + hole.par, 0)
 
   return (
     <main>
@@ -447,63 +467,319 @@ export default async function SummaryPage({
             Double bogey+ = dubbel fyrkant
           </p>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Spelare</th>
-                  {visibleHoles.map((hole) => (
-                    <th key={hole.hole_number}>H{hole.hole_number}</th>
-                  ))}
-                  <th>Tot</th>
-                  <th>+/-</th>
-                  <th>P</th>
-                </tr>
-              </thead>
-              <tbody>
-                {summary.map((player) => (
-                  <tr key={player.id}>
-                    <td>
-                      <strong>{player.name}</strong>
-                    </td>
+          <div style={{ display: 'grid', gap: 16 }}>
+            {summary.map((player) => {
+              const frontScores = player.holeScores.filter((score: any) =>
+                firstHalf.some((hole) => hole.hole_number === score.holeNumber)
+              )
 
-                    {player.holeScores.map((score) => (
-                      <td key={`${player.id}-${score.holeNumber}`}>
-                        {score.strokes == null ? (
-                          '-'
-                        ) : (
-                          <span style={getMarkerStyle(score.marker)}>
-                            {score.strokes}
-                          </span>
-                        )}
-                      </td>
-                    ))}
+              const backScores = player.holeScores.filter((score: any) =>
+                secondHalf.some((hole) => hole.hole_number === score.holeNumber)
+              )
 
-                    <td>{player.strokes}</td>
-                    <td>{player.vsPar > 0 ? `+${player.vsPar}` : player.vsPar}</td>
-                    <td>{player.points}</td>
-                  </tr>
-                ))}
+              const frontStrokes = sumStrokes(frontScores)
+              const backStrokes = sumStrokes(backScores)
+              const frontVsPar = sumVsPar(frontScores)
+              const backVsPar = sumVsPar(backScores)
 
-                <tr style={{ background: '#fafafa' }}>
-                  <td>
-                    <strong>Par</strong>
-                  </td>
-                  {visibleHoles.map((hole) => (
-                    <td key={`par-${hole.hole_number}`}>
-                      <strong>{hole.par}</strong>
-                    </td>
-                  ))}
-                  <td>
-                    <strong>
-                      {visibleHoles.reduce((sum, hole) => sum + hole.par, 0)}
-                    </strong>
-                  </td>
-                  <td>-</td>
-                  <td>-</td>
-                </tr>
-              </tbody>
-            </table>
+              return (
+                <div
+                  key={player.id}
+                  style={{
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 20,
+                    overflow: 'hidden',
+                    background: '#fff',
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: 16,
+                      background: '#f8fbf7',
+                      borderBottom: '1px solid #e5e7eb',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 24,
+                          fontWeight: 900,
+                          lineHeight: 1.1,
+                        }}
+                      >
+                        {player.name}
+                      </div>
+                      <div className="muted" style={{ marginTop: 4 }}>
+                        {player.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Spel-HCP{' '}
+                        {player.playingHandicap ?? 0}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, auto)',
+                        gap: 10,
+                      }}
+                    >
+                      <div
+                        style={{
+                          background: '#fff',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 12,
+                          padding: '10px 12px',
+                          textAlign: 'center',
+                        }}
+                      >
+                        <div className="muted" style={{ fontSize: 12 }}>Tot</div>
+                        <div style={{ fontWeight: 900, fontSize: 20 }}>{player.strokes}</div>
+                      </div>
+
+                      <div
+                        style={{
+                          background: '#fff',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 12,
+                          padding: '10px 12px',
+                          textAlign: 'center',
+                        }}
+                      >
+                        <div className="muted" style={{ fontSize: 12 }}>+/-</div>
+                        <div style={{ fontWeight: 900, fontSize: 20 }}>
+                          {player.vsPar > 0 ? `+${player.vsPar}` : player.vsPar}
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          background: '#fff',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 12,
+                          padding: '10px 12px',
+                          textAlign: 'center',
+                        }}
+                      >
+                        <div className="muted" style={{ fontSize: 12 }}>P</div>
+                        <div style={{ fontWeight: 900, fontSize: 20 }}>{player.points}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ padding: 16, display: 'grid', gap: 16 }}>
+                    <div>
+                      <div
+                        style={{
+                          marginBottom: 10,
+                          fontSize: 16,
+                          fontWeight: 800,
+                          color: '#166534',
+                        }}
+                      >
+                        Främre 9
+                      </div>
+
+                      <div style={{ overflowX: 'auto' }}>
+                        <table className="table">
+                          <thead>
+                            <tr>
+                              <th>Rad</th>
+                              {firstHalf.map((hole) => (
+                                <th key={`front-hole-${hole.hole_number}`}>H{hole.hole_number}</th>
+                              ))}
+                              <th>Ut</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td><strong>Index</strong></td>
+                              {firstHalf.map((hole) => (
+                                <td key={`front-index-${hole.hole_number}`}>{hole.hcp_index}</td>
+                              ))}
+                              <td>-</td>
+                            </tr>
+                            <tr>
+                              <td><strong>Par</strong></td>
+                              {firstHalf.map((hole) => (
+                                <td key={`front-par-${hole.hole_number}`}>{hole.par}</td>
+                              ))}
+                              <td><strong>{frontPar}</strong></td>
+                            </tr>
+                            <tr>
+                              <td><strong>Resultat</strong></td>
+                              {frontScores.map((score: any) => (
+                                <td key={`front-score-${player.id}-${score.holeNumber}`}>
+                                  {score.strokes == null ? (
+                                    '-'
+                                  ) : (
+                                    <span style={getMarkerStyle(score.marker)}>
+                                      {score.strokes}
+                                    </span>
+                                  )}
+                                </td>
+                              ))}
+                              <td><strong>{frontStrokes}</strong></td>
+                            </tr>
+                            <tr>
+                              <td><strong>+/-</strong></td>
+                              {frontScores.map((score: any) => (
+                                <td key={`front-vspar-${player.id}-${score.holeNumber}`}>
+                                  {score.strokes == null
+                                    ? '-'
+                                    : (() => {
+                                        const diff = (scoreVsPar(score.strokes, score.par) ?? 0)
+                                        return diff > 0 ? `+${diff}` : diff
+                                      })()}
+                                </td>
+                              ))}
+                              <td>
+                                <strong>
+                                  {frontVsPar > 0 ? `+${frontVsPar}` : frontVsPar}
+                                </strong>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {secondHalf.length > 0 ? (
+                      <div>
+                        <div
+                          style={{
+                            marginBottom: 10,
+                            fontSize: 16,
+                            fontWeight: 800,
+                            color: '#166534',
+                          }}
+                        >
+                          Bakre 9
+                        </div>
+
+                        <div style={{ overflowX: 'auto' }}>
+                          <table className="table">
+                            <thead>
+                              <tr>
+                                <th>Rad</th>
+                                {secondHalf.map((hole) => (
+                                  <th key={`back-hole-${hole.hole_number}`}>H{hole.hole_number}</th>
+                                ))}
+                                <th>In</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <td><strong>Index</strong></td>
+                                {secondHalf.map((hole) => (
+                                  <td key={`back-index-${hole.hole_number}`}>{hole.hcp_index}</td>
+                                ))}
+                                <td>-</td>
+                              </tr>
+                              <tr>
+                                <td><strong>Par</strong></td>
+                                {secondHalf.map((hole) => (
+                                  <td key={`back-par-${hole.hole_number}`}>{hole.par}</td>
+                                ))}
+                                <td><strong>{backPar}</strong></td>
+                              </tr>
+                              <tr>
+                                <td><strong>Resultat</strong></td>
+                                {backScores.map((score: any) => (
+                                  <td key={`back-score-${player.id}-${score.holeNumber}`}>
+                                    {score.strokes == null ? (
+                                      '-'
+                                    ) : (
+                                      <span style={getMarkerStyle(score.marker)}>
+                                        {score.strokes}
+                                      </span>
+                                    )}
+                                  </td>
+                                ))}
+                                <td><strong>{backStrokes}</strong></td>
+                              </tr>
+                              <tr>
+                                <td><strong>+/-</strong></td>
+                                {backScores.map((score: any) => (
+                                  <td key={`back-vspar-${player.id}-${score.holeNumber}`}>
+                                    {score.strokes == null
+                                      ? '-'
+                                      : (() => {
+                                          const diff = (scoreVsPar(score.strokes, score.par) ?? 0)
+                                          return diff > 0 ? `+${diff}` : diff
+                                        })()}
+                                  </td>
+                                ))}
+                                <td>
+                                  <strong>
+                                    {backVsPar > 0 ? `+${backVsPar}` : backVsPar}
+                                  </strong>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr 1fr',
+                        gap: 12,
+                      }}
+                    >
+                      <div
+                        style={{
+                          background: '#f8fafc',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 14,
+                          padding: 14,
+                        }}
+                      >
+                        <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
+                          Total par
+                        </div>
+                        <div style={{ fontSize: 24, fontWeight: 900 }}>{totalPar}</div>
+                      </div>
+
+                      <div
+                        style={{
+                          background: '#f8fafc',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 14,
+                          padding: 14,
+                        }}
+                      >
+                        <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
+                          Resultat
+                        </div>
+                        <div style={{ fontSize: 24, fontWeight: 900 }}>{player.strokes}</div>
+                      </div>
+
+                      <div
+                        style={{
+                          background: '#f8fafc',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 14,
+                          padding: 14,
+                        }}
+                      >
+                        <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
+                          Position
+                        </div>
+                        <div style={{ fontSize: 24, fontWeight: 900 }}>
+                          {summary.findIndex((item) => item.id === player.id) + 1}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>
