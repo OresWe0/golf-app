@@ -18,12 +18,11 @@ function getScoreMarker(strokes: number | null, par: number) {
 
 function getMarkerStyle(marker: string | null): React.CSSProperties {
   const base: React.CSSProperties = {
-    minWidth: 40,
-    height: 40,
+    minWidth: 38,
+    height: 38,
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
     fontWeight: 800,
     fontSize: 18,
     background: '#fff',
@@ -68,20 +67,26 @@ function getMarkerStyle(marker: string | null): React.CSSProperties {
   return base
 }
 
+function scoreText(strokes: number | null, par: number) {
+  if (strokes == null) return '-'
+  const diff = scoreVsPar(strokes, par) ?? 0
+  return diff > 0 ? `+${diff}` : `${diff}`
+}
+
 function sumStrokes(scores: { strokes: number | null }[]) {
   return scores.reduce((sum, item) => sum + (item.strokes ?? 0), 0)
 }
 
-function sumVsPar(scores: { strokes: number | null; par: number }[]) {
-  return scores.reduce((sum, item) => {
-    return sum + (scoreVsPar(item.strokes, item.par) ?? 0)
-  }, 0)
+function sumPar(holes: { par: number }[]) {
+  return holes.reduce((sum, hole) => sum + hole.par, 0)
 }
 
 export default async function SummaryPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ player?: string }>
 }) {
   const supabase = await createClient()
   const {
@@ -91,6 +96,7 @@ export default async function SummaryPage({
   if (!user) redirect('/login')
 
   const { id } = await params
+  const resolvedSearchParams = await searchParams
 
   const [{ data: round }, { data: players }, { data: scoreRows }] = await Promise.all([
     supabase.from('rounds').select('*').eq('id', id).single(),
@@ -182,6 +188,11 @@ export default async function SummaryPage({
 
   const winner = summary[0]
 
+  const selectedPlayer =
+    summary.find((player) => player.id === resolvedSearchParams.player) ?? summary[0]
+
+  const selectedIndex = summary.findIndex((player) => player.id === selectedPlayer?.id)
+
   const roundTypeLabel =
     round.scoring_mode === 'stableford' ? 'Stableford' : 'Slagspel'
 
@@ -192,9 +203,25 @@ export default async function SummaryPage({
       ? '9 hål · Främre 9'
       : '9 hål · Bakre 9'
 
-  const totalPar = visibleHoles.reduce((sum, hole) => sum + hole.par, 0)
-  const frontPar = firstHalf.reduce((sum, hole) => sum + hole.par, 0)
-  const backPar = secondHalf.reduce((sum, hole) => sum + hole.par, 0)
+  const totalPar = sumPar(visibleHoles)
+
+  const selectedFrontScores = selectedPlayer
+    ? selectedPlayer.holeScores.filter((score: any) =>
+        firstHalf.some((hole) => hole.hole_number === score.holeNumber)
+      )
+    : []
+
+  const selectedBackScores = selectedPlayer
+    ? selectedPlayer.holeScores.filter((score: any) =>
+        secondHalf.some((hole) => hole.hole_number === score.holeNumber)
+      )
+    : []
+
+  const frontPar = sumPar(firstHalf)
+  const backPar = sumPar(secondHalf)
+
+  const frontStrokes = sumStrokes(selectedFrontScores)
+  const backStrokes = sumStrokes(selectedBackScores)
 
   return (
     <main>
@@ -256,12 +283,7 @@ export default async function SummaryPage({
               marginBottom: 16,
             }}
           >
-            <div
-              style={{
-                display: 'grid',
-                gap: 12,
-              }}
-            >
+            <div style={{ display: 'grid', gap: 12 }}>
               <div
                 style={{
                   fontSize: 16,
@@ -460,328 +482,357 @@ export default async function SummaryPage({
           </div>
         </div>
 
-        <div className="card">
-          <h2 style={{ marginTop: 0, marginBottom: 8 }}>Scorekort</h2>
-          <p className="muted" style={{ marginTop: 0, marginBottom: 16, lineHeight: 1.5 }}>
-            Birdie = cirkel · Eagle eller bättre = dubbel cirkel · Bogey = fyrkant ·
-            Double bogey+ = dubbel fyrkant
-          </p>
+        {selectedPlayer ? (
+          <div className="card">
+            <div
+              style={{
+                display: 'grid',
+                gap: 14,
+                marginBottom: 16,
+              }}
+            >
+              <div>
+                <h2 style={{ marginTop: 0, marginBottom: 8 }}>Scorekort</h2>
+                <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
+                  Välj spelare för att visa ett rent och tydligt scorekort.
+                </p>
+              </div>
 
-          <div style={{ display: 'grid', gap: 16 }}>
-            {summary.map((player) => {
-              const frontScores = player.holeScores.filter((score: any) =>
-                firstHalf.some((hole) => hole.hole_number === score.holeNumber)
-              )
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  overflowX: 'auto',
+                  paddingBottom: 4,
+                }}
+              >
+                {summary.map((player) => {
+                  const isActive = player.id === selectedPlayer.id
 
-              const backScores = player.holeScores.filter((score: any) =>
-                secondHalf.some((hole) => hole.hole_number === score.holeNumber)
-              )
+                  return (
+                    <Link
+                      key={player.id}
+                      href={`/rounds/${id}/summary?player=${player.id}`}
+                      style={{
+                        flex: '0 0 auto',
+                        padding: '10px 14px',
+                        borderRadius: 999,
+                        border: isActive
+                          ? '1px solid #166534'
+                          : '1px solid #d1d5db',
+                        background: isActive ? '#166534' : '#ffffff',
+                        color: isActive ? '#ffffff' : '#0f172a',
+                        fontWeight: 800,
+                        fontSize: 14,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {player.name}
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
 
-              const frontStrokes = sumStrokes(frontScores)
-              const backStrokes = sumStrokes(backScores)
-              const frontVsPar = sumVsPar(frontScores)
-              const backVsPar = sumVsPar(backScores)
-
-              return (
+            <div
+              style={{
+                border: '1px solid #e5e7eb',
+                borderRadius: 20,
+                overflow: 'hidden',
+                background: '#fff',
+              }}
+            >
+              <div
+                style={{
+                  padding: 16,
+                  background: '#f8fbf7',
+                  borderBottom: '1px solid #e5e7eb',
+                  display: 'grid',
+                  gap: 12,
+                }}
+              >
                 <div
-                  key={player.id}
                   style={{
-                    border: '1px solid #e5e7eb',
-                    borderRadius: 20,
-                    overflow: 'hidden',
-                    background: '#fff',
+                    fontSize: 28,
+                    fontWeight: 900,
+                    lineHeight: 1.05,
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {selectedPlayer.name}
+                </div>
+
+                <div className="muted">
+                  {selectedPlayer.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Exakt HCP{' '}
+                  {selectedPlayer.exactHandicap ?? '-'} · Spel-HCP{' '}
+                  {selectedPlayer.playingHandicap ?? 0}
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr 1fr',
+                    gap: 10,
                   }}
                 >
                   <div
                     style={{
-                      padding: 16,
-                      background: '#f8fbf7',
-                      borderBottom: '1px solid #e5e7eb',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
+                      background: '#fff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 14,
+                      padding: 12,
                     }}
                   >
-                    <div>
-                      <div
-                        style={{
-                          fontSize: 24,
-                          fontWeight: 900,
-                          lineHeight: 1.1,
-                        }}
-                      >
-                        {player.name}
-                      </div>
-                      <div className="muted" style={{ marginTop: 4 }}>
-                        {player.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Spel-HCP{' '}
-                        {player.playingHandicap ?? 0}
-                      </div>
+                    <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                      Total
                     </div>
-
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(3, auto)',
-                        gap: 10,
-                      }}
-                    >
-                      <div
-                        style={{
-                          background: '#fff',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: 12,
-                          padding: '10px 12px',
-                          textAlign: 'center',
-                        }}
-                      >
-                        <div className="muted" style={{ fontSize: 12 }}>Tot</div>
-                        <div style={{ fontWeight: 900, fontSize: 20 }}>{player.strokes}</div>
-                      </div>
-
-                      <div
-                        style={{
-                          background: '#fff',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: 12,
-                          padding: '10px 12px',
-                          textAlign: 'center',
-                        }}
-                      >
-                        <div className="muted" style={{ fontSize: 12 }}>+/-</div>
-                        <div style={{ fontWeight: 900, fontSize: 20 }}>
-                          {player.vsPar > 0 ? `+${player.vsPar}` : player.vsPar}
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          background: '#fff',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: 12,
-                          padding: '10px 12px',
-                          textAlign: 'center',
-                        }}
-                      >
-                        <div className="muted" style={{ fontSize: 12 }}>P</div>
-                        <div style={{ fontWeight: 900, fontSize: 20 }}>{player.points}</div>
-                      </div>
+                    <div style={{ fontSize: 24, fontWeight: 900 }}>
+                      {selectedPlayer.strokes}
                     </div>
                   </div>
 
-                  <div style={{ padding: 16, display: 'grid', gap: 16 }}>
-                    <div>
-                      <div
-                        style={{
-                          marginBottom: 10,
-                          fontSize: 16,
-                          fontWeight: 800,
-                          color: '#166534',
-                        }}
-                      >
-                        Främre 9
-                      </div>
-
-                      <div style={{ overflowX: 'auto' }}>
-                        <table className="table">
-                          <thead>
-                            <tr>
-                              <th>Rad</th>
-                              {firstHalf.map((hole) => (
-                                <th key={`front-hole-${hole.hole_number}`}>H{hole.hole_number}</th>
-                              ))}
-                              <th>Ut</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td><strong>Index</strong></td>
-                              {firstHalf.map((hole) => (
-                                <td key={`front-index-${hole.hole_number}`}>{hole.hcp_index}</td>
-                              ))}
-                              <td>-</td>
-                            </tr>
-                            <tr>
-                              <td><strong>Par</strong></td>
-                              {firstHalf.map((hole) => (
-                                <td key={`front-par-${hole.hole_number}`}>{hole.par}</td>
-                              ))}
-                              <td><strong>{frontPar}</strong></td>
-                            </tr>
-                            <tr>
-                              <td><strong>Resultat</strong></td>
-                              {frontScores.map((score: any) => (
-                                <td key={`front-score-${player.id}-${score.holeNumber}`}>
-                                  {score.strokes == null ? (
-                                    '-'
-                                  ) : (
-                                    <span style={getMarkerStyle(score.marker)}>
-                                      {score.strokes}
-                                    </span>
-                                  )}
-                                </td>
-                              ))}
-                              <td><strong>{frontStrokes}</strong></td>
-                            </tr>
-                            <tr>
-                              <td><strong>+/-</strong></td>
-                              {frontScores.map((score: any) => (
-                                <td key={`front-vspar-${player.id}-${score.holeNumber}`}>
-                                  {score.strokes == null
-                                    ? '-'
-                                    : (() => {
-                                        const diff = (scoreVsPar(score.strokes, score.par) ?? 0)
-                                        return diff > 0 ? `+${diff}` : diff
-                                      })()}
-                                </td>
-                              ))}
-                              <td>
-                                <strong>
-                                  {frontVsPar > 0 ? `+${frontVsPar}` : frontVsPar}
-                                </strong>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
+                  <div
+                    style={{
+                      background: '#fff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 14,
+                      padding: 12,
+                    }}
+                  >
+                    <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                      Mot par
                     </div>
+                    <div style={{ fontSize: 24, fontWeight: 900 }}>
+                      {selectedPlayer.vsPar > 0
+                        ? `+${selectedPlayer.vsPar}`
+                        : selectedPlayer.vsPar}
+                    </div>
+                  </div>
 
-                    {secondHalf.length > 0 ? (
-                      <div>
-                        <div
-                          style={{
-                            marginBottom: 10,
-                            fontSize: 16,
-                            fontWeight: 800,
-                            color: '#166534',
-                          }}
-                        >
-                          Bakre 9
-                        </div>
-
-                        <div style={{ overflowX: 'auto' }}>
-                          <table className="table">
-                            <thead>
-                              <tr>
-                                <th>Rad</th>
-                                {secondHalf.map((hole) => (
-                                  <th key={`back-hole-${hole.hole_number}`}>H{hole.hole_number}</th>
-                                ))}
-                                <th>In</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr>
-                                <td><strong>Index</strong></td>
-                                {secondHalf.map((hole) => (
-                                  <td key={`back-index-${hole.hole_number}`}>{hole.hcp_index}</td>
-                                ))}
-                                <td>-</td>
-                              </tr>
-                              <tr>
-                                <td><strong>Par</strong></td>
-                                {secondHalf.map((hole) => (
-                                  <td key={`back-par-${hole.hole_number}`}>{hole.par}</td>
-                                ))}
-                                <td><strong>{backPar}</strong></td>
-                              </tr>
-                              <tr>
-                                <td><strong>Resultat</strong></td>
-                                {backScores.map((score: any) => (
-                                  <td key={`back-score-${player.id}-${score.holeNumber}`}>
-                                    {score.strokes == null ? (
-                                      '-'
-                                    ) : (
-                                      <span style={getMarkerStyle(score.marker)}>
-                                        {score.strokes}
-                                      </span>
-                                    )}
-                                  </td>
-                                ))}
-                                <td><strong>{backStrokes}</strong></td>
-                              </tr>
-                              <tr>
-                                <td><strong>+/-</strong></td>
-                                {backScores.map((score: any) => (
-                                  <td key={`back-vspar-${player.id}-${score.holeNumber}`}>
-                                    {score.strokes == null
-                                      ? '-'
-                                      : (() => {
-                                          const diff = (scoreVsPar(score.strokes, score.par) ?? 0)
-                                          return diff > 0 ? `+${diff}` : diff
-                                        })()}
-                                  </td>
-                                ))}
-                                <td>
-                                  <strong>
-                                    {backVsPar > 0 ? `+${backVsPar}` : backVsPar}
-                                  </strong>
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr 1fr',
-                        gap: 12,
-                      }}
-                    >
-                      <div
-                        style={{
-                          background: '#f8fafc',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: 14,
-                          padding: 14,
-                        }}
-                      >
-                        <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
-                          Total par
-                        </div>
-                        <div style={{ fontSize: 24, fontWeight: 900 }}>{totalPar}</div>
-                      </div>
-
-                      <div
-                        style={{
-                          background: '#f8fafc',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: 14,
-                          padding: 14,
-                        }}
-                      >
-                        <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
-                          Resultat
-                        </div>
-                        <div style={{ fontSize: 24, fontWeight: 900 }}>{player.strokes}</div>
-                      </div>
-
-                      <div
-                        style={{
-                          background: '#f8fafc',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: 14,
-                          padding: 14,
-                        }}
-                      >
-                        <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
-                          Position
-                        </div>
-                        <div style={{ fontSize: 24, fontWeight: 900 }}>
-                          {summary.findIndex((item) => item.id === player.id) + 1}
-                        </div>
-                      </div>
+                  <div
+                    style={{
+                      background: '#fff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 14,
+                      padding: 12,
+                    }}
+                  >
+                    <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                      Position
+                    </div>
+                    <div style={{ fontSize: 24, fontWeight: 900 }}>
+                      {selectedIndex + 1}
                     </div>
                   </div>
                 </div>
-              )
-            })}
+              </div>
+
+              <div style={{ padding: 16, display: 'grid', gap: 16 }}>
+                <div>
+                  <div
+                    style={{
+                      marginBottom: 10,
+                      fontSize: 16,
+                      fontWeight: 800,
+                      color: '#166534',
+                    }}
+                  >
+                    Främre 9
+                  </div>
+
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Rad</th>
+                          {firstHalf.map((hole) => (
+                            <th key={`front-hole-${hole.hole_number}`}>H{hole.hole_number}</th>
+                          ))}
+                          <th>Ut</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td><strong>Index</strong></td>
+                          {firstHalf.map((hole) => (
+                            <td key={`front-index-${hole.hole_number}`}>{hole.hcp_index}</td>
+                          ))}
+                          <td>-</td>
+                        </tr>
+                        <tr>
+                          <td><strong>Par</strong></td>
+                          {firstHalf.map((hole) => (
+                            <td key={`front-par-${hole.hole_number}`}>{hole.par}</td>
+                          ))}
+                          <td><strong>{frontPar}</strong></td>
+                        </tr>
+                        <tr>
+                          <td><strong>Resultat</strong></td>
+                          {selectedFrontScores.map((score: any) => (
+                            <td key={`front-score-${selectedPlayer.id}-${score.holeNumber}`}>
+                              {score.strokes == null ? (
+                                '-'
+                              ) : (
+                                <span style={getMarkerStyle(score.marker)}>
+                                  {score.strokes}
+                                </span>
+                              )}
+                            </td>
+                          ))}
+                          <td><strong>{frontStrokes}</strong></td>
+                        </tr>
+                        <tr>
+                          <td><strong>+/-</strong></td>
+                          {selectedFrontScores.map((score: any) => (
+                            <td key={`front-vspar-${selectedPlayer.id}-${score.holeNumber}`}>
+                              {scoreText(score.strokes, score.par)}
+                            </td>
+                          ))}
+                          <td>
+                            <strong>
+                              {sumVsPar(selectedFrontScores) > 0
+                                ? `+${sumVsPar(selectedFrontScores)}`
+                                : sumVsPar(selectedFrontScores)}
+                            </strong>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {secondHalf.length > 0 ? (
+                  <div>
+                    <div
+                      style={{
+                        marginBottom: 10,
+                        fontSize: 16,
+                        fontWeight: 800,
+                        color: '#166534',
+                      }}
+                    >
+                      Bakre 9
+                    </div>
+
+                    <div style={{ overflowX: 'auto' }}>
+                      <table className="table">
+                        <thead>
+                          <tr>
+                            <th>Rad</th>
+                            {secondHalf.map((hole) => (
+                              <th key={`back-hole-${hole.hole_number}`}>H{hole.hole_number}</th>
+                            ))}
+                            <th>In</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td><strong>Index</strong></td>
+                            {secondHalf.map((hole) => (
+                              <td key={`back-index-${hole.hole_number}`}>{hole.hcp_index}</td>
+                            ))}
+                            <td>-</td>
+                          </tr>
+                          <tr>
+                            <td><strong>Par</strong></td>
+                            {secondHalf.map((hole) => (
+                              <td key={`back-par-${hole.hole_number}`}>{hole.par}</td>
+                            ))}
+                            <td><strong>{backPar}</strong></td>
+                          </tr>
+                          <tr>
+                            <td><strong>Resultat</strong></td>
+                            {selectedBackScores.map((score: any) => (
+                              <td key={`back-score-${selectedPlayer.id}-${score.holeNumber}`}>
+                                {score.strokes == null ? (
+                                  '-'
+                                ) : (
+                                  <span style={getMarkerStyle(score.marker)}>
+                                    {score.strokes}
+                                  </span>
+                                )}
+                              </td>
+                            ))}
+                            <td><strong>{backStrokes}</strong></td>
+                          </tr>
+                          <tr>
+                            <td><strong>+/-</strong></td>
+                            {selectedBackScores.map((score: any) => (
+                              <td key={`back-vspar-${selectedPlayer.id}-${score.holeNumber}`}>
+                                {scoreText(score.strokes, score.par)}
+                              </td>
+                            ))}
+                            <td>
+                              <strong>
+                                {sumVsPar(selectedBackScores) > 0
+                                  ? `+${sumVsPar(selectedBackScores)}`
+                                  : sumVsPar(selectedBackScores)}
+                              </strong>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr 1fr',
+                    gap: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      background: '#f8fafc',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 14,
+                      padding: 14,
+                    }}
+                  >
+                    <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
+                      Total par
+                    </div>
+                    <div style={{ fontSize: 24, fontWeight: 900 }}>{totalPar}</div>
+                  </div>
+
+                  <div
+                    style={{
+                      background: '#f8fafc',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 14,
+                      padding: 14,
+                    }}
+                  >
+                    <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
+                      Resultat
+                    </div>
+                    <div style={{ fontSize: 24, fontWeight: 900 }}>
+                      {selectedPlayer.strokes}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      background: '#f8fafc',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 14,
+                      padding: 14,
+                    }}
+                  >
+                    <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
+                      Poäng
+                    </div>
+                    <div style={{ fontSize: 24, fontWeight: 900 }}>
+                      {selectedPlayer.points}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
     </main>
   )
