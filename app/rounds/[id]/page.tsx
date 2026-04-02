@@ -76,8 +76,16 @@ export default async function RoundPage({
             </p>
           </div>
 
-          <Link className="button secondary" href={`/rounds/${id}/summary`}>
-            Öppna summary
+          <Link
+            className="button"
+            href={`/rounds/${id}/summary`}
+            style={{
+              fontWeight: 800,
+              fontSize: 16,
+              padding: '12px 18px',
+            }}
+          >
+            🏆 Leaderboard
           </Link>
         </div>
 
