@@ -78,7 +78,7 @@ export default async function RoundPage({
 
           <Link
             className="button"
-            href={`/rounds/${id}/summary`}
+            href={`/rounds/${id}/summary?hole=${currentHole.hole_number}`}
             style={{
               fontWeight: 800,
               fontSize: 16,

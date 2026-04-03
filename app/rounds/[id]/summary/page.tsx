@@ -272,7 +272,7 @@ export default async function SummaryPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ player?: string }>
+  searchParams: Promise<{ player?: string; hole?: string }>
 }) {
   const supabase = await createClient()
   const {
@@ -301,6 +301,7 @@ export default async function SummaryPage({
 
   const startHole = round.start_hole ?? 1
   const endHole = round.end_hole ?? holes.length
+  const returnHole = Number(resolvedSearchParams.hole || startHole)
 
   const visibleHoles = holes.filter(
     (hole) => hole.hole_number >= startHole && hole.hole_number <= endHole
@@ -428,7 +429,7 @@ export default async function SummaryPage({
           >
             <Link
               className="button"
-              href={`/rounds/${id}?hole=${startHole}`}
+              href={`/rounds/${id}?hole=${returnHole}`}
               style={{
                 width: '100%',
                 minHeight: 56,
@@ -695,7 +696,7 @@ export default async function SummaryPage({
                   return (
                     <Link
                       key={player.id}
-                      href={`/rounds/${id}/summary?player=${player.id}`}
+                      href={`/rounds/${id}/summary?player=${player.id}&hole=${returnHole}`}
                       style={{
                         flex: '0 0 auto',
                         padding: '10px 14px',
@@ -835,7 +836,7 @@ export default async function SummaryPage({
                   selectedPlayer={selectedPlayer}
                   visibleHoleCount={visibleHoles.length}
                   scoringMode={round.scoring_mode}
-                  totalLabel="Ut"
+                  totalLabel="Summa främre"
                 />
 
                 {secondHalf.length > 0 ? (
@@ -846,7 +847,7 @@ export default async function SummaryPage({
                     selectedPlayer={selectedPlayer}
                     visibleHoleCount={visibleHoles.length}
                     scoringMode={round.scoring_mode}
-                    totalLabel="In"
+                    totalLabel="Summa bakre"
                   />
                 ) : null}
 
