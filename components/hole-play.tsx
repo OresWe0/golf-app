@@ -14,6 +14,7 @@ export function HolePlay({
   scores,
 }: any) {
   const touchStartX = useRef<number | null>(null)
+  const firstPlayerCardRef = useRef<HTMLDivElement | null>(null)
 
   const createValuesFromScores = () =>
     Object.fromEntries(
@@ -38,6 +39,13 @@ export function HolePlay({
     setValues(createValuesFromScores())
     setPreviewHoleNumber(hole.hole_number)
     setHoleImageError(false)
+
+    setTimeout(() => {
+      firstPlayerCardRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    }, 80)
   }, [hole.hole_number, scores])
 
   const quickScores = useMemo(() => {
@@ -90,6 +98,10 @@ export function HolePlay({
     setSavedFlash(true)
     setValues(emptyValues)
 
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate([25, 20, 25])
+    }
+
     setTimeout(() => {
       const target =
         currentHole === endHole
@@ -97,7 +109,7 @@ export function HolePlay({
           : `/rounds/${roundId}?hole=${currentHole + 1}`
 
       window.location.href = target
-    }, 450)
+    }, 260)
   }
 
   const setScore = (playerId: string, score: number) => {
@@ -522,11 +534,13 @@ export function HolePlay({
         return (
           <div
             key={player.id}
+            ref={players[0]?.id === player.id ? firstPlayerCardRef : null}
             className="card"
             style={{
-              marginBottom: 10,
-              padding: 12,
+              marginBottom: 12,
+              padding: 14,
               borderRadius: 22,
+              scrollMarginTop: 12,
             }}
           >
             <div
@@ -607,43 +621,27 @@ export function HolePlay({
                       e.currentTarget.style.transform = 'scale(0.97)'
                     }}
                     onMouseUp={(e) => {
-                      e.currentTarget.style.transform = active ? 'scale(1.02)' : 'scale(1)'
+                      e.currentTarget.style.transform = active ? 'scale(1.03)' : 'scale(1)'
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = active ? 'scale(1.02)' : 'scale(1)'
+                      e.currentTarget.style.transform = active ? 'scale(1.03)' : 'scale(1)'
                     }}
                     style={{
-                      minHeight: 58,
-                      padding: '8px 4px',
+                      minHeight: 68,
                       borderRadius: 18,
                       border: `2px solid ${border}`,
                       background: bg,
                       color,
                       fontWeight: 800,
-                      fontSize: 17,
+                      fontSize: 20,
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
-                      transform: active ? 'scale(1.02)' : 'scale(1)',
+                      transform: active ? 'scale(1.03)' : 'scale(1)',
                     }}
                   >
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 2,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <span style={{ lineHeight: 1 }}>{score}</span>
-                      <span
-                        style={{
-                          fontSize: 10,
-                          lineHeight: 1.1,
-                          opacity: 0.9,
-                          minHeight: 12,
-                        }}
-                      >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      <span>{score}</span>
+                      <span style={{ fontSize: 12, opacity: 0.82, fontWeight: 700 }}>
                         {getLabel(diff)}
                       </span>
                     </div>
@@ -667,12 +665,19 @@ export function HolePlay({
           background: '#fff',
           borderTop: '1px solid #e5e7eb',
           zIndex: 30,
+          boxShadow: '0 -8px 24px rgba(0,0,0,0.06)',
         }}
       >
         <button
           type="button"
           onClick={goPrevious}
-          style={{ flex: 1 }}
+          style={{
+            flex: 1,
+            minHeight: 58,
+            fontWeight: 900,
+            fontSize: 22,
+            borderRadius: 18,
+          }}
         >
           ←
         </button>
@@ -681,7 +686,13 @@ export function HolePlay({
           type="button"
           onClick={saveScores}
           disabled={loading}
-          style={{ flex: 3, fontWeight: 800 }}
+          style={{
+            flex: 3,
+            minHeight: 58,
+            fontWeight: 900,
+            fontSize: 20,
+            borderRadius: 18,
+          }}
         >
           {loading ? 'Sparar...' : currentHole === endHole ? 'Avsluta runda' : 'Nästa hål →'}
         </button>
