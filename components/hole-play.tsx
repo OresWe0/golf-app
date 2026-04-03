@@ -409,6 +409,9 @@ export function HolePlay({
         style={{
           padding: 14,
           marginBottom: 12,
+          position: 'sticky',
+          top: 8,
+          zIndex: 10,
           background: '#ffffffee',
           backdropFilter: 'blur(6px)',
           borderRadius: 22,
