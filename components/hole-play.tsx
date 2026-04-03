@@ -407,144 +407,97 @@ export function HolePlay({
       <div
         className="card"
         style={{
-          padding: 16,
-          marginBottom: 14,
-          position: 'sticky',
-          top: 8,
-          zIndex: 10,
+          padding: 14,
+          marginBottom: 12,
           background: '#ffffffee',
           backdropFilter: 'blur(6px)',
-          borderRadius: 24,
+          borderRadius: 22,
         }}
       >
         <div
           style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            gap: 16,
-            alignItems: 'stretch',
+            display: 'grid',
+            gap: 10,
           }}
         >
           <div
             style={{
-              flex: 1.2,
-              background: '#f0fdf4',
-              border: '1px solid #bbf7d0',
-              borderRadius: 20,
-              padding: 16,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-            }}
-          >
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: '#166534',
-                textTransform: 'uppercase',
-                letterSpacing: 0.6,
-                marginBottom: 8,
-              }}
-            >
-              Aktuellt hål
-            </div>
-            <div
-              style={{
-                fontSize: 36,
-                fontWeight: 900,
-                lineHeight: 1,
-                color: '#0f172a',
-              }}
-            >
-              Hål {hole.hole_number}
-            </div>
-          </div>
-
-          <div
-            style={{
-              flex: 1,
-              background: '#f8fafc',
-              border: '1px solid #e5e7eb',
-              borderRadius: 20,
-              padding: 16,
               display: 'grid',
+              gridTemplateColumns: '1.2fr 1fr',
               gap: 10,
-              alignContent: 'center',
+              alignItems: 'stretch',
             }}
           >
-            <div>
+            <div
+              style={{
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: 18,
+                padding: 14,
+              }}
+            >
               <div
                 style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: '#64748b',
+                  fontSize: 12,
+                  fontWeight: 800,
+                  color: '#166534',
                   textTransform: 'uppercase',
-                  letterSpacing: 0.6,
-                  marginBottom: 4,
+                  marginBottom: 6,
                 }}
               >
-                Par
+                Hål
               </div>
               <div
                 style={{
-                  fontSize: 28,
+                  fontSize: 30,
                   fontWeight: 900,
                   lineHeight: 1,
-                  color: '#0f172a',
                 }}
               >
-                {hole.par}
+                {hole.hole_number}
               </div>
             </div>
 
-            <div>
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: '#64748b',
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.6,
-                  marginBottom: 4,
-                }}
-              >
-                Index
+            <div
+              style={{
+                background: '#f8fafc',
+                border: '1px solid #e5e7eb',
+                borderRadius: 18,
+                padding: 14,
+                display: 'grid',
+                gap: 6,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 12, color: '#64748b' }}>Par</span>
+                <span style={{ fontSize: 24, fontWeight: 900 }}>{hole.par}</span>
               </div>
-              <div
-                style={{
-                  fontSize: 24,
-                  fontWeight: 800,
-                  lineHeight: 1,
-                  color: '#0f172a',
-                }}
-              >
-                {hole.hcp_index}
+
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 12, color: '#64748b' }}>Index</span>
+                <span style={{ fontSize: 20, fontWeight: 800 }}>
+                  {hole.hcp_index}
+                </span>
               </div>
             </div>
           </div>
-        </div>
 
-        <button
-          type="button"
-          onClick={openHoleImage}
-          style={{
-            marginTop: 14,
-            width: '100%',
-            minHeight: 54,
-            padding: '12px 16px',
-            borderRadius: 16,
-            border: '1px solid #bbf7d0',
-            background: 'linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%)',
-            color: '#14532d',
-            fontWeight: 800,
-            fontSize: 17,
-            cursor: 'pointer',
-            boxShadow: '0 6px 16px rgba(22, 101, 52, 0.08)',
-          }}
-        >
-          ⛳ Se banan
-        </button>
+          <button
+            type="button"
+            onClick={openHoleImage}
+            style={{
+              width: '100%',
+              padding: '10px',
+              borderRadius: 12,
+              border: '1px solid #bbf7d0',
+              background: '#ecfdf5',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            ⛳ Se banan
+          </button>
+        </div>
       </div>
 
       {players.map((player: any) => {
