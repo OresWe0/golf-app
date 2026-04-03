@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from 'next'
 export const metadata: Metadata = {
   title: 'Golfrundan',
   description: 'Golfapp för score, leaderboard och rundor med vänner.',
+  manifest: '/manifest.webmanifest',
   icons: {
     icon: [
       { url: '/favicon.ico' },
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
     title: 'Golfrundan',
   },
   formatDetection: {

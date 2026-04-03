@@ -2,11 +2,14 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: '/',
     name: 'Golfrundan',
     short_name: 'Golfrundan',
     description: 'Golfapp för score, leaderboard och rundor med vänner.',
     start_url: '/',
+    scope: '/',
     display: 'standalone',
+    display_override: ['standalone', 'minimal-ui'],
     background_color: '#f4f7f2',
     theme_color: '#166534',
     orientation: 'portrait',
