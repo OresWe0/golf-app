@@ -195,7 +195,7 @@ export function HolePlay({
 
   return (
     <div
-      style={{ paddingBottom: 100 }}
+      style={{ paddingBottom: 120 }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
@@ -407,8 +407,8 @@ export function HolePlay({
       <div
         className="card"
         style={{
-          padding: 14,
-          marginBottom: 12,
+          padding: 12,
+          marginBottom: 10,
           position: 'sticky',
           top: 8,
           zIndex: 10,
@@ -420,14 +420,14 @@ export function HolePlay({
         <div
           style={{
             display: 'grid',
-            gap: 10,
+            gap: 8,
           }}
         >
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '1.2fr 1fr',
-              gap: 10,
+              gridTemplateColumns: '1.15fr 1fr',
+              gap: 8,
               alignItems: 'stretch',
             }}
           >
@@ -436,7 +436,7 @@ export function HolePlay({
                 background: '#f0fdf4',
                 border: '1px solid #bbf7d0',
                 borderRadius: 18,
-                padding: 14,
+                padding: 12,
               }}
             >
               <div
@@ -452,9 +452,10 @@ export function HolePlay({
               </div>
               <div
                 style={{
-                  fontSize: 30,
+                  fontSize: 28,
                   fontWeight: 900,
                   lineHeight: 1,
+                  color: '#0f172a',
                 }}
               >
                 {hole.hole_number}
@@ -466,19 +467,21 @@ export function HolePlay({
                 background: '#f8fafc',
                 border: '1px solid #e5e7eb',
                 borderRadius: 18,
-                padding: 14,
+                padding: 12,
                 display: 'grid',
-                gap: 6,
+                gap: 4,
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 12, color: '#64748b' }}>Par</span>
-                <span style={{ fontSize: 24, fontWeight: 900 }}>{hole.par}</span>
+                <span style={{ fontSize: 22, fontWeight: 900, color: '#0f172a' }}>
+                  {hole.par}
+                </span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 12, color: '#64748b' }}>Index</span>
-                <span style={{ fontSize: 20, fontWeight: 800 }}>
+                <span style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>
                   {hole.hcp_index}
                 </span>
               </div>
@@ -490,12 +493,17 @@ export function HolePlay({
             onClick={openHoleImage}
             style={{
               width: '100%',
-              padding: '10px',
-              borderRadius: 12,
-              border: '1px solid #bbf7d0',
-              background: '#ecfdf5',
-              fontWeight: 700,
+              minHeight: 48,
+              padding: '12px 14px',
+              borderRadius: 14,
+              border: '1px solid #16a34a',
+              background: 'linear-gradient(180deg, #22c55e 0%, #16a34a 100%)',
+              color: '#ffffff',
+              fontWeight: 800,
+              fontSize: 18,
+              letterSpacing: 0.2,
               cursor: 'pointer',
+              boxShadow: '0 8px 18px rgba(22, 163, 74, 0.18)',
             }}
           >
             ⛳ Se banan
@@ -516,9 +524,9 @@ export function HolePlay({
             key={player.id}
             className="card"
             style={{
-              marginBottom: 14,
-              padding: 16,
-              borderRadius: 24,
+              marginBottom: 10,
+              padding: 12,
+              borderRadius: 22,
             }}
           >
             <div
@@ -526,7 +534,7 @@ export function HolePlay({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'flex-start',
-                gap: 12,
+                gap: 10,
                 marginBottom: 10,
               }}
             >
@@ -558,8 +566,8 @@ export function HolePlay({
               style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-                gap: 12,
-                marginTop: 12,
+                gap: 8,
+                marginTop: 8,
               }}
             >
               {quickScores.map((score) => {
@@ -596,30 +604,48 @@ export function HolePlay({
                     type="button"
                     onClick={() => setScore(player.id, score)}
                     onMouseDown={(e) => {
-                      e.currentTarget.style.transform = 'scale(0.96)'
+                      e.currentTarget.style.transform = 'scale(0.97)'
                     }}
                     onMouseUp={(e) => {
-                      e.currentTarget.style.transform = active ? 'scale(1.03)' : 'scale(1)'
+                      e.currentTarget.style.transform = active ? 'scale(1.02)' : 'scale(1)'
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = active ? 'scale(1.03)' : 'scale(1)'
+                      e.currentTarget.style.transform = active ? 'scale(1.02)' : 'scale(1)'
                     }}
                     style={{
-                      minHeight: 72,
-                      borderRadius: 20,
+                      minHeight: 58,
+                      padding: '8px 4px',
+                      borderRadius: 18,
                       border: `2px solid ${border}`,
                       background: bg,
                       color,
                       fontWeight: 800,
-                      fontSize: 20,
+                      fontSize: 17,
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
-                      transform: active ? 'scale(1.03)' : 'scale(1)',
+                      transform: active ? 'scale(1.02)' : 'scale(1)',
                     }}
                   >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <span>{score}</span>
-                      <span style={{ fontSize: 11, opacity: 0.8 }}>{getLabel(diff)}</span>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <span style={{ lineHeight: 1 }}>{score}</span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          lineHeight: 1.1,
+                          opacity: 0.9,
+                          minHeight: 12,
+                        }}
+                      >
+                        {getLabel(diff)}
+                      </span>
                     </div>
                   </button>
                 )
