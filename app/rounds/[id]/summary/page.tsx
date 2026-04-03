@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { receivedStrokesOnHole, scoreVsPar, stablefordPoints } from '@/lib/scoring'
-import HoleSummaryStrip from '@/components/hole-summary-strip'
 
 function getScoreMarker(strokes: number | null, par: number) {
   if (strokes == null) return null
@@ -17,8 +16,255 @@ function getScoreMarker(strokes: number | null, par: number) {
   return null
 }
 
+function getMarkerStyle(marker: string | null): React.CSSProperties {
+  const base: React.CSSProperties = {
+    width: 44,
+    height: 44,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 800,
+    fontSize: 18,
+    background: '#fff',
+    margin: '0 auto',
+    flexShrink: 0,
+  }
+
+  if (marker === 'circle') {
+    return {
+      ...base,
+      border: '2px solid #166534',
+      borderRadius: '999px',
+    }
+  }
+
+  if (marker === 'double-circle') {
+    return {
+      ...base,
+      border: '2px solid #166534',
+      borderRadius: '999px',
+      boxShadow: '0 0 0 4px #d1fae5',
+    }
+  }
+
+  if (marker === 'square') {
+    return {
+      ...base,
+      border: '2px solid #b45309',
+      borderRadius: 8,
+      background: '#fff7ed',
+    }
+  }
+
+  if (marker === 'double-square') {
+    return {
+      ...base,
+      border: '2px solid #991b1b',
+      borderRadius: 8,
+      boxShadow: '0 0 0 4px #fee2e2',
+      background: '#fff5f5',
+    }
+  }
+
+  return base
+}
+
 function sumPar(holes: { par: number }[]) {
   return holes.reduce((sum, hole) => sum + hole.par, 0)
+}
+
+function HoleSummaryGrid({
+  title,
+  holes,
+  scores,
+  selectedPlayer,
+  visibleHoleCount,
+  scoringMode,
+  totalLabel,
+}: {
+  title: string
+  holes: any[]
+  scores: any[]
+  selectedPlayer: any
+  visibleHoleCount: number
+  scoringMode: string
+  totalLabel: string
+}) {
+  const parTotal = holes.reduce((sum, hole) => sum + hole.par, 0)
+  const strokesTotal = scores.reduce((sum, score) => sum + (score.strokes ?? 0), 0)
+  const pointsTotal = scores.reduce((sum, score) => {
+    if (score.strokes == null) return sum
+
+    return (
+      sum +
+      stablefordPoints(
+        score.strokes,
+        score.par,
+        receivedStrokesOnHole(
+          selectedPlayer.playingHandicap,
+          score.hcpIndex,
+          visibleHoleCount
+        )
+      )
+    )
+  }, 0)
+
+  return (
+    <div>
+      <div
+        style={{
+          marginBottom: 10,
+          fontSize: 16,
+          fontWeight: 800,
+          color: '#166534',
+        }}
+      >
+        {title}
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          gap: 10,
+        }}
+      >
+        {scores.map((score) => {
+          const points =
+            score.strokes == null
+              ? null
+              : stablefordPoints(
+                  score.strokes,
+                  score.par,
+                  receivedStrokesOnHole(
+                    selectedPlayer.playingHandicap,
+                    score.hcpIndex,
+                    visibleHoleCount
+                  )
+                )
+
+          return (
+            <div
+              key={`${selectedPlayer.id}-${score.holeNumber}`}
+              style={{
+                border: '1px solid #e5e7eb',
+                borderRadius: 18,
+                background: '#fff',
+                overflow: 'hidden',
+                minWidth: 0,
+              }}
+            >
+              <div
+                style={{
+                  background: '#1f9d55',
+                  color: '#fff',
+                  textAlign: 'center',
+                  padding: '10px 8px',
+                  fontWeight: 800,
+                  fontSize: 15,
+                }}
+              >
+                Hål {score.holeNumber}
+              </div>
+
+              <div
+                style={{
+                  padding: 12,
+                  display: 'grid',
+                  gap: 10,
+                  textAlign: 'center',
+                }}
+              >
+                <div>
+                  <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                    Par
+                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 800 }}>{score.par}</div>
+                </div>
+
+                <div>
+                  <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                    Resultat
+                  </div>
+                  {score.strokes == null ? (
+                    <div style={{ fontSize: 24, fontWeight: 900 }}>-</div>
+                  ) : (
+                    <span style={getMarkerStyle(score.marker)}>{score.strokes}</span>
+                  )}
+                </div>
+
+                {scoringMode === 'stableford' ? (
+                  <div>
+                    <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                      Poäng
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 800 }}>
+                      {points == null ? '-' : points}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          )
+        })}
+
+        <div
+          style={{
+            border: '1px solid #cfe7d4',
+            borderRadius: 18,
+            background: '#f8fbf7',
+            overflow: 'hidden',
+            minWidth: 0,
+          }}
+        >
+          <div
+            style={{
+              background: '#166534',
+              color: '#fff',
+              textAlign: 'center',
+              padding: '10px 8px',
+              fontWeight: 800,
+              fontSize: 15,
+            }}
+          >
+            {totalLabel}
+          </div>
+
+          <div
+            style={{
+              padding: 12,
+              display: 'grid',
+              gap: 10,
+              textAlign: 'center',
+            }}
+          >
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                Par
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 900 }}>{parTotal}</div>
+            </div>
+
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                Resultat
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 900 }}>{strokesTotal}</div>
+            </div>
+
+            {scoringMode === 'stableford' ? (
+              <div>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                  Poäng
+                </div>
+                <div style={{ fontSize: 20, fontWeight: 900 }}>{pointsTotal}</div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default async function SummaryPage({
@@ -428,7 +674,7 @@ export default async function SummaryPage({
               <div>
                 <h2 style={{ marginTop: 0, marginBottom: 8 }}>Scorekort</h2>
                 <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
-                  Välj spelare och svep sidled på hålkorten.
+                  Välj spelare. Alla hål visas direkt utan sidscroll.
                 </p>
               </div>
 
@@ -582,7 +828,7 @@ export default async function SummaryPage({
               </div>
 
               <div style={{ padding: 16, display: 'grid', gap: 16 }}>
-                <HoleSummaryStrip
+                <HoleSummaryGrid
                   title="Främre 9"
                   holes={firstHalf}
                   scores={selectedFrontScores}
@@ -593,7 +839,7 @@ export default async function SummaryPage({
                 />
 
                 {secondHalf.length > 0 ? (
-                  <HoleSummaryStrip
+                  <HoleSummaryGrid
                     title="Bakre 9"
                     holes={secondHalf}
                     scores={selectedBackScores}
