@@ -68,6 +68,7 @@ export function HolePlay({
   const [holeImageError, setHoleImageError] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
   const [previewHoleNumber, setPreviewHoleNumber] = useState<number>(hole.hole_number)
+  const [showFinishModal, setShowFinishModal] = useState(false)
 
   const allPlayersHaveScores = (candidateValues: Record<string, string>) => {
     if (!players?.length) return false
@@ -84,6 +85,7 @@ export function HolePlay({
     setHoleImageError(false)
     hasUserChangedScoreRef.current = false
     setSavedFlash(false)
+    setShowFinishModal(false)
 
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current)
@@ -152,6 +154,10 @@ export function HolePlay({
     router.push(target)
   }
 
+  const confirmFinishRound = () => {
+    router.push(`/rounds/${roundId}/summary`)
+  }
+
   const saveScores = async (overrideValues?: Record<string, string>) => {
     const valuesToSave = overrideValues ?? values
     if (loading) return
@@ -179,6 +185,7 @@ export function HolePlay({
       return
     }
 
+    setLoading(false)
     setSavedFlash(true)
     setValues(createEmptyValues())
     hasUserChangedScoreRef.current = false
@@ -188,11 +195,12 @@ export function HolePlay({
     }
 
     setTimeout(() => {
-      const target =
-        currentHole === endHole
-          ? `/rounds/${roundId}/summary`
-          : `/rounds/${roundId}?hole=${currentHole + 1}`
-      router.push(target)
+      if (currentHole === endHole) {
+        setShowFinishModal(true)
+        return
+      }
+
+      router.push(`/rounds/${roundId}?hole=${currentHole + 1}`)
     }, 260)
   }
 
@@ -864,6 +872,83 @@ export function HolePlay({
                 }}
               >
                 Nästa →
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showFinishModal ? (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.6)',
+            zIndex: 200,
+            display: 'grid',
+            placeItems: 'center',
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 420,
+              background: '#ffffff',
+              borderRadius: 24,
+              padding: 20,
+              display: 'grid',
+              gap: 16,
+              textAlign: 'center',
+              boxShadow: '0 24px 60px rgba(15, 23, 42, 0.18)',
+            }}
+          >
+            <div style={{ fontSize: 22, fontWeight: 900 }}>
+              🎉 Rundan är klar!
+            </div>
+
+            <div style={{ color: '#475569', fontSize: 15, lineHeight: 1.5 }}>
+              Vill du avsluta rundan och gå vidare till leaderboard och scorekort?
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 10,
+                marginTop: 8,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setShowFinishModal(false)}
+                style={{
+                  border: '1px solid #d1d5db',
+                  borderRadius: 16,
+                  padding: '14px',
+                  fontWeight: 800,
+                  background: '#fff',
+                  cursor: 'pointer',
+                  color: '#0f172a',
+                }}
+              >
+                Avbryt
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmFinishRound}
+                style={{
+                  border: 'none',
+                  borderRadius: 16,
+                  padding: '14px',
+                  fontWeight: 900,
+                  background: '#166534',
+                  color: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                Bekräfta
               </button>
             </div>
           </div>
