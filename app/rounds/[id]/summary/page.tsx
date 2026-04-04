@@ -162,182 +162,107 @@ function ScoreTable({
         borderRadius: 18,
         overflow: 'hidden',
         background: '#fff',
+        boxShadow: '0 6px 18px rgba(15, 23, 42, 0.04)',
       }}
     >
       <div
         style={{
           background: '#14803c',
           color: '#fff',
-          padding: '10px 14px',
-          fontSize: 16,
-          fontWeight: 900,
+          padding: '12px 14px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 10,
+          flexWrap: 'wrap',
         }}
       >
-        {title}
-      </div>
-
-      <div style={{ overflowX: 'auto' }}>
-        <table
+        <div
           style={{
-            width: '100%',
-            minWidth: 520,
-            borderCollapse: 'collapse',
-            fontSize: 15,
+            fontSize: 16,
+            fontWeight: 900,
           }}
         >
-          <tbody>
-            <tr style={{ background: '#f8fbf7' }}>
-              <th
-                style={{
-                  textAlign: 'left',
-                  padding: '12px 14px',
-                  fontSize: 16,
-                  fontWeight: 900,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Hål
-              </th>
-              {scores.map((score) => (
+          {title}
+        </div>
+
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 800,
+            opacity: 0.95,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          ← Dra i sidled →
+        </div>
+      </div>
+
+      <div
+        style={{
+          position: 'relative',
+          background: '#fff',
+        }}
+      >
+        <div
+          style={{
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          <table
+            style={{
+              width: '100%',
+              minWidth: 620,
+              borderCollapse: 'collapse',
+              fontSize: 15,
+            }}
+          >
+            <tbody>
+              <tr style={{ background: '#f8fbf7' }}>
                 <th
-                  key={`hole-${score.holeNumber}`}
                   style={{
-                    textAlign: 'center',
-                    padding: '12px 8px',
+                    textAlign: 'left',
+                    padding: '12px 14px',
                     fontSize: 16,
                     fontWeight: 900,
-                    minWidth: 38,
+                    whiteSpace: 'nowrap',
+                    position: 'sticky',
+                    left: 0,
+                    background: '#f8fbf7',
+                    zIndex: 2,
                   }}
                 >
-                  {score.holeNumber}
+                  Hål
                 </th>
-              ))}
-              <th
-                style={{
-                  textAlign: 'center',
-                  padding: '12px 10px',
-                  fontSize: 16,
-                  fontWeight: 900,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {totalLabel}
-              </th>
-            </tr>
-
-            <tr>
-              <td
-                style={{
-                  padding: '12px 14px',
-                  fontWeight: 700,
-                  whiteSpace: 'nowrap',
-                  borderTop: '1px solid #e5e7eb',
-                }}
-              >
-                Hcp
-              </td>
-              {scores.map((score) => (
-                <td
-                  key={`hcp-${score.holeNumber}`}
+                {scores.map((score) => (
+                  <th
+                    key={`hole-${score.holeNumber}`}
+                    style={{
+                      textAlign: 'center',
+                      padding: '12px 8px',
+                      fontSize: 16,
+                      fontWeight: 900,
+                      minWidth: 38,
+                    }}
+                  >
+                    {score.holeNumber}
+                  </th>
+                ))}
+                <th
                   style={{
-                    padding: '12px 8px',
                     textAlign: 'center',
-                    color: '#334155',
-                    borderTop: '1px solid #e5e7eb',
+                    padding: '12px 10px',
+                    fontSize: 16,
+                    fontWeight: 900,
+                    whiteSpace: 'nowrap',
+                    color: '#166534',
                   }}
                 >
-                  {score.hcpIndex}
-                </td>
-              ))}
-              <td
-                style={{
-                  padding: '12px 10px',
-                  textAlign: 'center',
-                  color: '#94a3b8',
-                  borderTop: '1px solid #e5e7eb',
-                }}
-              >
-                —
-              </td>
-            </tr>
+                  {totalLabel}
+                </th>
+              </tr>
 
-            <tr>
-              <td
-                style={{
-                  padding: '12px 14px',
-                  fontWeight: 700,
-                  whiteSpace: 'nowrap',
-                  borderTop: '1px solid #e5e7eb',
-                }}
-              >
-                Par
-              </td>
-              {scores.map((score) => (
-                <td
-                  key={`par-${score.holeNumber}`}
-                  style={{
-                    padding: '12px 8px',
-                    textAlign: 'center',
-                    color: '#334155',
-                    borderTop: '1px solid #e5e7eb',
-                  }}
-                >
-                  {score.par}
-                </td>
-              ))}
-              <td
-                style={{
-                  padding: '12px 10px',
-                  textAlign: 'center',
-                  fontWeight: 900,
-                  borderTop: '1px solid #e5e7eb',
-                }}
-              >
-                {parTotal}
-              </td>
-            </tr>
-
-            <tr>
-              <td
-                style={{
-                  padding: '12px 14px',
-                  fontWeight: 800,
-                  whiteSpace: 'nowrap',
-                  borderTop: '1px solid #e5e7eb',
-                }}
-              >
-                Resultat
-              </td>
-              {scores.map((score) => (
-                <td
-                  key={`res-${score.holeNumber}`}
-                  style={{
-                    padding: '10px 8px',
-                    textAlign: 'center',
-                    borderTop: '1px solid #e5e7eb',
-                  }}
-                >
-                  {score.strokes == null ? (
-                    <span style={{ color: '#94a3b8', fontWeight: 700 }}>-</span>
-                  ) : (
-                    <span style={markerStyle(score.marker)}>{score.strokes}</span>
-                  )}
-                </td>
-              ))}
-              <td
-                style={{
-                  padding: '12px 10px',
-                  textAlign: 'center',
-                  fontWeight: 900,
-                  fontSize: 18,
-                  borderTop: '1px solid #e5e7eb',
-                }}
-              >
-                {strokesTotal}
-              </td>
-            </tr>
-
-            {showPoints ? (
               <tr>
                 <td
                   style={{
@@ -345,23 +270,113 @@ function ScoreTable({
                     fontWeight: 700,
                     whiteSpace: 'nowrap',
                     borderTop: '1px solid #e5e7eb',
+                    position: 'sticky',
+                    left: 0,
+                    background: '#ffffff',
+                    zIndex: 1,
+                    color: '#64748b',
                   }}
                 >
-                  Poäng
+                  Hcp
                 </td>
-                {pointsPerHole.map((points, index) => (
+                {scores.map((score) => (
                   <td
-                    key={`points-${scores[index].holeNumber}`}
+                    key={`hcp-${score.holeNumber}`}
                     style={{
                       padding: '12px 8px',
                       textAlign: 'center',
+                      color: '#64748b',
                       borderTop: '1px solid #e5e7eb',
                     }}
                   >
-                    {points == null ? (
+                    {score.hcpIndex}
+                  </td>
+                ))}
+                <td
+                  style={{
+                    padding: '12px 10px',
+                    textAlign: 'center',
+                    color: '#94a3b8',
+                    borderTop: '1px solid #e5e7eb',
+                    fontWeight: 700,
+                  }}
+                >
+                  —
+                </td>
+              </tr>
+
+              <tr style={{ background: '#fcfcfc' }}>
+                <td
+                  style={{
+                    padding: '12px 14px',
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                    borderTop: '1px solid #e5e7eb',
+                    position: 'sticky',
+                    left: 0,
+                    background: '#fcfcfc',
+                    zIndex: 1,
+                    color: '#475569',
+                  }}
+                >
+                  Par
+                </td>
+                {scores.map((score) => (
+                  <td
+                    key={`par-${score.holeNumber}`}
+                    style={{
+                      padding: '12px 8px',
+                      textAlign: 'center',
+                      color: '#334155',
+                      borderTop: '1px solid #e5e7eb',
+                    }}
+                  >
+                    {score.par}
+                  </td>
+                ))}
+                <td
+                  style={{
+                    padding: '12px 10px',
+                    textAlign: 'center',
+                    fontWeight: 900,
+                    borderTop: '1px solid #e5e7eb',
+                    background: '#f8fbf7',
+                    color: '#166534',
+                  }}
+                >
+                  {parTotal}
+                </td>
+              </tr>
+
+              <tr style={{ background: '#ffffff' }}>
+                <td
+                  style={{
+                    padding: '12px 14px',
+                    fontWeight: 900,
+                    whiteSpace: 'nowrap',
+                    borderTop: '2px solid #d1fae5',
+                    position: 'sticky',
+                    left: 0,
+                    background: '#ffffff',
+                    zIndex: 1,
+                    color: '#0f172a',
+                  }}
+                >
+                  Resultat
+                </td>
+                {scores.map((score) => (
+                  <td
+                    key={`res-${score.holeNumber}`}
+                    style={{
+                      padding: '10px 8px',
+                      textAlign: 'center',
+                      borderTop: '2px solid #d1fae5',
+                    }}
+                  >
+                    {score.strokes == null ? (
                       <span style={{ color: '#94a3b8', fontWeight: 700 }}>-</span>
                     ) : (
-                      points
+                      <span style={markerStyle(score.marker)}>{score.strokes}</span>
                     )}
                   </td>
                 ))}
@@ -370,16 +385,82 @@ function ScoreTable({
                     padding: '12px 10px',
                     textAlign: 'center',
                     fontWeight: 900,
-                    fontSize: 18,
-                    borderTop: '1px solid #e5e7eb',
+                    fontSize: 20,
+                    borderTop: '2px solid #d1fae5',
+                    background: '#f0fdf4',
+                    color: '#166534',
                   }}
                 >
-                  {pointsTotal}
+                  {strokesTotal}
                 </td>
               </tr>
-            ) : null}
-          </tbody>
-        </table>
+
+              {showPoints ? (
+                <tr style={{ background: '#f7fbff' }}>
+                  <td
+                    style={{
+                      padding: '12px 14px',
+                      fontWeight: 800,
+                      whiteSpace: 'nowrap',
+                      borderTop: '1px solid #dbeafe',
+                      position: 'sticky',
+                      left: 0,
+                      background: '#f7fbff',
+                      zIndex: 1,
+                      color: '#0f172a',
+                    }}
+                  >
+                    Poäng
+                  </td>
+                  {pointsPerHole.map((points, index) => (
+                    <td
+                      key={`points-${scores[index].holeNumber}`}
+                      style={{
+                        padding: '12px 8px',
+                        textAlign: 'center',
+                        borderTop: '1px solid #dbeafe',
+                        color: '#0f172a',
+                        fontWeight: 700,
+                      }}
+                    >
+                      {points == null ? (
+                        <span style={{ color: '#94a3b8', fontWeight: 700 }}>-</span>
+                      ) : (
+                        points
+                      )}
+                    </td>
+                  ))}
+                  <td
+                    style={{
+                      padding: '12px 10px',
+                      textAlign: 'center',
+                      fontWeight: 900,
+                      fontSize: 20,
+                      borderTop: '1px solid #dbeafe',
+                      background: '#eff6ff',
+                      color: '#1d4ed8',
+                    }}
+                  >
+                    {pointsTotal}
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: 18,
+            pointerEvents: 'none',
+            background:
+              'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.95) 100%)',
+          }}
+        />
       </div>
     </div>
   )
@@ -641,7 +722,7 @@ export default async function SummaryPage({
             </div>
 
             <div className="muted" style={{ marginBottom: 14 }}>
-              {winner.teeKey === 'red' ? 'Gul/Röd tee' : 'Gul tee'} · Exakt HCP{' '}
+              {winner.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Exakt HCP{' '}
               {winner.exactHandicap ?? '-'} · Spel-HCP {winner.playingHandicap ?? 0}
             </div>
 
