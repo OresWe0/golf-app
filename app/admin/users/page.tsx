@@ -1,134 +1,378 @@
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-export default async function AdminUsersPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ message?: string }>
-}) {
-  const { message } = await searchParams
+const ADMIN_EMAIL = 'sigge@dufvander.se'
+
+export default async function AdminUsersPage() {
   const supabase = await createClient()
 
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect('/login')
-  }
+  if (!user) redirect('/login')
+  if (user.email !== ADMIN_EMAIL) notFound()
 
-  const { data: me } = await supabase
+  const { data: pendingUsers } = await supabase
     .from('profiles')
-    .select('id, is_admin, is_approved, email, display_name')
-    .eq('id', user.id)
-    .single()
-
-  if (!me?.is_admin) {
-    redirect('/dashboard')
-  }
-
-  const { data: pendingUsers, error } = await supabase
-    .from('profiles')
-    .select('id, email, display_name, is_approved, is_admin')
+    .select('*')
     .eq('is_approved', false)
     .order('created_at', { ascending: true })
 
+  const { data: approvedUsers } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('is_approved', true)
+    .order('display_name', { ascending: true })
+
+  const pending = pendingUsers ?? []
+  const approved = approvedUsers ?? []
+
+  async function approveUser(formData: FormData) {
+    'use server'
+
+    const supabase = await createClient()
+    const userId = String(formData.get('userId') ?? '')
+
+    if (!userId) return
+
+    await supabase
+      .from('profiles')
+      .update({ is_approved: true })
+      .eq('id', userId)
+
+    redirect('/admin/users')
+  }
+
+  async function denyUser(formData: FormData) {
+    'use server'
+
+    const supabase = await createClient()
+    const userId = String(formData.get('userId') ?? '')
+
+    if (!userId) return
+
+    await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', userId)
+
+    redirect('/admin/users')
+  }
+
   return (
-    <main className="container" style={{ paddingTop: 24, paddingBottom: 80 }}>
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="badge">Admin</div>
-        <h1 style={{ marginTop: 12 }}>Godkänn användare</h1>
-        <p className="muted" style={{ marginTop: 8 }}>
-          Här kan du godkänna nya användare som registrerat sig.
-        </p>
+    <main>
+      <div className="container">
+        <div
+          style={{
+            display: 'grid',
+            gap: 16,
+            marginBottom: 16,
+          }}
+        >
+          <div>
+            <span className="badge">🛠️ Admin</span>
+            <h1 style={{ marginTop: 12, marginBottom: 10 }}>Användare</h1>
+            <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
+              Godkänn nya användare och få överblick över vilka som redan har access.
+            </p>
+          </div>
 
-        {message ? (
           <div
             style={{
-              marginTop: 14,
-              padding: '12px 14px',
-              borderRadius: 14,
-              background: '#f8fafc',
-              border: '1px solid #e5e7eb',
-              color: '#0f172a',
-              fontWeight: 600,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gap: 12,
             }}
           >
-            {message}
-          </div>
-        ) : null}
+            <div
+              className="card"
+              style={{
+                padding: 16,
+                border: '1px solid #fde68a',
+                background: '#fffbeb',
+              }}
+            >
+              <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>
+                Väntar på godkännande
+              </div>
+              <div style={{ fontSize: 30, fontWeight: 900 }}>{pending.length}</div>
+            </div>
 
-        {error ? (
+            <div
+              className="card"
+              style={{
+                padding: 16,
+              }}
+            >
+              <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>
+                Godkända användare
+              </div>
+              <div style={{ fontSize: 30, fontWeight: 900 }}>{approved.length}</div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          className="card"
+          style={{
+            marginBottom: 16,
+            border: pending.length > 0 ? '1px solid #fde68a' : undefined,
+            background: pending.length > 0 ? '#fffdf7' : undefined,
+          }}
+        >
           <div
             style={{
-              marginTop: 14,
-              padding: '12px 14px',
-              borderRadius: 14,
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
-              color: '#991b1b',
-              fontWeight: 600,
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: 12,
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              marginBottom: 14,
             }}
           >
-            Kunde inte läsa användare: {error.message}
+            <div>
+              <h2 style={{ margin: 0 }}>Väntande användare</h2>
+              <p className="muted" style={{ margin: '6px 0 0 0' }}>
+                Nya registreringar som behöver godkännas.
+              </p>
+            </div>
+
+            <div
+              style={{
+                padding: '6px 12px',
+                borderRadius: 999,
+                background: pending.length > 0 ? '#fef3c7' : '#f3f4f6',
+                color: '#92400e',
+                fontSize: 13,
+                fontWeight: 800,
+              }}
+            >
+              {pending.length} st
+            </div>
           </div>
-        ) : null}
-      </div>
 
-      <div className="card">
-        <h2 style={{ marginTop: 0, marginBottom: 12 }}>
-          Väntande användare ({pendingUsers?.length ?? 0})
-        </h2>
-
-        {!pendingUsers || pendingUsers.length === 0 ? (
-          <div className="muted">Inga användare väntar på godkännande 🎉</div>
-        ) : (
-          <div style={{ display: 'grid', gap: 12 }}>
-            {pendingUsers.map((profile) => (
-              <div
-                key={profile.id}
-                style={{
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 16,
-                  padding: 14,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: 16 }}>
-                    {profile.display_name || 'Ingen namnuppgift'}
-                  </div>
-                  <div className="muted" style={{ marginTop: 4 }}>
-                    {profile.email}
-                  </div>
-                </div>
-
-                <form action="/api/admin/approve-user" method="POST">
-                  <input type="hidden" name="userId" value={profile.id} />
-                  <button
-                    type="submit"
+          {pending.length === 0 ? (
+            <div
+              style={{
+                border: '1px dashed #d1d5db',
+                borderRadius: 16,
+                padding: 18,
+                background: '#f9fafb',
+              }}
+            >
+              <div style={{ fontWeight: 800, marginBottom: 4 }}>
+                Inga väntande användare 🎉
+              </div>
+              <div className="muted">
+                Alla registrerade användare är redan hanterade.
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: 12 }}>
+              {pending.map((profile: any) => (
+                <div
+                  key={profile.id}
+                  style={{
+                    border: '1px solid #fcd34d',
+                    borderRadius: 18,
+                    background: '#ffffff',
+                    padding: 16,
+                    display: 'grid',
+                    gap: 14,
+                  }}
+                >
+                  <div
                     style={{
-                      minHeight: 46,
-                      padding: '10px 16px',
-                      borderRadius: 14,
-                      border: '1px solid #166534',
-                      background: '#166534',
-                      color: '#fff',
-                      fontWeight: 800,
-                      cursor: 'pointer',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      alignItems: 'flex-start',
+                      flexWrap: 'wrap',
                     }}
                   >
-                    Godkänn
-                  </button>
-                </form>
-              </div>
-            ))}
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 22,
+                          fontWeight: 900,
+                          lineHeight: 1.1,
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {profile.display_name || 'Saknar namn'}
+                      </div>
+
+                      <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+                        {profile.email || 'Saknar e-post'}
+                        <br />
+                        HCP: {profile.handicap_index ?? '-'} · Standardtee:{' '}
+                        {profile.default_tee === 'red' ? 'Röd' : 'Gul'}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: 999,
+                        background: '#fef3c7',
+                        color: '#92400e',
+                        fontSize: 12,
+                        fontWeight: 900,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Väntar
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 10,
+                    }}
+                  >
+                    <form action={approveUser}>
+                      <input type="hidden" name="userId" value={profile.id} />
+                      <button
+                        type="submit"
+                        className="button"
+                        style={{
+                          width: '100%',
+                          minHeight: 50,
+                          fontWeight: 800,
+                        }}
+                      >
+                        Godkänn
+                      </button>
+                    </form>
+
+                    <form action={denyUser}>
+                      <input type="hidden" name="userId" value={profile.id} />
+                      <button
+                        type="submit"
+                        style={{
+                          width: '100%',
+                          minHeight: 50,
+                          border: '1px solid #fecaca',
+                          background: '#fff1f2',
+                          color: '#b91c1c',
+                          borderRadius: 14,
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Avslå
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card">
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: 12,
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              marginBottom: 14,
+            }}
+          >
+            <div>
+              <h2 style={{ margin: 0 }}>Godkända användare</h2>
+              <p className="muted" style={{ margin: '6px 0 0 0' }}>
+                Alla användare som redan har tillgång till appen.
+              </p>
+            </div>
+
+            <div
+              style={{
+                padding: '6px 12px',
+                borderRadius: 999,
+                background: '#f0fdf4',
+                color: '#166534',
+                fontSize: 13,
+                fontWeight: 800,
+              }}
+            >
+              {approved.length} st
+            </div>
           </div>
-        )}
+
+          {approved.length === 0 ? (
+            <div
+              style={{
+                border: '1px dashed #d1d5db',
+                borderRadius: 16,
+                padding: 18,
+                background: '#f9fafb',
+              }}
+            >
+              <div style={{ fontWeight: 800, marginBottom: 4 }}>
+                Inga godkända användare ännu
+              </div>
+              <div className="muted">
+                När du godkänner användare visas de här.
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: 10 }}>
+              {approved.map((profile: any) => (
+                <div
+                  key={profile.id}
+                  style={{
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 16,
+                    padding: 14,
+                    background: '#fff',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontWeight: 900,
+                        fontSize: 18,
+                        lineHeight: 1.1,
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      {profile.display_name || 'Saknar namn'}
+                    </div>
+
+                    <div className="muted" style={{ marginTop: 4, lineHeight: 1.4 }}>
+                      {profile.email || 'Saknar e-post'} · HCP {profile.handicap_index ?? '-'}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: 999,
+                      background: '#dcfce7',
+                      color: '#166534',
+                      fontSize: 12,
+                      fontWeight: 900,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Godkänd
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </main>
   )
