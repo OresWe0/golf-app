@@ -160,27 +160,33 @@ export async function POST(request: Request) {
     }
 
     const exactHandicap = player.handicapIndex ?? profile?.handicap_index ?? null
-    const teeKey = (player.teeKey || profile?.default_tee || 'yellow') as 'yellow' | 'red'
-    const tee = teeByKey.get(teeKey)
+const exactHandicap = player.handicapIndex ?? profile?.handicap_index ?? null
+const teeKey = (player.teeKey || profile?.default_tee || 'yellow') as 'yellow' | 'red'
+const tee = teeByKey.get(teeKey)
 
-    const playingHandicap = calculatePlayingHandicap({
-      handicapIndex: exactHandicap,
-      slopeRating: tee?.slope_rating ?? null,
-      courseRating: tee?.course_rating ?? null,
-      par: tee?.tee_par ?? course.total_par,
-    })
+const fullPlayingHandicap = calculatePlayingHandicap({
+  handicapIndex: exactHandicap,
+  slopeRating: tee?.slope_rating ?? null,
+  courseRating: tee?.course_rating ?? null,
+  par: tee?.tee_par ?? course.total_par,
+})
 
-    return {
-      round_id: round.id,
-      user_id: userId,
-      invited_email: email || null,
-      display_name: player.name,
-      handicap_index: exactHandicap,
-      exact_handicap: exactHandicap,
-      tee_key: teeKey,
-      playing_handicap: playingHandicap,
-      sort_order: player.sortOrder ?? index + 1,
-    }
+const playingHandicap =
+  holesMode === 9
+    ? Math.round(fullPlayingHandicap / 2)
+    : fullPlayingHandicap
+
+return {
+  round_id: round.id,
+  user_id: userId,
+  invited_email: email || null,
+  display_name: player.name,
+  handicap_index: exactHandicap,
+  exact_handicap: exactHandicap,
+  tee_key: teeKey,
+  playing_handicap: playingHandicap,
+  sort_order: player.sortOrder ?? index + 1,
+}
   })
 
   const { error: membersError } = await supabase
