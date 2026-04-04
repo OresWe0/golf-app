@@ -295,7 +295,7 @@ export default async function DashboardPage() {
                     membershipByRoundId.get(round.id) === 'owner' ? 'Ägare' : 'Spelare'
 
                   const scoring =
-                    round.scoring_mode === 'stableford' ? 'Stableford' : 'Slagspel'
+                    round.scoring_mode === 'stableford' ? 'Poängbogey' : 'Slagspel'
 
                   const href = `/rounds/${round.id}?hole=${round.current_hole}`
 

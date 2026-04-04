@@ -168,7 +168,7 @@ export function NewRoundForm({
     courses.find((course) => course.id === courseId)?.name ?? 'Ingen bana vald'
 
   const roundModeLabel =
-    scoringMode === 'stableford' ? 'Stableford' : 'Slagspel'
+    scoringMode === 'stableford' ? 'Poängbogey' : 'Slagspel'
 
   const holesModeLabel =
     holesMode === 18 ? '18 hål' : nineHoleSide === 'front' ? '9 hål · Främre 9' : '9 hål · Bakre 9'
@@ -284,7 +284,7 @@ export function NewRoundForm({
                     setScoringMode(e.target.value as 'strokeplay' | 'stableford')
                   }
                 >
-                  <option value="stableford">Stableford</option>
+                  <option value="stableford">Poängbogey</option>
                   <option value="strokeplay">Slagspel</option>
                 </select>
               </div>

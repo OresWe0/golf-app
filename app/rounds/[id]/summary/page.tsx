@@ -589,7 +589,7 @@ export default async function SummaryPage({
   const selectedIndex = summary.findIndex((player) => player.id === selectedPlayer?.id)
 
   const roundTypeLabel =
-    round.scoring_mode === 'stableford' ? 'Poängbogey NET' : 'Slagspel NET'
+    round.scoring_mode === 'stableford' ? 'Poängbogey' : 'Slagspel'
 
   const holesLabel =
     round.holes_mode === 18
