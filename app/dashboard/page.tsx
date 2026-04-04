@@ -8,6 +8,7 @@ const ADMIN_EMAIL = 'sigge@dufvander.se'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
+
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -46,9 +47,13 @@ export default async function DashboardPage() {
   const allCourses = (courses as Course[] | null) ?? []
 
   const activeRoundsCount = allRounds.filter((r) => r.status === 'active').length
+  const completedRoundsCount = allRounds.filter((r) => r.status !== 'active').length
   const sharedRoundsCount = allRounds.filter(
     (r) => membershipByRoundId.get(r.id) === 'player'
   ).length
+
+  const activeRounds = allRounds.filter((r) => r.status === 'active')
+  const completedRounds = allRounds.filter((r) => r.status !== 'active')
 
   return (
     <main style={{ width: '100%', overflowX: 'hidden' }}>
@@ -63,240 +68,529 @@ export default async function DashboardPage() {
       >
         <div
           style={{
-            display: 'flex',
-            flexDirection: 'column',
+            display: 'grid',
             gap: 16,
             marginBottom: 16,
           }}
         >
-          <div>
-            <span className="badge">👋 Inloggad som {displayName}</span>
-            <h1 style={{ marginTop: 12, marginBottom: 10 }}>Dashboard</h1>
-            <p className="muted" style={{ marginBottom: 0 }}>
-              Starta en ny runda eller fortsätt en delad runda med dina golfvänner.
-              Ditt sparade HCP används som standard.
-            </p>
-          </div>
-
-          <div
-            className="row"
-            style={{
-              gap: 10,
-              flexWrap: 'wrap',
-            }}
-          >
-            {isAdmin ? (
-              <Link href="/admin/users" className="button secondary">
-                Admin
-                {pendingCount > 0 ? ` (${pendingCount})` : ''}
-              </Link>
-            ) : null}
-
-            <Link href="/profile" className="button secondary">
-              Min profil
-            </Link>
-
-            <form action={signOut}>
-              <button type="submit" className="secondary">
-                Logga ut
-              </button>
-            </form>
-          </div>
-        </div>
-
-        {isAdmin && pendingCount > 0 ? (
           <div
             className="card"
             style={{
-              background: '#fff7ed',
-              border: '1px solid #fed7aa',
-              marginBottom: 16,
+              background: 'linear-gradient(180deg, #f8fbf7 0%, #ffffff 100%)',
+              border: '1px solid #dbeedc',
             }}
           >
             <div
               style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 12,
+                display: 'grid',
+                gap: 16,
               }}
             >
-              <div>
-                <h2 style={{ marginBottom: 6 }}>⏳ Väntande användare</h2>
-                <p className="muted" style={{ marginBottom: 0 }}>
-                  Du har {pendingCount} användare som väntar på godkännande.
-                </p>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  alignItems: 'flex-start',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div>
+                  <span className="badge">👋 Inloggad som {displayName}</span>
+                  <h1 style={{ marginTop: 12, marginBottom: 10 }}>Dashboard</h1>
+                  <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
+                    Starta en ny runda eller fortsätt en aktiv runda med dina golfvänner.
+                    Ditt sparade HCP används som standard.
+                  </p>
+                </div>
+
+                {isAdmin && pendingCount > 0 ? (
+                  <div
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 999,
+                      background: '#fef3c7',
+                      color: '#92400e',
+                      fontSize: 13,
+                      fontWeight: 900,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {pendingCount} väntar på godkännande
+                  </div>
+                ) : null}
               </div>
 
-              <div>
-                <Link href="/admin/users" className="button">
-                  Öppna admin
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr',
+                  gap: 10,
+                }}
+              >
+                <Link
+                  href="/rounds/new"
+                  className="button"
+                  style={{
+                    width: '100%',
+                    minHeight: 56,
+                    fontSize: 18,
+                    fontWeight: 900,
+                  }}
+                >
+                  ⛳ Starta ny runda
                 </Link>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                    gap: 10,
+                  }}
+                >
+                  {isAdmin ? (
+                    <Link
+                      href="/admin/users"
+                      className="button secondary"
+                      style={{
+                        width: '100%',
+                        textAlign: 'center',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/profile"
+                      className="button secondary"
+                      style={{
+                        width: '100%',
+                        textAlign: 'center',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      Min profil
+                    </Link>
+                  )}
+
+                  {isAdmin ? (
+                    <Link
+                      href="/profile"
+                      className="button secondary"
+                      style={{
+                        width: '100%',
+                        textAlign: 'center',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      Min profil
+                    </Link>
+                  ) : (
+                    <div />
+                  )}
+
+                  <form action={signOut}>
+                    <button
+                      type="submit"
+                      className="secondary"
+                      style={{
+                        width: '100%',
+                      }}
+                    >
+                      Logga ut
+                    </button>
+                  </form>
+                </div>
               </div>
             </div>
           </div>
-        ) : null}
+
+          {isAdmin && pendingCount > 0 ? (
+            <div
+              className="card"
+              style={{
+                background: '#fffbeb',
+                border: '1px solid #fde68a',
+              }}
+            >
+              <div
+                style={{
+                  display: 'grid',
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <h2 style={{ marginTop: 0, marginBottom: 6 }}>⏳ Väntande användare</h2>
+                  <p className="muted" style={{ margin: 0 }}>
+                    Du har {pendingCount} användare som väntar på godkännande.
+                  </p>
+                </div>
+
+                <div>
+                  <Link href="/admin/users" className="button">
+                    Öppna admin
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gap: 12,
+            }}
+          >
+            <div className="card" style={{ padding: 16 }}>
+              <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>
+                Banor
+              </div>
+              <div style={{ fontSize: 30, fontWeight: 900 }}>{allCourses.length}</div>
+            </div>
+
+            <div className="card" style={{ padding: 16 }}>
+              <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>
+                Aktiva rundor
+              </div>
+              <div style={{ fontSize: 30, fontWeight: 900 }}>{activeRoundsCount}</div>
+            </div>
+
+            <div className="card" style={{ padding: 16 }}>
+              <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>
+                Delade rundor
+              </div>
+              <div style={{ fontSize: 30, fontWeight: 900 }}>{sharedRoundsCount}</div>
+            </div>
+
+            <div className="card" style={{ padding: 16 }}>
+              <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>
+                Avslutade
+              </div>
+              <div style={{ fontSize: 30, fontWeight: 900 }}>{completedRoundsCount}</div>
+            </div>
+          </div>
+        </div>
 
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr',
-            gap: 12,
-            marginBottom: 16,
+            gap: 16,
           }}
         >
-          <div className="kpi">
-            <strong>{allCourses.length}</strong>
-            <div className="muted">Banor i systemet</div>
-          </div>
-
-          <div className="kpi">
-            <strong>{activeRoundsCount}</strong>
-            <div className="muted">Aktiva rundor du ser</div>
-          </div>
-
-          <div className="kpi">
-            <strong>{sharedRoundsCount}</strong>
-            <div className="muted">Delade rundor</div>
-          </div>
-        </div>
-
-        <div
-          className="card"
-          style={{
-            marginBottom: 16,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-            }}
-          >
-            <div>
-              <h2 style={{ marginBottom: 6 }}>Ny runda</h2>
-              <p className="muted" style={{ marginBottom: 0 }}>
-                Välj bana, spelare och scoring mode.
-              </p>
-            </div>
-
-            <div>
-              <Link href="/rounds/new" className="button">
-                Starta ny runda
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <h2 style={{ marginBottom: 12 }}>Mina och delade rundor</h2>
-
-          {!allRounds || allRounds.length === 0 ? (
-            <p className="muted">
-              Inga rundor ännu. Starta en ny för att komma igång.
-            </p>
-          ) : (
+          <div className="card">
             <div
               style={{
-                display: 'grid',
+                display: 'flex',
+                justifyContent: 'space-between',
                 gap: 12,
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                marginBottom: 14,
               }}
             >
-              {allRounds.map((round) => {
-                const role =
-                  membershipByRoundId.get(round.id) === 'owner' ? 'Ägare' : 'Spelare'
+              <div>
+                <h2 style={{ margin: 0 }}>Aktiva rundor</h2>
+                <p className="muted" style={{ margin: '6px 0 0 0' }}>
+                  Rundor som pågår just nu.
+                </p>
+              </div>
 
-                const status = round.status === 'active' ? 'Pågår' : 'Klar'
-                const scoring =
-                  round.scoring_mode === 'stableford' ? 'Stableford' : 'Slagspel'
+              <div
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 999,
+                  background: '#f0fdf4',
+                  color: '#166534',
+                  fontSize: 13,
+                  fontWeight: 800,
+                }}
+              >
+                {activeRounds.length} st
+              </div>
+            </div>
 
-                const href =
-                  round.status === 'active'
-                    ? `/rounds/${round.id}?hole=${round.current_hole}`
-                    : `/rounds/${round.id}/summary`
+            {activeRounds.length === 0 ? (
+              <div
+                style={{
+                  border: '1px dashed #d1d5db',
+                  borderRadius: 16,
+                  padding: 18,
+                  background: '#f9fafb',
+                }}
+              >
+                <div style={{ fontWeight: 800, marginBottom: 4 }}>
+                  Inga aktiva rundor ännu
+                </div>
+                <div className="muted">
+                  Starta en ny runda för att komma igång.
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: 12 }}>
+                {activeRounds.map((round) => {
+                  const role =
+                    membershipByRoundId.get(round.id) === 'owner' ? 'Ägare' : 'Spelare'
 
-                const buttonText =
-                  round.status === 'active' ? 'Öppna runda' : 'Visa summary'
+                  const scoring =
+                    round.scoring_mode === 'stableford' ? 'Stableford' : 'Slagspel'
 
-                return (
-                  <div
-                    key={round.id}
-                    style={{
-                      border: '1px solid #e5e7eb',
-                      borderRadius: 18,
-                      padding: 14,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 12,
-                    }}
-                  >
-                    <div>
+                  const href = `/rounds/${round.id}?hole=${round.current_hole}`
+
+                  return (
+                    <div
+                      key={round.id}
+                      style={{
+                        border: '1px solid #dbeedc',
+                        borderRadius: 18,
+                        background: '#f8fbf7',
+                        padding: 16,
+                        display: 'grid',
+                        gap: 14,
+                      }}
+                    >
                       <div
                         style={{
-                          fontSize: 18,
-                          fontWeight: 800,
-                          marginBottom: 8,
-                          wordBreak: 'break-word',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          gap: 12,
+                          alignItems: 'flex-start',
+                          flexWrap: 'wrap',
                         }}
                       >
-                        {round.title}
+                        <div style={{ minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontSize: 22,
+                              fontWeight: 900,
+                              lineHeight: 1.1,
+                              marginBottom: 6,
+                              wordBreak: 'break-word',
+                            }}
+                          >
+                            {round.title}
+                          </div>
+
+                          <div className="muted" style={{ lineHeight: 1.45 }}>
+                            {scoring} · Aktuellt hål {round.current_hole} · {role}
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: 999,
+                            background: '#dcfce7',
+                            color: '#166534',
+                            fontSize: 12,
+                            fontWeight: 900,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Pågår
+                        </div>
                       </div>
 
                       <div
                         style={{
                           display: 'grid',
-                          gridTemplateColumns: '1fr 1fr',
+                          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
                           gap: 10,
                         }}
                       >
-                        <div>
-                          <div className="muted" style={{ fontSize: 13 }}>
+                        <div
+                          style={{
+                            background: '#fff',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: 14,
+                            padding: 12,
+                          }}
+                        >
+                          <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
                             Roll
                           </div>
-                          <div style={{ fontWeight: 700 }}>{role}</div>
+                          <div style={{ fontWeight: 900 }}>{role}</div>
                         </div>
 
-                        <div>
-                          <div className="muted" style={{ fontSize: 13 }}>
-                            Status
+                        <div
+                          style={{
+                            background: '#fff',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: 14,
+                            padding: 12,
+                          }}
+                        >
+                          <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                            Mode
                           </div>
-                          <div style={{ fontWeight: 700 }}>{status}</div>
+                          <div style={{ fontWeight: 900 }}>{scoring}</div>
                         </div>
 
-                        <div>
-                          <div className="muted" style={{ fontSize: 13 }}>
-                            Scoring
+                        <div
+                          style={{
+                            background: '#fff',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: 14,
+                            padding: 12,
+                          }}
+                        >
+                          <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                            Hål
                           </div>
-                          <div style={{ fontWeight: 700 }}>{scoring}</div>
-                        </div>
-
-                        <div>
-                          <div className="muted" style={{ fontSize: 13 }}>
-                            Aktuellt hål
-                          </div>
-                          <div style={{ fontWeight: 700 }}>{round.current_hole}</div>
+                          <div style={{ fontWeight: 900 }}>{round.current_hole}</div>
                         </div>
                       </div>
-                    </div>
 
-                    <div>
-                      <Link
-                        className="button secondary"
-                        href={href}
+                      <div>
+                        <Link
+                          className="button"
+                          href={href}
+                          style={{
+                            width: '100%',
+                            textAlign: 'center',
+                            boxSizing: 'border-box',
+                          }}
+                        >
+                          Fortsätt runda
+                        </Link>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="card">
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: 12,
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                marginBottom: 14,
+              }}
+            >
+              <div>
+                <h2 style={{ margin: 0 }}>Avslutade rundor</h2>
+                <p className="muted" style={{ margin: '6px 0 0 0' }}>
+                  Tidigare spelade rundor och sammanfattningar.
+                </p>
+              </div>
+
+              <div
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 999,
+                  background: '#f3f4f6',
+                  color: '#334155',
+                  fontSize: 13,
+                  fontWeight: 800,
+                }}
+              >
+                {completedRounds.length} st
+              </div>
+            </div>
+
+            {completedRounds.length === 0 ? (
+              <div
+                style={{
+                  border: '1px dashed #d1d5db',
+                  borderRadius: 16,
+                  padding: 18,
+                  background: '#f9fafb',
+                }}
+              >
+                <div style={{ fontWeight: 800, marginBottom: 4 }}>
+                  Inga avslutade rundor ännu
+                </div>
+                <div className="muted">
+                  När du avslutar en runda visas den här.
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: 10 }}>
+                {completedRounds.map((round) => {
+                  const role =
+                    membershipByRoundId.get(round.id) === 'owner' ? 'Ägare' : 'Spelare'
+
+                  const scoring =
+                    round.scoring_mode === 'stableford' ? 'Stableford' : 'Slagspel'
+
+                  return (
+                    <div
+                      key={round.id}
+                      style={{
+                        border: '1px solid #e5e7eb',
+                        borderRadius: 16,
+                        background: '#fff',
+                        padding: 14,
+                        display: 'grid',
+                        gap: 12,
+                      }}
+                    >
+                      <div
                         style={{
-                          width: '100%',
-                          textAlign: 'center',
-                          boxSizing: 'border-box',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          gap: 12,
+                          alignItems: 'flex-start',
+                          flexWrap: 'wrap',
                         }}
                       >
-                        {buttonText}
-                      </Link>
+                        <div style={{ minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontSize: 18,
+                              fontWeight: 900,
+                              lineHeight: 1.1,
+                              wordBreak: 'break-word',
+                            }}
+                          >
+                            {round.title}
+                          </div>
+
+                          <div className="muted" style={{ marginTop: 4, lineHeight: 1.45 }}>
+                            {scoring} · {role}
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: 999,
+                            background: '#f3f4f6',
+                            color: '#334155',
+                            fontSize: 12,
+                            fontWeight: 900,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Klar
+                        </div>
+                      </div>
+
+                      <div>
+                        <Link
+                          className="button secondary"
+                          href={`/rounds/${round.id}/summary`}
+                          style={{
+                            width: '100%',
+                            textAlign: 'center',
+                            boxSizing: 'border-box',
+                          }}
+                        >
+                          Visa summary
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </main>
