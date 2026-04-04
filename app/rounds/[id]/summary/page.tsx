@@ -4,6 +4,32 @@ import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { receivedStrokesOnHole, scoreVsPar, stablefordPoints } from '@/lib/scoring'
 
+type HoleLike = {
+  hole_number: number
+  par: number
+  hcp_index: number
+}
+
+type HoleScoreView = {
+  holeNumber: number
+  par: number
+  hcpIndex: number
+  strokes: number | null
+  marker: string | null
+}
+
+type SummaryPlayer = {
+  id: string
+  name: string
+  strokes: number
+  vsPar: number
+  points: number
+  exactHandicap: number | null
+  playingHandicap: number
+  teeKey: string
+  holeScores: HoleScoreView[]
+}
+
 function getScoreMarker(strokes: number | null, par: number) {
   if (strokes == null) return null
 
@@ -70,7 +96,7 @@ function markerStyle(marker: string | null): CSSProperties {
   return base
 }
 
-function sumPar(holes: { par: number }[]) {
+function sumPar(holes: Array<{ par: number }>) {
   return holes.reduce((sum, hole) => sum + hole.par, 0)
 }
 
@@ -95,9 +121,9 @@ function SummaryTableSection({
   totalLabel,
 }: {
   title: string
-  holes: any[]
-  scores: any[]
-  selectedPlayer: any
+  holes: Array<{ par: number }>
+  scores: HoleScoreView[]
+  selectedPlayer: Pick<SummaryPlayer, 'playingHandicap'>
   visibleHoleCount: number
   scoringMode: string
   totalLabel: string
@@ -109,7 +135,7 @@ function SummaryTableSection({
     return sum + score.strokes
   }, 0)
 
-  const pointsPerHole = scores.map((score) => {
+  const pointsPerHole: Array<number | null> = scores.map((score) => {
     if (score.strokes == null) return null
 
     return stablefordPoints(
@@ -123,10 +149,10 @@ function SummaryTableSection({
     )
   })
 
-  const pointsTotal = pointsPerHole.reduce<number>((sum, points) => {
-  return sum + (points ?? 0)
-}, 0)
-F
+  const pointsTotal = pointsPerHole.reduce((sum: number, points: number | null) => {
+    return sum + (points ?? 0)
+  }, 0)
+
   const showPoints = scoringMode === 'stableford'
 
   return (
@@ -176,7 +202,7 @@ F
                 Hål
               </th>
 
-              {scores.map((score: any) => (
+              {scores.map((score) => (
                 <th
                   key={`hole-${score.holeNumber}`}
                   style={{
@@ -222,7 +248,7 @@ F
                 Par
               </td>
 
-              {scores.map((score: any) => (
+              {scores.map((score) => (
                 <td
                   key={`par-${score.holeNumber}`}
                   style={{
@@ -263,7 +289,7 @@ F
                 Resultat
               </td>
 
-              {scores.map((score: any) => (
+              {scores.map((score) => (
                 <td
                   key={`res-${score.holeNumber}`}
                   style={{
@@ -395,30 +421,30 @@ export default async function SummaryPage({
   const returnHole = Number(resolvedSearchParams.hole || startHole)
 
   const visibleHoles = holes.filter(
-    (hole) => hole.hole_number >= startHole && hole.hole_number <= endHole
+    (hole: HoleLike) => hole.hole_number >= startHole && hole.hole_number <= endHole
   )
 
   const firstHalf = visibleHoles.slice(0, Math.ceil(visibleHoles.length / 2))
   const secondHalf = visibleHoles.slice(Math.ceil(visibleHoles.length / 2))
 
-  const summary = players
-    .map((player) => {
+  const summary: SummaryPlayer[] = players
+    .map((player: any) => {
       const rows = scoreRows.filter(
-        (row) =>
+        (row: any) =>
           row.round_player_id === player.id &&
           row.hole_number >= startHole &&
           row.hole_number <= endHole
       )
 
-      const strokes = rows.reduce((sum, row) => sum + (row.strokes ?? 0), 0)
+      const strokes = rows.reduce((sum: number, row: any) => sum + (row.strokes ?? 0), 0)
 
-      const vsPar = rows.reduce((sum, row) => {
-        const hole = visibleHoles.find((item) => item.hole_number === row.hole_number)
+      const vsPar = rows.reduce((sum: number, row: any) => {
+        const hole = visibleHoles.find((item: HoleLike) => item.hole_number === row.hole_number)
         return sum + (hole ? (scoreVsPar(row.strokes, hole.par) ?? 0) : 0)
       }, 0)
 
-      const points = rows.reduce((sum, row) => {
-        const hole = visibleHoles.find((item) => item.hole_number === row.hole_number)
+      const points = rows.reduce((sum: number, row: any) => {
+        const hole = visibleHoles.find((item: HoleLike) => item.hole_number === row.hole_number)
         if (!hole) return sum
 
         return (
@@ -435,16 +461,16 @@ export default async function SummaryPage({
         )
       }, 0)
 
-      const holeScores = visibleHoles.map((hole) => {
-        const row = rows.find((item) => item.hole_number === hole.hole_number)
-        const strokes = row?.strokes ?? null
+      const holeScores: HoleScoreView[] = visibleHoles.map((hole: HoleLike) => {
+        const row = rows.find((item: any) => item.hole_number === hole.hole_number)
+        const strokesOnHole = row?.strokes ?? null
 
         return {
           holeNumber: hole.hole_number,
           par: hole.par,
           hcpIndex: hole.hcp_index,
-          strokes,
-          marker: getScoreMarker(strokes, hole.par),
+          strokes: strokesOnHole,
+          marker: getScoreMarker(strokesOnHole, hole.par),
         }
       })
 
@@ -454,9 +480,9 @@ export default async function SummaryPage({
         strokes,
         vsPar,
         points,
-        exactHandicap: player.exact_handicap,
-        playingHandicap: player.playing_handicap,
-        teeKey: player.tee_key,
+        exactHandicap: player.exact_handicap ?? null,
+        playingHandicap: player.playing_handicap ?? 0,
+        teeKey: player.tee_key ?? 'yellow',
         holeScores,
       }
     })
@@ -484,14 +510,14 @@ export default async function SummaryPage({
   const totalPar = sumPar(visibleHoles)
 
   const selectedFrontScores = selectedPlayer
-    ? selectedPlayer.holeScores.filter((score: any) =>
-        firstHalf.some((hole) => hole.hole_number === score.holeNumber)
+    ? selectedPlayer.holeScores.filter((score) =>
+        firstHalf.some((hole: HoleLike) => hole.hole_number === score.holeNumber)
       )
     : []
 
   const selectedBackScores = selectedPlayer
-    ? selectedPlayer.holeScores.filter((score: any) =>
-        secondHalf.some((hole) => hole.hole_number === score.holeNumber)
+    ? selectedPlayer.holeScores.filter((score) =>
+        secondHalf.some((hole: HoleLike) => hole.hole_number === score.holeNumber)
       )
     : []
 
