@@ -12,11 +12,19 @@ type PlayerInput = {
   teeKey: 'yellow' | 'red'
 }
 
+type FriendInput = {
+  id: string
+  friend_email: string
+  friend_name: string | null
+}
+
 export function NewRoundForm({
   courses,
+  friends,
   currentUser,
 }: {
   courses: Course[]
+  friends: FriendInput[]
   currentUser: {
     email: string
     displayName: string
@@ -129,6 +137,30 @@ export function NewRoundForm({
         kind: 'guest',
         name: trimmedName,
         email: '',
+        handicapIndex: '',
+        teeKey: 'yellow',
+      },
+    ])
+  }
+
+  const addFriendToRound = (friend: FriendInput) => {
+    const friendEmail = friend.friend_email.trim().toLowerCase()
+    if (!friendEmail) return
+
+    const alreadyExists = players.some(
+      (player) => player.email.trim().toLowerCase() === friendEmail
+    )
+
+    if (alreadyExists) return
+
+    const fallbackName = friend.friend_email.split('@')[0] || 'Vän'
+
+    setPlayers((prev) => [
+      ...prev,
+      {
+        kind: 'registered',
+        name: friend.friend_name?.trim() || fallbackName,
+        email: friendEmail,
         handicapIndex: '',
         teeKey: 'yellow',
       },
@@ -399,6 +431,69 @@ export function NewRoundForm({
               </div>
             ) : null}
           </div>
+        </div>
+      </div>
+
+      <div className="card" style={sectionCardStyle}>
+        <div style={{ display: 'grid', gap: 12 }}>
+          <div>
+            <h3 style={{ marginTop: 0, marginBottom: 8 }}>Välj från mina vänner</h3>
+            <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
+              Lägg snabbt till spelare från din sparade vänlista.
+            </p>
+          </div>
+
+          {friends.length === 0 ? (
+            <div
+              style={{
+                padding: 14,
+                borderRadius: 16,
+                background: '#ffffff',
+                border: '1px dashed #d1d5db',
+                color: '#64748b',
+              }}
+            >
+              Du har inga sparade vänner ännu. Lägg till vänner under Min profil.
+            </div>
+          ) : (
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 8,
+              }}
+            >
+              {friends.map((friend) => {
+                const alreadyAdded = players.some(
+                  (player) =>
+                    player.email.trim().toLowerCase() ===
+                    friend.friend_email.trim().toLowerCase()
+                )
+
+                return (
+                  <button
+                    key={friend.id}
+                    type="button"
+                    onClick={() => addFriendToRound(friend)}
+                    disabled={alreadyAdded}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: 999,
+                      border: alreadyAdded ? '1px solid #d1d5db' : '1px solid #bbf7d0',
+                      background: alreadyAdded ? '#f3f4f6' : '#f0fdf4',
+                      color: alreadyAdded ? '#64748b' : '#166534',
+                      fontWeight: 700,
+                      fontSize: 14,
+                      cursor: alreadyAdded ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {alreadyAdded ? '✓ ' : '+ '}
+                    {friend.friend_name?.trim() || friend.friend_email}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
 
