@@ -51,6 +51,9 @@ export function receivedStrokesOnHole(
 
   let normalizedHoleIndex = holeIndex
 
+  // För 9 hål måste hålens HCP-index normaliseras inom de spelade nio hålen.
+  // Exempel främre 9 med index 12, 8, 18, 10, 2, 14, 4, 16, 6
+  // blir inom rundan:             6, 4,  9,  5, 1,  7, 2,  8, 3
   if (holesCount === 9) {
     normalizedHoleIndex = Math.ceil(holeIndex / 2)
   }

@@ -163,17 +163,19 @@ export async function POST(request: Request) {
     const teeKey = (player.teeKey || profile?.default_tee || 'yellow') as 'yellow' | 'red'
     const tee = teeByKey.get(teeKey)
 
-    const fullPlayingHandicap = calculatePlayingHandicap({
-      handicapIndex: exactHandicap,
-      slopeRating: tee?.slope_rating ?? null,
-      courseRating: tee?.course_rating ?? null,
-      par: tee?.tee_par ?? course.total_par,
-    })
+const fullPlayingHandicap = calculatePlayingHandicap({
+  handicapIndex: exactHandicap,
+  slopeRating: tee?.slope_rating ?? null,
+  courseRating: tee?.course_rating ?? null,
+  par: tee?.tee_par ?? course.total_par,
+})
 
-    const playingHandicap =
-      holesMode === 9
-        ? Math.round(fullPlayingHandicap / 2)
-        : fullPlayingHandicap
+const holesPlayed = endHole - startHole + 1
+
+const playingHandicap =
+  holesPlayed < 18
+    ? Math.round((fullPlayingHandicap * holesPlayed) / 18)
+    : fullPlayingHandicap
 
     return {
       round_id: round.id,
