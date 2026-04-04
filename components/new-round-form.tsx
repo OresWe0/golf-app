@@ -49,7 +49,6 @@ export function NewRoundForm({
       handicapIndex: currentUser.handicapIndex == null ? '' : String(currentUser.handicapIndex),
       teeKey: currentUser.defaultTee === 'red' ? 'red' : 'yellow',
     },
-    { kind: 'registered', name: '', email: '', handicapIndex: '', teeKey: 'yellow' },
   ])
 
   const [recentPlayers, setRecentPlayers] = useState<string[]>([])
@@ -434,13 +433,63 @@ export function NewRoundForm({
         </div>
       </div>
 
-      <div className="card" style={sectionCardStyle}>
-        <div style={{ display: 'grid', gap: 12 }}>
-          <div>
-            <h3 style={{ marginTop: 0, marginBottom: 8 }}>Välj från mina vänner</h3>
-            <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
-              Lägg snabbt till spelare från din sparade vänlista.
-            </p>
+      <div
+        className="card"
+        style={{
+          ...sectionCardStyle,
+          background: 'linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%)',
+          border: '1px solid #bbf7d0',
+        }}
+      >
+        <div style={{ display: 'grid', gap: 14 }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              gap: 12,
+              flexWrap: 'wrap',
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '6px 10px',
+                  borderRadius: 999,
+                  background: '#dcfce7',
+                  color: '#166534',
+                  fontSize: 12,
+                  fontWeight: 900,
+                  marginBottom: 10,
+                }}
+              >
+                👥 Mina vänner
+              </div>
+
+              <h3 style={{ marginTop: 0, marginBottom: 6 }}>Lägg till från vänlistan</h3>
+
+              <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
+                Tryck på en vän för att lägga till personen direkt i bollen.
+              </p>
+            </div>
+
+            <div
+              style={{
+                padding: '6px 10px',
+                borderRadius: 999,
+                background: '#ffffff',
+                border: '1px solid #d1fae5',
+                color: '#166534',
+                fontSize: 12,
+                fontWeight: 800,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Snabbval
+            </div>
           </div>
 
           {friends.length === 0 ? (
@@ -460,7 +509,7 @@ export function NewRoundForm({
               style={{
                 display: 'flex',
                 flexWrap: 'wrap',
-                gap: 8,
+                gap: 10,
               }}
             >
               {friends.map((friend) => {
@@ -477,18 +526,19 @@ export function NewRoundForm({
                     onClick={() => addFriendToRound(friend)}
                     disabled={alreadyAdded}
                     style={{
-                      padding: '10px 14px',
+                      padding: '12px 16px',
                       borderRadius: 999,
-                      border: alreadyAdded ? '1px solid #d1d5db' : '1px solid #bbf7d0',
-                      background: alreadyAdded ? '#f3f4f6' : '#f0fdf4',
+                      border: alreadyAdded ? '1px solid #d1d5db' : '1px solid #86efac',
+                      background: alreadyAdded ? '#f3f4f6' : '#ffffff',
                       color: alreadyAdded ? '#64748b' : '#166534',
-                      fontWeight: 700,
+                      fontWeight: 800,
                       fontSize: 14,
                       cursor: alreadyAdded ? 'not-allowed' : 'pointer',
+                      boxShadow: alreadyAdded ? 'none' : '0 4px 12px rgba(22, 101, 52, 0.06)',
                     }}
                   >
-                    {alreadyAdded ? '✓ ' : '+ '}
-                    {friend.friend_name?.trim() || friend.friend_email}
+                    {alreadyAdded ? '✓ Tillagd · ' : '+ Lägg till · '}
+                    {friend.friend_name?.trim() || friend.friend_email.split('@')[0]}
                   </button>
                 )
               })}
@@ -529,7 +579,7 @@ export function NewRoundForm({
                 onClick={addRegisteredPlayer}
                 style={{ width: '100%' }}
               >
-                + Registrerad vän
+                + Lägg till registrerad spelare
               </button>
 
               <button
@@ -538,7 +588,7 @@ export function NewRoundForm({
                 onClick={addGuestPlayer}
                 style={{ width: '100%' }}
               >
-                + Gäst
+                + Lägg till gäst
               </button>
             </div>
           </div>
