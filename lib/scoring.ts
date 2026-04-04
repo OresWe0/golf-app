@@ -3,10 +3,16 @@ export function scoreVsPar(strokes: number | null, par: number) {
   return strokes - par
 }
 
-export function stablefordPoints(strokes: number | null, par: number, receivedStrokes = 0) {
+export function stablefordPoints(
+  strokes: number | null,
+  par: number,
+  receivedStrokes = 0
+) {
   if (strokes == null) return 0
+
   const net = strokes - receivedStrokes
   const diff = net - par
+
   if (diff <= -3) return 5
   if (diff === -2) return 4
   if (diff === -1) return 3
@@ -30,14 +36,31 @@ export function calculatePlayingHandicap({
     return handicapIndex == null ? 0 : Math.round(handicapIndex)
   }
 
-  const courseHandicap = handicapIndex * (slopeRating / 113) + (courseRating - par)
+  const courseHandicap =
+    handicapIndex * (slopeRating / 113) + (courseRating - par)
+
   return Math.round(courseHandicap)
 }
 
-export function receivedStrokesOnHole(playingHandicap: number | null, holeIndex: number, holesCount: number) {
+export function receivedStrokesOnHole(
+  playingHandicap: number | null,
+  holeIndex: number,
+  holesCount: number
+) {
   if (playingHandicap == null || playingHandicap <= 0) return 0
+
+  let normalizedHoleIndex = holeIndex
+
+  if (holesCount === 9) {
+    normalizedHoleIndex = Math.ceil(holeIndex / 2)
+  }
+
   let strokes = Math.floor(playingHandicap / holesCount)
   const remainder = playingHandicap % holesCount
-  if (remainder > 0 && holeIndex <= remainder) strokes += 1
+
+  if (remainder > 0 && normalizedHoleIndex <= remainder) {
+    strokes += 1
+  }
+
   return strokes
 }

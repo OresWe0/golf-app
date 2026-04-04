@@ -1,77 +1,25 @@
-export function scoreVsPar(strokes: number | null, par: number) {
-  if (strokes == null) return null
-  return strokes - par
+export type Course = {
+  id: string
+  name: string
 }
 
-export function stablefordPoints(
-  strokes: number | null,
-  par: number,
-  receivedStrokes = 0
-) {
-  if (strokes == null) return 0
-
-  const net = strokes - receivedStrokes
-  const diff = net - par
-
-  if (diff <= -3) return 5
-  if (diff === -2) return 4
-  if (diff === -1) return 3
-  if (diff === 0) return 2
-  if (diff === 1) return 1
-  return 0
+export type Profile = {
+  id: string
+  email?: string | null
+  display_name?: string | null
+  handicap_index?: number | null
+  default_tee?: string | null
 }
 
-export function calculatePlayingHandicap({
-  handicapIndex,
-  slopeRating,
-  courseRating,
-  par,
-}: {
-  handicapIndex: number | null
-  slopeRating: number | null
-  courseRating: number | null
-  par: number
-}) {
-  if (handicapIndex == null || slopeRating == null || courseRating == null) {
-    return handicapIndex == null ? 0 : Math.round(handicapIndex)
-  }
-
-  const courseHandicap =
-    handicapIndex * (slopeRating / 113) + (courseRating - par)
-
-  return Math.round(courseHandicap)
-}
-
-export function receivedStrokesOnHole(
-  playingHandicap: number | null,
-  holeIndex: number,
-  holesCount: number
-) {
-  if (playingHandicap == null || playingHandicap <= 0) return 0
-
-  let normalizedHoleIndex = holeIndex
-
-  // Viktigt för 9 hål:
-  // På många banor ligger hålens hcp_index fortfarande som 1–18 för hela banan,
-  // medan en 9-hålsrunda bara spelar halva banan.
-  //
-  // Exempel främre 9:
-  // 12, 8, 18, 10, 2, 14, 4, 16, 6
-  //
-  // Då måste indexen normaliseras inom just de spelade 9 hålen:
-  // 6, 4, 9, 5, 1, 7, 2, 8, 3
-  //
-  // För den här typen av indexfördelning fungerar ceil(index / 2).
-  if (holesCount === 9) {
-    normalizedHoleIndex = Math.ceil(holeIndex / 2)
-  }
-
-  let strokes = Math.floor(playingHandicap / holesCount)
-  const remainder = playingHandicap % holesCount
-
-  if (remainder > 0 && normalizedHoleIndex <= remainder) {
-    strokes += 1
-  }
-
-  return strokes
+export type Round = {
+  id: string
+  owner_id: string
+  course_id: string
+  title: string
+  scoring_mode: 'stableford' | 'strokeplay'
+  status?: string | null
+  holes_mode?: number | null
+  start_hole?: number | null
+  end_hole?: number | null
+  current_hole?: number | null
 }

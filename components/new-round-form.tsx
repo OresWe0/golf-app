@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Course } from '@/lib/types'
 
@@ -58,6 +58,10 @@ export function NewRoundForm({
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [highlightedPlayerIndex, setHighlightedPlayerIndex] = useState<number | null>(null)
+  const [recentlyAddedType, setRecentlyAddedType] = useState<'guest' | 'registered' | null>(null)
+
+  const playerRefs = useRef<(HTMLDivElement | null)[]>([])
 
   const recentPlayersStorageKey = useMemo(
     () => `recent-players:${currentUser.email.toLowerCase()}`,
@@ -103,23 +107,61 @@ export function NewRoundForm({
     )
   }
 
+  const showButtonFeedback = (type: 'guest' | 'registered') => {
+    setRecentlyAddedType(type)
+
+    setTimeout(() => {
+      setRecentlyAddedType((current) => (current === type ? null : current))
+    }, 1800)
+  }
+
+  const highlightAndScrollToPlayer = (newIndex: number) => {
+    setTimeout(() => {
+      playerRefs.current[newIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+
+      setHighlightedPlayerIndex(newIndex)
+
+      setTimeout(() => {
+        setHighlightedPlayerIndex((current) => (current === newIndex ? null : current))
+      }, 2500)
+    }, 120)
+  }
+
   const addRegisteredPlayer = () => {
-    setPlayers((prev) => [
-      ...prev,
-      { kind: 'registered', name: '', email: '', handicapIndex: '', teeKey: 'yellow' },
-    ])
+    showButtonFeedback('registered')
+
+    setPlayers((prev) => {
+      const newIndex = prev.length
+      highlightAndScrollToPlayer(newIndex)
+
+      return [
+        ...prev,
+        { kind: 'registered', name: '', email: '', handicapIndex: '', teeKey: 'yellow' },
+      ]
+    })
   }
 
   const addGuestPlayer = () => {
-    setPlayers((prev) => [
-      ...prev,
-      { kind: 'guest', name: '', email: '', handicapIndex: '', teeKey: 'yellow' },
-    ])
+    showButtonFeedback('guest')
+
+    setPlayers((prev) => {
+      const newIndex = prev.length
+      highlightAndScrollToPlayer(newIndex)
+
+      return [
+        ...prev,
+        { kind: 'guest', name: '', email: '', handicapIndex: '', teeKey: 'yellow' },
+      ]
+    })
   }
 
   const removePlayer = (index: number) => {
     if (index === 0) return
     setPlayers((prev) => prev.filter((_, i) => i !== index))
+    setHighlightedPlayerIndex((current) => (current === index ? null : current))
   }
 
   const addRecentPlayer = (name: string) => {
@@ -132,16 +174,21 @@ export function NewRoundForm({
 
     if (alreadyExists) return
 
-    setPlayers((prev) => [
-      ...prev,
-      {
-        kind: 'guest',
-        name: trimmedName,
-        email: '',
-        handicapIndex: '',
-        teeKey: 'yellow',
-      },
-    ])
+    setPlayers((prev) => {
+      const newIndex = prev.length
+      highlightAndScrollToPlayer(newIndex)
+
+      return [
+        ...prev,
+        {
+          kind: 'guest',
+          name: trimmedName,
+          email: '',
+          handicapIndex: '',
+          teeKey: 'yellow',
+        },
+      ]
+    })
   }
 
   const addFriendToRound = (friend: FriendInput) => {
@@ -158,19 +205,24 @@ export function NewRoundForm({
     const teeKey: 'yellow' | 'red' =
       friend.friend_default_tee === 'red' ? 'red' : 'yellow'
 
-    setPlayers((prev) => [
-      ...prev,
-      {
-        kind: 'registered',
-        name: friend.friend_name?.trim() || fallbackName,
-        email: friendEmail,
-        handicapIndex:
-          friend.friend_handicap_index == null
-            ? ''
-            : String(friend.friend_handicap_index),
-        teeKey,
-      },
-    ])
+    setPlayers((prev) => {
+      const newIndex = prev.length
+      highlightAndScrollToPlayer(newIndex)
+
+      return [
+        ...prev,
+        {
+          kind: 'registered',
+          name: friend.friend_name?.trim() || fallbackName,
+          email: friendEmail,
+          handicapIndex:
+            friend.friend_handicap_index == null
+              ? ''
+              : String(friend.friend_handicap_index),
+          teeKey,
+        },
+      ]
+    })
   }
 
   const saveRecentPlayers = (names: string[]) => {
@@ -606,18 +658,26 @@ export function NewRoundForm({
                 type="button"
                 className="button"
                 onClick={addRegisteredPlayer}
-                style={{ width: '100%' }}
+                style={{
+                  width: '100%',
+                  transition: 'all 0.2s ease',
+                }}
               >
-                + Lägg till registrerad spelare
+                {recentlyAddedType === 'registered'
+                  ? 'Spelare tillagd ↓'
+                  : '+ Lägg till registrerad spelare'}
               </button>
 
               <button
                 type="button"
                 className="secondary"
                 onClick={addGuestPlayer}
-                style={{ width: '100%' }}
+                style={{
+                  width: '100%',
+                  transition: 'all 0.2s ease',
+                }}
               >
-                + Lägg till gäst
+                {recentlyAddedType === 'guest' ? 'Gäst tillagd ↓' : '+ Lägg till gäst'}
               </button>
             </div>
           </div>
@@ -640,7 +700,7 @@ export function NewRoundForm({
                 letterSpacing: 0.4,
               }}
             >
-              Senast spelade med
+              SENAST SPELADE MED
             </div>
 
             {loadingRecent ? (
@@ -683,11 +743,24 @@ export function NewRoundForm({
           <div className="stack">
             {players.map((player, index) => (
               <div
+                ref={(el) => {
+                  playerRefs.current[index] = el
+                }}
                 className="card"
                 style={{
                   marginBottom: 0,
-                  background: '#fff',
-                  border: index === 0 ? '1px solid #bbf7d0' : '1px solid #e5e7eb',
+                  background: highlightedPlayerIndex === index ? '#f0fdf4' : '#fff',
+                  border:
+                    highlightedPlayerIndex === index
+                      ? '2px solid #22c55e'
+                      : index === 0
+                      ? '1px solid #bbf7d0'
+                      : '1px solid #e5e7eb',
+                  boxShadow:
+                    highlightedPlayerIndex === index
+                      ? '0 0 0 4px rgba(34, 197, 94, 0.12)'
+                      : 'none',
+                  transition: 'all 0.25s ease',
                 }}
                 key={index}
               >
@@ -715,6 +788,23 @@ export function NewRoundForm({
                         ? 'Registrerad spelare'
                         : 'Gästspelare'}
                     </div>
+
+                    {highlightedPlayerIndex === index && index > 0 ? (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          display: 'inline-flex',
+                          padding: '4px 8px',
+                          borderRadius: 999,
+                          background: '#dcfce7',
+                          color: '#166534',
+                          fontSize: 12,
+                          fontWeight: 800,
+                        }}
+                      >
+                        {player.kind === 'guest' ? 'Ny gäst tillagd' : 'Ny spelare tillagd'}
+                      </div>
+                    ) : null}
 
                     <div className="muted" style={{ marginTop: 4 }}>
                       {player.kind === 'registered'
