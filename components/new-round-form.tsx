@@ -150,7 +150,7 @@ export function NewRoundForm({
       window.localStorage.setItem(recentPlayersStorageKey, JSON.stringify(cleaned))
       setRecentPlayers(cleaned)
     } catch {
-      // Ignorera localStorage-fel i beta
+      // Ignorera localStorage-fel
     }
   }
 
@@ -189,298 +189,475 @@ export function NewRoundForm({
       return
     }
 
-    const namesToRemember = normalizedPlayers
-      .map((player) => player.name)
-      .filter(Boolean)
-
+    const namesToRemember = normalizedPlayers.map((player) => player.name).filter(Boolean)
     saveRecentPlayers(namesToRemember)
 
-    const firstHole =
-      holesMode === 18 ? 1 : nineHoleSide === 'front' ? 1 : 10
-
+    const firstHole = holesMode === 18 ? 1 : nineHoleSide === 'front' ? 1 : 10
     router.push(`/rounds/${result.roundId}?hole=${firstHole}`)
+  }
+
+  const sectionCardStyle: React.CSSProperties = {
+    background: '#f8fbf7',
+    border: '1px solid #dbeedc',
+    marginBottom: 0,
   }
 
   return (
     <div className="stack">
-      <div>
-        <label htmlFor="title">Rundnamn</label>
-        <input
-          id="title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-      </div>
-
-      <div className="grid grid-2">
-        <div>
-          <label htmlFor="course">Bana</label>
-          <select
-            id="course"
-            value={courseId}
-            onChange={(e) => setCourseId(e.target.value)}
-          >
-            {courses.map((course) => (
-              <option key={course.id} value={course.id}>
-                {course.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="mode">Scoring mode</label>
-          <select
-            id="mode"
-            value={scoringMode}
-            onChange={(e) =>
-              setScoringMode(e.target.value as 'strokeplay' | 'stableford')
-            }
-          >
-            <option value="stableford">Stableford</option>
-            <option value="strokeplay">Slagspel</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="card" style={{ background: '#f8fbf7', marginBottom: 0 }}>
-        <div className="header-line" style={{ marginBottom: 12 }}>
+      <div
+        className="card"
+        style={{
+          background: 'linear-gradient(180deg, #f8fbf7 0%, #ffffff 100%)',
+          border: '1px solid #dbeedc',
+          marginBottom: 0,
+        }}
+      >
+        <div style={{ display: 'grid', gap: 16 }}>
           <div>
-            <h3>Rundinställningar</h3>
-            <p className="muted">
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 12px',
+                borderRadius: 999,
+                background: '#ecfdf3',
+                color: '#166534',
+                fontSize: 13,
+                fontWeight: 900,
+                marginBottom: 12,
+              }}
+            >
+              ⛳ Ny runda
+            </div>
+
+            <h2 style={{ margin: 0, marginBottom: 8 }}>Grundinställningar</h2>
+            <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
+              Välj rundnamn, bana och scoring mode. När du sparar skickas ni direkt
+              till rätt starthål.
+            </p>
+          </div>
+
+          <div className="stack">
+            <div>
+              <label htmlFor="title">Rundnamn</label>
+              <input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="T.ex. Lördagsrundan"
+              />
+            </div>
+
+            <div className="grid grid-2">
+              <div>
+                <label htmlFor="course">Bana</label>
+                <select
+                  id="course"
+                  value={courseId}
+                  onChange={(e) => setCourseId(e.target.value)}
+                >
+                  {courses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="mode">Scoring mode</label>
+                <select
+                  id="mode"
+                  value={scoringMode}
+                  onChange={(e) =>
+                    setScoringMode(e.target.value as 'strokeplay' | 'stableford')
+                  }
+                >
+                  <option value="stableford">Stableford</option>
+                  <option value="strokeplay">Slagspel</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card" style={sectionCardStyle}>
+        <div style={{ display: 'grid', gap: 14 }}>
+          <div>
+            <h3 style={{ marginTop: 0, marginBottom: 8 }}>Rundinställningar</h3>
+            <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
               Välj om ni spelar 18 hål eller 9 hål. Vid 9 hål kan du välja främre
               eller bakre 9.
             </p>
           </div>
-        </div>
 
-        <div className="stack">
-          <div>
-            <label>Antal hål</label>
-            <div className="row" style={{ gap: 16, marginTop: 8 }}>
-              <label className="row" style={{ gap: 8 }}>
-                <input
-                  type="radio"
-                  name="holesMode"
-                  value="18"
-                  checked={holesMode === 18}
-                  onChange={() => setHolesMode(18)}
-                />
-                18 hål
-              </label>
-
-              <label className="row" style={{ gap: 8 }}>
-                <input
-                  type="radio"
-                  name="holesMode"
-                  value="9"
-                  checked={holesMode === 9}
-                  onChange={() => setHolesMode(9)}
-                />
-                9 hål
-              </label>
-            </div>
-          </div>
-
-          {holesMode === 9 ? (
-            <div>
-              <label>Vilka 9 hål?</label>
-              <div className="row" style={{ gap: 16, marginTop: 8 }}>
-                <label className="row" style={{ gap: 8 }}>
-                  <input
-                    type="radio"
-                    name="nineHoleSide"
-                    value="front"
-                    checked={nineHoleSide === 'front'}
-                    onChange={() => setNineHoleSide('front')}
-                  />
-                  Främre 9
-                </label>
-
-                <label className="row" style={{ gap: 8 }}>
-                  <input
-                    type="radio"
-                    name="nineHoleSide"
-                    value="back"
-                    checked={nineHoleSide === 'back'}
-                    onChange={() => setNineHoleSide('back')}
-                  />
-                  Bakre 9
-                </label>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="card" style={{ background: '#f8fbf7', marginBottom: 0 }}>
-        <div className="header-line">
-          <div>
-            <h3>Spelare i bollen</h3>
-            <p className="muted">
-              För registrerade vänner räcker e-post. HCP och tee kan ändras om det
-              behövs innan rundan startar.
-            </p>
-          </div>
-
-          <div className="row">
-            <button
-              type="button"
-              className="secondary"
-              onClick={addRegisteredPlayer}
-            >
-              + Registrerad vän
-            </button>
-            <button type="button" className="secondary" onClick={addGuestPlayer}>
-              + Gäst
-            </button>
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: 14,
-            marginBottom: 16,
-            padding: 14,
-            borderRadius: 18,
-            background: '#ffffff',
-            border: '1px solid #e5e7eb',
-          }}
-        >
           <div
             style={{
-              fontSize: 13,
-              fontWeight: 800,
-              color: '#64748b',
-              textTransform: 'uppercase',
-              marginBottom: 10,
-              letterSpacing: 0.4,
+              display: 'grid',
+              gap: 12,
             }}
           >
-            Senast spelade med
-          </div>
-
-          {loadingRecent ? (
-            <div style={{ fontSize: 14, color: '#64748b' }}>Laddar spelare...</div>
-          ) : recentPlayers.length === 0 ? (
-            <div style={{ fontSize: 14, color: '#64748b' }}>
-              Dina senaste spelare dyker upp här efter att du skapat några rundor.
-            </div>
-          ) : (
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 8,
-              }}
-            >
-              {recentPlayers.map((name) => (
+            <div>
+              <label>Antal hål</label>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 10,
+                  marginTop: 8,
+                }}
+              >
                 <button
-                  key={name}
                   type="button"
-                  onClick={() => addRecentPlayer(name)}
+                  onClick={() => setHolesMode(18)}
                   style={{
-                    padding: '10px 14px',
-                    borderRadius: 999,
-                    border: '1px solid #bbf7d0',
-                    background: '#f0fdf4',
-                    color: '#166534',
-                    fontWeight: 700,
-                    fontSize: 14,
+                    padding: '14px 16px',
+                    borderRadius: 16,
+                    border: holesMode === 18 ? '2px solid #166534' : '1px solid #d1d5db',
+                    background: holesMode === 18 ? '#ecfdf3' : '#fff',
+                    color: '#0f172a',
+                    fontWeight: 900,
                     cursor: 'pointer',
                   }}
                 >
-                  + {name}
+                  18 hål
                 </button>
-              ))}
+
+                <button
+                  type="button"
+                  onClick={() => setHolesMode(9)}
+                  style={{
+                    padding: '14px 16px',
+                    borderRadius: 16,
+                    border: holesMode === 9 ? '2px solid #166534' : '1px solid #d1d5db',
+                    background: holesMode === 9 ? '#ecfdf3' : '#fff',
+                    color: '#0f172a',
+                    fontWeight: 900,
+                    cursor: 'pointer',
+                  }}
+                >
+                  9 hål
+                </button>
+              </div>
             </div>
-          )}
-        </div>
 
-        <div className="stack">
-          {players.map((player, index) => (
-            <div
-              className="card"
-              style={{ marginBottom: 0, background: '#fff' }}
-              key={index}
-            >
-              <div className="header-line" style={{ marginBottom: 12 }}>
-                <strong>
-                  {index === 0
-                    ? 'Du'
-                    : player.kind === 'registered'
-                    ? 'Registrerad spelare'
-                    : 'Gästspelare'}
-                </strong>
-
-                {index > 0 ? (
+            {holesMode === 9 ? (
+              <div>
+                <label>Vilka 9 hål?</label>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 10,
+                    marginTop: 8,
+                  }}
+                >
                   <button
                     type="button"
-                    className="danger"
-                    onClick={() => removePlayer(index)}
+                    onClick={() => setNineHoleSide('front')}
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: 16,
+                      border:
+                        nineHoleSide === 'front'
+                          ? '2px solid #166534'
+                          : '1px solid #d1d5db',
+                      background: nineHoleSide === 'front' ? '#ecfdf3' : '#fff',
+                      color: '#0f172a',
+                      fontWeight: 900,
+                      cursor: 'pointer',
+                    }}
                   >
-                    Ta bort
+                    Främre 9
                   </button>
-                ) : null}
-              </div>
 
-              <div className="grid grid-4">
-                <div>
-                  <label>Namn</label>
-                  <input
-                    placeholder="Namn"
-                    value={player.name}
-                    onChange={(e) => updatePlayer(index, 'name', e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label>
-                    E-post {player.kind === 'registered' ? '(krävs)' : '(valfritt)'}
-                  </label>
-                  <input
-                    placeholder={
-                      player.kind === 'registered' ? 'vän@epost.se' : 'tomt = gäst'
-                    }
-                    type="email"
-                    value={player.email}
-                    onChange={(e) => updatePlayer(index, 'email', e.target.value)}
-                    disabled={index === 0}
-                  />
-                </div>
-
-                <div>
-                  <label>Exakt HCP</label>
-                  <input
-                    placeholder="t.ex. 24.1"
-                    type="number"
-                    step="0.1"
-                    value={player.handicapIndex}
-                    onChange={(e) =>
-                      updatePlayer(index, 'handicapIndex', e.target.value)
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label>Tee</label>
-                  <select
-                    value={player.teeKey}
-                    onChange={(e) => updatePlayer(index, 'teeKey', e.target.value)}
+                  <button
+                    type="button"
+                    onClick={() => setNineHoleSide('back')}
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: 16,
+                      border:
+                        nineHoleSide === 'back'
+                          ? '2px solid #166534'
+                          : '1px solid #d1d5db',
+                      background: nineHoleSide === 'back' ? '#ecfdf3' : '#fff',
+                      color: '#0f172a',
+                      fontWeight: 900,
+                      cursor: 'pointer',
+                    }}
                   >
-                    <option value="yellow">Gul tee</option>
-                    <option value="red">Röd tee</option>
-                  </select>
+                    Bakre 9
+                  </button>
                 </div>
               </div>
-            </div>
-          ))}
+            ) : null}
+          </div>
         </div>
       </div>
 
-      {error ? <div className="notice">{error}</div> : null}
+      <div className="card" style={sectionCardStyle}>
+        <div style={{ display: 'grid', gap: 16 }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: 12,
+              alignItems: 'flex-start',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div>
+              <h3 style={{ marginTop: 0, marginBottom: 8 }}>Spelare i bollen</h3>
+              <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
+                För registrerade vänner räcker e-post. HCP och tee kan justeras
+                innan rundan startar.
+              </p>
+            </div>
 
-      <button type="button" onClick={submit} disabled={loading}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 10,
+                width: '100%',
+              }}
+            >
+              <button
+                type="button"
+                className="secondary"
+                onClick={addRegisteredPlayer}
+                style={{ width: '100%' }}
+              >
+                + Registrerad vän
+              </button>
+
+              <button
+                type="button"
+                className="secondary"
+                onClick={addGuestPlayer}
+                style={{ width: '100%' }}
+              >
+                + Gäst
+              </button>
+            </div>
+          </div>
+
+          <div
+            style={{
+              padding: 14,
+              borderRadius: 18,
+              background: '#ffffff',
+              border: '1px solid #e5e7eb',
+            }}
+          >
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 800,
+                color: '#64748b',
+                textTransform: 'uppercase',
+                marginBottom: 10,
+                letterSpacing: 0.4,
+              }}
+            >
+              Senast spelade med
+            </div>
+
+            {loadingRecent ? (
+              <div style={{ fontSize: 14, color: '#64748b' }}>Laddar spelare...</div>
+            ) : recentPlayers.length === 0 ? (
+              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.5 }}>
+                Dina senaste spelare dyker upp här efter att du skapat några rundor.
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                }}
+              >
+                {recentPlayers.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => addRecentPlayer(name)}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: 999,
+                      border: '1px solid #bbf7d0',
+                      background: '#f0fdf4',
+                      color: '#166534',
+                      fontWeight: 700,
+                      fontSize: 14,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    + {name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="stack">
+            {players.map((player, index) => (
+              <div
+                className="card"
+                style={{
+                  marginBottom: 0,
+                  background: '#fff',
+                  border: index === 0 ? '1px solid #bbf7d0' : '1px solid #e5e7eb',
+                }}
+                key={index}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    alignItems: 'flex-start',
+                    flexWrap: 'wrap',
+                    marginBottom: 12,
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 900,
+                        lineHeight: 1.1,
+                      }}
+                    >
+                      {index === 0
+                        ? 'Du'
+                        : player.kind === 'registered'
+                        ? 'Registrerad spelare'
+                        : 'Gästspelare'}
+                    </div>
+
+                    <div className="muted" style={{ marginTop: 4 }}>
+                      {player.kind === 'registered'
+                        ? 'Använd e-post för registrerad vän'
+                        : 'Gäst kan lämnas utan e-post'}
+                    </div>
+                  </div>
+
+                  {index > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => removePlayer(index)}
+                      style={{
+                        border: '1px solid #fecaca',
+                        background: '#fff1f2',
+                        color: '#b91c1c',
+                        borderRadius: 12,
+                        padding: '10px 12px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Ta bort
+                    </button>
+                  ) : (
+                    <div
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: 999,
+                        background: '#dcfce7',
+                        color: '#166534',
+                        fontSize: 12,
+                        fontWeight: 900,
+                      }}
+                    >
+                      Huvudspelare
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-4">
+                  <div>
+                    <label>Namn</label>
+                    <input
+                      placeholder="Namn"
+                      value={player.name}
+                      onChange={(e) => updatePlayer(index, 'name', e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label>
+                      E-post {player.kind === 'registered' ? '(krävs)' : '(valfritt)'}
+                    </label>
+                    <input
+                      placeholder={
+                        player.kind === 'registered' ? 'vän@epost.se' : 'tomt = gäst'
+                      }
+                      type="email"
+                      value={player.email}
+                      onChange={(e) => updatePlayer(index, 'email', e.target.value)}
+                      disabled={index === 0}
+                    />
+                  </div>
+
+                  <div>
+                    <label>Exakt HCP</label>
+                    <input
+                      placeholder="t.ex. 24.1"
+                      type="number"
+                      step="0.1"
+                      value={player.handicapIndex}
+                      onChange={(e) => updatePlayer(index, 'handicapIndex', e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label>Tee</label>
+                    <select
+                      value={player.teeKey}
+                      onChange={(e) =>
+                        updatePlayer(index, 'teeKey', e.target.value as 'yellow' | 'red')
+                      }
+                    >
+                      <option value="yellow">Gul tee</option>
+                      <option value="red">Röd tee</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {error ? (
+        <div
+          style={{
+            border: '1px solid #fecaca',
+            background: '#fff1f2',
+            color: '#b91c1c',
+            borderRadius: 16,
+            padding: 14,
+            fontWeight: 700,
+          }}
+        >
+          {error}
+        </div>
+      ) : null}
+
+      <button
+        type="button"
+        onClick={submit}
+        disabled={loading}
+        style={{
+          minHeight: 56,
+          fontSize: 18,
+          fontWeight: 900,
+        }}
+      >
         {loading ? 'Skapar...' : 'Starta runda'}
       </button>
     </div>
