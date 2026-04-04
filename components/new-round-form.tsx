@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Course } from '@/lib/types'
 
@@ -44,8 +44,49 @@ export function NewRoundForm({
     { kind: 'registered', name: '', email: '', handicapIndex: '', teeKey: 'yellow' },
   ])
 
+  const [recentPlayers, setRecentPlayers] = useState<string[]>([])
+  const [loadingRecent, setLoadingRecent] = useState(true)
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const recentPlayersStorageKey = useMemo(
+    () => `recent-players:${currentUser.email.toLowerCase()}`,
+    [currentUser.email]
+  )
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(recentPlayersStorageKey)
+      if (!raw) {
+        setRecentPlayers([])
+        setLoadingRecent(false)
+        return
+      }
+
+      const parsed = JSON.parse(raw)
+
+      if (Array.isArray(parsed)) {
+        const cleaned = parsed
+          .map((name) => (typeof name === 'string' ? name.trim() : ''))
+          .filter(Boolean)
+          .filter(
+            (name, index, arr) =>
+              arr.findIndex((n) => n.toLowerCase() === name.toLowerCase()) === index
+          )
+          .filter((name) => name.toLowerCase() !== currentUser.displayName.trim().toLowerCase())
+          .slice(0, 6)
+
+        setRecentPlayers(cleaned)
+      } else {
+        setRecentPlayers([])
+      }
+    } catch {
+      setRecentPlayers([])
+    } finally {
+      setLoadingRecent(false)
+    }
+  }, [recentPlayersStorageKey, currentUser.displayName])
 
   const updatePlayer = (index: number, key: keyof PlayerInput, value: string) => {
     setPlayers((prev) =>
@@ -70,6 +111,47 @@ export function NewRoundForm({
   const removePlayer = (index: number) => {
     if (index === 0) return
     setPlayers((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const addRecentPlayer = (name: string) => {
+    const trimmedName = name.trim()
+    if (!trimmedName) return
+
+    const alreadyExists = players.some(
+      (player) => player.name.trim().toLowerCase() === trimmedName.toLowerCase()
+    )
+
+    if (alreadyExists) return
+
+    setPlayers((prev) => [
+      ...prev,
+      {
+        kind: 'guest',
+        name: trimmedName,
+        email: '',
+        handicapIndex: '',
+        teeKey: 'yellow',
+      },
+    ])
+  }
+
+  const saveRecentPlayers = (names: string[]) => {
+    try {
+      const cleaned = names
+        .map((name) => name.trim())
+        .filter(Boolean)
+        .filter(
+          (name, index, arr) =>
+            arr.findIndex((n) => n.toLowerCase() === name.toLowerCase()) === index
+        )
+        .filter((name) => name.toLowerCase() !== currentUser.displayName.trim().toLowerCase())
+        .slice(0, 6)
+
+      window.localStorage.setItem(recentPlayersStorageKey, JSON.stringify(cleaned))
+      setRecentPlayers(cleaned)
+    } catch {
+      // Ignorera localStorage-fel i beta
+    }
   }
 
   const submit = async () => {
@@ -106,6 +188,12 @@ export function NewRoundForm({
       setError(result.error || 'Kunde inte skapa rundan.')
       return
     }
+
+    const namesToRemember = normalizedPlayers
+      .map((player) => player.name)
+      .filter(Boolean)
+
+    saveRecentPlayers(namesToRemember)
 
     const firstHole =
       holesMode === 18 ? 1 : nineHoleSide === 'front' ? 1 : 10
@@ -247,6 +335,66 @@ export function NewRoundForm({
               + Gäst
             </button>
           </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            marginBottom: 16,
+            padding: 14,
+            borderRadius: 18,
+            background: '#ffffff',
+            border: '1px solid #e5e7eb',
+          }}
+        >
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 800,
+              color: '#64748b',
+              textTransform: 'uppercase',
+              marginBottom: 10,
+              letterSpacing: 0.4,
+            }}
+          >
+            Senast spelade med
+          </div>
+
+          {loadingRecent ? (
+            <div style={{ fontSize: 14, color: '#64748b' }}>Laddar spelare...</div>
+          ) : recentPlayers.length === 0 ? (
+            <div style={{ fontSize: 14, color: '#64748b' }}>
+              Dina senaste spelare dyker upp här efter att du skapat några rundor.
+            </div>
+          ) : (
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 8,
+              }}
+            >
+              {recentPlayers.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => addRecentPlayer(name)}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: 999,
+                    border: '1px solid #bbf7d0',
+                    background: '#f0fdf4',
+                    color: '#166534',
+                    fontWeight: 700,
+                    fontSize: 14,
+                    cursor: 'pointer',
+                  }}
+                >
+                  + {name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="stack">

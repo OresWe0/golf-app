@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -16,15 +17,15 @@ function getScoreMarker(strokes: number | null, par: number) {
   return null
 }
 
-function getMarkerStyle(marker: string | null): React.CSSProperties {
-  const base: React.CSSProperties = {
-    width: 44,
-    height: 44,
+function markerStyle(marker: string | null): CSSProperties {
+  const base: CSSProperties = {
+    width: 34,
+    height: 34,
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontWeight: 800,
-    fontSize: 18,
+    fontSize: 16,
     background: '#fff',
     margin: '0 auto',
     flexShrink: 0,
@@ -73,7 +74,18 @@ function sumPar(holes: { par: number }[]) {
   return holes.reduce((sum, hole) => sum + hole.par, 0)
 }
 
-function HoleSummaryGrid({
+function formatVsPar(value: number) {
+  return value > 0 ? `+${value}` : `${value}`
+}
+
+function getMedal(index: number) {
+  if (index === 0) return '🥇'
+  if (index === 1) return '🥈'
+  if (index === 2) return '🥉'
+  return null
+}
+
+function SummaryTableSection({
   title,
   holes,
   scores,
@@ -91,31 +103,36 @@ function HoleSummaryGrid({
   totalLabel: string
 }) {
   const parTotal = holes.reduce((sum, hole) => sum + hole.par, 0)
-  const strokesTotal = scores.reduce((sum, score) => sum + (score.strokes ?? 0), 0)
-  const pointsTotal = scores.reduce((sum, score) => {
-    if (score.strokes == null) return sum
 
-    return (
-      sum +
-      stablefordPoints(
-        score.strokes,
-        score.par,
-        receivedStrokesOnHole(
-          selectedPlayer.playingHandicap,
-          score.hcpIndex,
-          visibleHoleCount
-        )
+  const strokesTotal = scores.reduce((sum, score) => {
+    if (score.strokes == null) return sum
+    return sum + score.strokes
+  }, 0)
+
+  const pointsPerHole = scores.map((score) => {
+    if (score.strokes == null) return null
+
+    return stablefordPoints(
+      score.strokes,
+      score.par,
+      receivedStrokesOnHole(
+        selectedPlayer.playingHandicap,
+        score.hcpIndex,
+        visibleHoleCount
       )
     )
-  }, 0)
+  })
+
+  const pointsTotal = pointsPerHole.reduce((sum, points) => sum + (points ?? 0), 0)
+  const showPoints = scoringMode === 'stableford'
 
   return (
     <div>
       <div
         style={{
           marginBottom: 10,
-          fontSize: 16,
-          fontWeight: 800,
+          fontSize: 18,
+          fontWeight: 900,
           color: '#166534',
         }}
       >
@@ -124,144 +141,211 @@ function HoleSummaryGrid({
 
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-          gap: 10,
+          overflowX: 'auto',
+          border: '1px solid #dbe4dd',
+          borderRadius: 20,
+          background: '#fff',
         }}
       >
-        {scores.map((score) => {
-          const points =
-            score.strokes == null
-              ? null
-              : stablefordPoints(
-                  score.strokes,
-                  score.par,
-                  receivedStrokesOnHole(
-                    selectedPlayer.playingHandicap,
-                    score.hcpIndex,
-                    visibleHoleCount
-                  )
-                )
-
-          return (
-            <div
-              key={`${selectedPlayer.id}-${score.holeNumber}`}
-              style={{
-                border: '1px solid #e5e7eb',
-                borderRadius: 18,
-                background: '#fff',
-                overflow: 'hidden',
-                minWidth: 0,
-              }}
-            >
-              <div
-                style={{
-                  background: '#1f9d55',
-                  color: '#fff',
-                  textAlign: 'center',
-                  padding: '10px 8px',
-                  fontWeight: 800,
-                  fontSize: 15,
-                }}
-              >
-                Hål {score.holeNumber}
-              </div>
-
-              <div
-                style={{
-                  padding: 12,
-                  display: 'grid',
-                  gap: 10,
-                  textAlign: 'center',
-                }}
-              >
-                <div>
-                  <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                    Par
-                  </div>
-                  <div style={{ fontSize: 20, fontWeight: 800 }}>{score.par}</div>
-                </div>
-
-                <div>
-                  <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                    Resultat
-                  </div>
-                  {score.strokes == null ? (
-                    <div style={{ fontSize: 24, fontWeight: 900 }}>-</div>
-                  ) : (
-                    <span style={getMarkerStyle(score.marker)}>{score.strokes}</span>
-                  )}
-                </div>
-
-                {scoringMode === 'stableford' ? (
-                  <div>
-                    <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                      Poäng
-                    </div>
-                    <div style={{ fontSize: 18, fontWeight: 800 }}>
-                      {points == null ? '-' : points}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          )
-        })}
-
-        <div
+        <table
           style={{
-            border: '1px solid #cfe7d4',
-            borderRadius: 18,
-            background: '#f8fbf7',
-            overflow: 'hidden',
-            minWidth: 0,
+            width: '100%',
+            minWidth: 720,
+            borderCollapse: 'separate',
+            borderSpacing: 0,
+            fontSize: 14,
           }}
         >
-          <div
-            style={{
-              background: '#166534',
-              color: '#fff',
-              textAlign: 'center',
-              padding: '10px 8px',
-              fontWeight: 800,
-              fontSize: 15,
-            }}
-          >
-            {totalLabel}
-          </div>
+          <thead>
+            <tr style={{ background: '#f8fbf7' }}>
+              <th
+                style={{
+                  position: 'sticky',
+                  left: 0,
+                  zIndex: 2,
+                  background: '#f8fbf7',
+                  textAlign: 'left',
+                  padding: '12px 14px',
+                  fontWeight: 800,
+                  borderBottom: '1px solid #e5e7eb',
+                }}
+              >
+                Hål
+              </th>
 
-          <div
-            style={{
-              padding: 12,
-              display: 'grid',
-              gap: 10,
-              textAlign: 'center',
-            }}
-          >
-            <div>
-              <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+              {scores.map((score: any) => (
+                <th
+                  key={`hole-${score.holeNumber}`}
+                  style={{
+                    padding: '12px 10px',
+                    textAlign: 'center',
+                    fontWeight: 800,
+                    borderBottom: '1px solid #e5e7eb',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {score.holeNumber}
+                </th>
+              ))}
+
+              <th
+                style={{
+                  padding: '12px 14px',
+                  textAlign: 'center',
+                  fontWeight: 900,
+                  color: '#166534',
+                  borderBottom: '1px solid #e5e7eb',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {totalLabel}
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr>
+              <td
+                style={{
+                  position: 'sticky',
+                  left: 0,
+                  zIndex: 1,
+                  background: '#fff',
+                  padding: '12px 14px',
+                  fontWeight: 700,
+                  borderBottom: '1px solid #f1f5f9',
+                }}
+              >
                 Par
-              </div>
-              <div style={{ fontSize: 20, fontWeight: 900 }}>{parTotal}</div>
-            </div>
+              </td>
 
-            <div>
-              <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+              {scores.map((score: any) => (
+                <td
+                  key={`par-${score.holeNumber}`}
+                  style={{
+                    padding: '12px 10px',
+                    textAlign: 'center',
+                    borderBottom: '1px solid #f1f5f9',
+                    color: '#334155',
+                  }}
+                >
+                  {score.par}
+                </td>
+              ))}
+
+              <td
+                style={{
+                  padding: '12px 14px',
+                  textAlign: 'center',
+                  fontWeight: 900,
+                  borderBottom: '1px solid #f1f5f9',
+                }}
+              >
+                {parTotal}
+              </td>
+            </tr>
+
+            <tr>
+              <td
+                style={{
+                  position: 'sticky',
+                  left: 0,
+                  zIndex: 1,
+                  background: '#fff',
+                  padding: '12px 14px',
+                  fontWeight: 700,
+                  borderBottom: '1px solid #f1f5f9',
+                }}
+              >
                 Resultat
-              </div>
-              <div style={{ fontSize: 20, fontWeight: 900 }}>{strokesTotal}</div>
-            </div>
+              </td>
 
-            {scoringMode === 'stableford' ? (
-              <div>
-                <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+              {scores.map((score: any) => (
+                <td
+                  key={`res-${score.holeNumber}`}
+                  style={{
+                    padding: '12px 10px',
+                    textAlign: 'center',
+                    borderBottom: '1px solid #f1f5f9',
+                  }}
+                >
+                  {score.strokes == null ? (
+                    <span
+                      style={{
+                        color: '#94a3b8',
+                        fontWeight: 700,
+                      }}
+                    >
+                      -
+                    </span>
+                  ) : (
+                    <span style={markerStyle(score.marker)}>{score.strokes}</span>
+                  )}
+                </td>
+              ))}
+
+              <td
+                style={{
+                  padding: '12px 14px',
+                  textAlign: 'center',
+                  fontWeight: 900,
+                  fontSize: 18,
+                  borderBottom: '1px solid #f1f5f9',
+                }}
+              >
+                {strokesTotal}
+              </td>
+            </tr>
+
+            {showPoints ? (
+              <tr>
+                <td
+                  style={{
+                    position: 'sticky',
+                    left: 0,
+                    zIndex: 1,
+                    background: '#fff',
+                    padding: '12px 14px',
+                    fontWeight: 700,
+                    borderBottom: '1px solid #f1f5f9',
+                  }}
+                >
                   Poäng
-                </div>
-                <div style={{ fontSize: 20, fontWeight: 900 }}>{pointsTotal}</div>
-              </div>
+                </td>
+
+                {pointsPerHole.map((points, index) => (
+                  <td
+                    key={`points-${scores[index].holeNumber}`}
+                    style={{
+                      padding: '12px 10px',
+                      textAlign: 'center',
+                      borderBottom: '1px solid #f1f5f9',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {points == null ? (
+                      <span style={{ color: '#94a3b8' }}>-</span>
+                    ) : (
+                      points
+                    )}
+                  </td>
+                ))}
+
+                <td
+                  style={{
+                    padding: '12px 14px',
+                    textAlign: 'center',
+                    fontWeight: 900,
+                    fontSize: 18,
+                    borderBottom: '1px solid #f1f5f9',
+                  }}
+                >
+                  {pointsTotal}
+                </td>
+              </tr>
             ) : null}
-          </div>
-        </div>
+          </tbody>
+        </table>
       </div>
     </div>
   )
@@ -294,7 +378,11 @@ export default async function SummaryPage({
 
   const [{ data: course }, { data: holes }] = await Promise.all([
     supabase.from('courses').select('*').eq('id', round.course_id).single(),
-    supabase.from('course_holes').select('*').eq('course_id', round.course_id).order('hole_number'),
+    supabase
+      .from('course_holes')
+      .select('*')
+      .eq('course_id', round.course_id)
+      .order('hole_number'),
   ])
 
   if (!course || !holes) notFound()
@@ -459,38 +547,77 @@ export default async function SummaryPage({
           <div
             className="card"
             style={{
-              background: 'linear-gradient(180deg, #f8fbf7 0%, #f2f9f3 100%)',
-              border: '2px solid #dbeedc',
+              background: 'linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%)',
+              border: '2px solid #bbf7d0',
               marginBottom: 16,
+              boxShadow: '0 10px 30px rgba(22, 101, 52, 0.08)',
             }}
           >
-            <div style={{ display: 'grid', gap: 12 }}>
+            <div style={{ display: 'grid', gap: 16 }}>
               <div
                 style={{
-                  fontSize: 16,
-                  fontWeight: 800,
-                  color: '#166534',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  flexWrap: 'wrap',
                 }}
               >
-                🏆 Vinnare
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '6px 10px',
+                    borderRadius: 999,
+                    background: '#dcfce7',
+                    color: '#166534',
+                    fontSize: 13,
+                    fontWeight: 900,
+                  }}
+                >
+                  🏆 Vinnare
+                </div>
+
+                <div
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: 999,
+                    background: '#ffffff',
+                    border: '1px solid #d1fae5',
+                    fontSize: 13,
+                    fontWeight: 800,
+                    color: '#166534',
+                  }}
+                >
+                  {roundTypeLabel}
+                </div>
               </div>
 
-              <div
-                style={{
-                  fontSize: 36,
-                  fontWeight: 900,
-                  lineHeight: 1.05,
-                  color: '#0f172a',
-                  wordBreak: 'break-word',
-                }}
-              >
-                {winner.name}
+              <div>
+                <div
+                  style={{
+                    fontSize: 38,
+                    fontWeight: 900,
+                    lineHeight: 1.05,
+                    color: '#0f172a',
+                    wordBreak: 'break-word',
+                    marginBottom: 6,
+                  }}
+                >
+                  {winner.name}
+                </div>
+
+                <div className="muted" style={{ lineHeight: 1.5 }}>
+                  {winner.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Exakt HCP{' '}
+                  {winner.exactHandicap ?? '-'} · Spel-HCP {winner.playingHandicap ?? 0}
+                </div>
               </div>
 
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
+                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
                   gap: 12,
                 }}
               >
@@ -504,11 +631,11 @@ export default async function SummaryPage({
                 >
                   <div
                     style={{
-                      fontSize: 13,
+                      fontSize: 12,
                       color: '#64748b',
-                      fontWeight: 700,
+                      fontWeight: 800,
                       textTransform: 'uppercase',
-                      letterSpacing: 0.6,
+                      letterSpacing: 0.5,
                       marginBottom: 6,
                     }}
                   >
@@ -531,19 +658,42 @@ export default async function SummaryPage({
                 >
                   <div
                     style={{
-                      fontSize: 13,
+                      fontSize: 12,
                       color: '#64748b',
-                      fontWeight: 700,
+                      fontWeight: 800,
                       textTransform: 'uppercase',
-                      letterSpacing: 0.6,
+                      letterSpacing: 0.5,
                       marginBottom: 6,
                     }}
                   >
                     Mot par
                   </div>
                   <div style={{ fontSize: 26, fontWeight: 900 }}>
-                    {winner.vsPar > 0 ? `+${winner.vsPar}` : winner.vsPar}
+                    {formatVsPar(winner.vsPar)}
                   </div>
+                </div>
+
+                <div
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 16,
+                    padding: 14,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: '#64748b',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.5,
+                      marginBottom: 6,
+                    }}
+                  >
+                    Position
+                  </div>
+                  <div style={{ fontSize: 26, fontWeight: 900 }}>1</div>
                 </div>
               </div>
             </div>
@@ -551,115 +701,222 @@ export default async function SummaryPage({
         ) : null}
 
         <div className="card" style={{ marginBottom: 16 }}>
-          <h2 style={{ marginTop: 0, marginBottom: 14 }}>Leaderboard</h2>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              marginBottom: 16,
+              flexWrap: 'wrap',
+            }}
+          >
+            <h2 style={{ margin: 0 }}>Leaderboard</h2>
 
-          <div style={{ display: 'grid', gap: 12 }}>
-            {summary.map((player, index) => (
-              <div
-                key={player.id}
-                style={{
-                  border: index === 0 ? '2px solid #cce9d1' : '1px solid #e5e7eb',
-                  background: index === 0 ? '#f8fbf7' : '#ffffff',
-                  borderRadius: 18,
-                  padding: 14,
-                  display: 'grid',
-                  gap: 12,
-                }}
-              >
+            <div
+              style={{
+                padding: '6px 12px',
+                borderRadius: 999,
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                color: '#166534',
+                fontSize: 13,
+                fontWeight: 800,
+              }}
+            >
+              {roundTypeLabel}
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gap: 10 }}>
+            {summary.map((player, index) => {
+              const medal = getMedal(index)
+              const scoreValue =
+                round.scoring_mode === 'stableford'
+                  ? `${player.points} p`
+                  : `${player.strokes} slag`
+
+              return (
                 <div
+                  key={player.id}
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
+                    display: 'grid',
+                    gridTemplateColumns: 'auto 1fr auto',
                     gap: 12,
-                    alignItems: 'flex-start',
+                    alignItems: 'center',
+                    padding: index === 0 ? '16px' : '14px',
+                    borderRadius: 18,
+                    border: index === 0 ? '2px solid #86efac' : '1px solid #e5e7eb',
+                    background:
+                      index === 0
+                        ? 'linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%)'
+                        : '#ffffff',
+                    boxShadow:
+                      index === 0 ? '0 8px 24px rgba(22, 101, 52, 0.08)' : 'none',
                   }}
                 >
-                  <div>
+                  <div
+                    style={{
+                      width: 46,
+                      height: 46,
+                      borderRadius: 999,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background:
+                        index === 0 ? '#166534' : index < 3 ? '#f3f4f6' : '#f8fafc',
+                      color: index === 0 ? '#ffffff' : '#0f172a',
+                      fontWeight: 900,
+                      fontSize: 18,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {medal ?? index + 1}
+                  </div>
+
+                  <div style={{ minWidth: 0 }}>
                     <div
                       style={{
-                        fontSize: 22,
-                        fontWeight: 900,
-                        lineHeight: 1.1,
-                        wordBreak: 'break-word',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                        marginBottom: 4,
                       }}
                     >
-                      {index === 0 ? '👑 ' : ''}
-                      {index + 1}. {player.name}
+                      <div
+                        style={{
+                          fontSize: index === 0 ? 24 : 20,
+                          fontWeight: 900,
+                          lineHeight: 1.1,
+                          color: '#0f172a',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {player.name}
+                      </div>
+
+                      {index === 0 ? (
+                        <span
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: 999,
+                            background: '#dcfce7',
+                            color: '#166534',
+                            fontSize: 12,
+                            fontWeight: 800,
+                          }}
+                        >
+                          Leder
+                        </span>
+                      ) : null}
                     </div>
 
-                    <div className="muted" style={{ marginTop: 6 }}>
+                    <div
+                      className="muted"
+                      style={{
+                        fontSize: 14,
+                        lineHeight: 1.4,
+                      }}
+                    >
                       {player.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Exakt HCP{' '}
                       {player.exactHandicap ?? '-'} · Spel-HCP {player.playingHandicap ?? 0}
                     </div>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 8,
+                        marginTop: 10,
+                      }}
+                    >
+                      <div
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: 12,
+                          background: '#f8fafc',
+                          border: '1px solid #e5e7eb',
+                          minWidth: 78,
+                        }}
+                      >
+                        <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>
+                          Slag
+                        </div>
+                        <div style={{ fontWeight: 900, fontSize: 18 }}>
+                          {player.strokes}
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: 12,
+                          background: '#f8fafc',
+                          border: '1px solid #e5e7eb',
+                          minWidth: 78,
+                        }}
+                      >
+                        <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>
+                          Mot par
+                        </div>
+                        <div style={{ fontWeight: 900, fontSize: 18 }}>
+                          {formatVsPar(player.vsPar)}
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: 12,
+                          background:
+                            round.scoring_mode === 'stableford' ? '#eff6ff' : '#f8fafc',
+                          border: '1px solid #e5e7eb',
+                          minWidth: 78,
+                        }}
+                      >
+                        <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>
+                          Poäng
+                        </div>
+                        <div style={{ fontWeight: 900, fontSize: 18 }}>
+                          {player.points}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div
                     style={{
-                      padding: '6px 10px',
-                      borderRadius: 999,
-                      background: index === 0 ? '#e8f5e9' : '#f3f4f6',
-                      fontSize: 13,
-                      fontWeight: 800,
-                      whiteSpace: 'nowrap',
+                      textAlign: 'right',
+                      minWidth: 82,
+                      alignSelf: 'center',
                     }}
                   >
-                    #{index + 1}
+                    <div
+                      className="muted"
+                      style={{
+                        fontSize: 12,
+                        marginBottom: 4,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      Resultat
+                    </div>
+                    <div
+                      style={{
+                        fontSize: index === 0 ? 24 : 20,
+                        fontWeight: 900,
+                        color: '#166534',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {scoreValue}
+                    </div>
                   </div>
                 </div>
-
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr 1fr',
-                    gap: 10,
-                  }}
-                >
-                  <div
-                    style={{
-                      background: '#f8fafc',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: 14,
-                      padding: 12,
-                    }}
-                  >
-                    <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
-                      Slag
-                    </div>
-                    <div style={{ fontSize: 24, fontWeight: 900 }}>{player.strokes}</div>
-                  </div>
-
-                  <div
-                    style={{
-                      background: '#f8fafc',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: 14,
-                      padding: 12,
-                    }}
-                  >
-                    <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
-                      Mot par
-                    </div>
-                    <div style={{ fontSize: 24, fontWeight: 900 }}>
-                      {player.vsPar > 0 ? `+${player.vsPar}` : player.vsPar}
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      background: '#f8fafc',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: 14,
-                      padding: 12,
-                    }}
-                  >
-                    <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
-                      Poäng
-                    </div>
-                    <div style={{ fontSize: 24, fontWeight: 900 }}>{player.points}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
@@ -675,7 +932,7 @@ export default async function SummaryPage({
               <div>
                 <h2 style={{ marginTop: 0, marginBottom: 8 }}>Scorekort</h2>
                 <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
-                  Välj spelare. Alla hål visas direkt utan sidscroll.
+                  Välj spelare och få en kompakt överblick över hela rundan.
                 </p>
               </div>
 
@@ -765,7 +1022,7 @@ export default async function SummaryPage({
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(3, auto)',
+                      gridTemplateColumns: 'repeat(4, auto)',
                       gap: 10,
                     }}
                   >
@@ -801,9 +1058,7 @@ export default async function SummaryPage({
                         +/-
                       </div>
                       <div style={{ fontSize: 24, fontWeight: 900 }}>
-                        {selectedPlayer.vsPar > 0
-                          ? `+${selectedPlayer.vsPar}`
-                          : selectedPlayer.vsPar}
+                        {formatVsPar(selectedPlayer.vsPar)}
                       </div>
                     </div>
 
@@ -824,12 +1079,30 @@ export default async function SummaryPage({
                         {selectedPlayer.points}
                       </div>
                     </div>
+
+                    <div
+                      style={{
+                        background: '#fff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: 14,
+                        padding: '10px 14px',
+                        textAlign: 'center',
+                        minWidth: 76,
+                      }}
+                    >
+                      <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                        Pos
+                      </div>
+                      <div style={{ fontSize: 24, fontWeight: 900 }}>
+                        {selectedIndex + 1}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div style={{ padding: 16, display: 'grid', gap: 16 }}>
-                <HoleSummaryGrid
+              <div style={{ padding: 16, display: 'grid', gap: 18 }}>
+                <SummaryTableSection
                   title="Främre 9"
                   holes={firstHalf}
                   scores={selectedFrontScores}
@@ -840,7 +1113,7 @@ export default async function SummaryPage({
                 />
 
                 {secondHalf.length > 0 ? (
-                  <HoleSummaryGrid
+                  <SummaryTableSection
                     title="Bakre 9"
                     holes={secondHalf}
                     scores={selectedBackScores}
@@ -854,7 +1127,7 @@ export default async function SummaryPage({
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '1fr 1fr 1fr',
+                    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
                     gap: 12,
                   }}
                 >
@@ -885,6 +1158,22 @@ export default async function SummaryPage({
                     </div>
                     <div style={{ fontSize: 24, fontWeight: 900 }}>
                       {selectedPlayer.strokes}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      background: '#f8fafc',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 14,
+                      padding: 14,
+                    }}
+                  >
+                    <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
+                      Mot par
+                    </div>
+                    <div style={{ fontSize: 24, fontWeight: 900 }}>
+                      {formatVsPar(selectedPlayer.vsPar)}
                     </div>
                   </div>
 

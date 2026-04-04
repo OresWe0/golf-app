@@ -1,8 +1,9 @@
 'use client'
 
-import { useRef } from 'react'
+import React from 'react'
 import { receivedStrokesOnHole, stablefordPoints } from '@/lib/scoring'
 
+// Typer för hålpoäng och spelare
 type HoleScore = {
   holeNumber: number
   par: number
@@ -16,57 +17,14 @@ type SelectedPlayer = {
   playingHandicap: number
 }
 
-function getMarkerStyle(marker: string | null): React.CSSProperties {
-  const base: React.CSSProperties = {
-    width: 44,
-    height: 44,
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: 800,
-    fontSize: 18,
-    background: '#fff',
-    margin: '0 auto',
-    flexShrink: 0,
-  }
-
-  if (marker === 'circle') {
-    return {
-      ...base,
-      border: '2px solid #166534',
-      borderRadius: '999px',
-    }
-  }
-
-  if (marker === 'double-circle') {
-    return {
-      ...base,
-      border: '2px solid #166534',
-      borderRadius: '999px',
-      boxShadow: '0 0 0 4px #d1fae5',
-    }
-  }
-
-  if (marker === 'square') {
-    return {
-      ...base,
-      border: '2px solid #b45309',
-      borderRadius: 8,
-      background: '#fff7ed',
-    }
-  }
-
-  if (marker === 'double-square') {
-    return {
-      ...base,
-      border: '2px solid #991b1b',
-      borderRadius: 8,
-      boxShadow: '0 0 0 4px #fee2e2',
-      background: '#fff5f5',
-    }
-  }
-
-  return base
+interface Props {
+  title: string
+  holes: { par: number }[]
+  scores: HoleScore[]
+  selectedPlayer: SelectedPlayer
+  visibleHoleCount: number
+  scoringMode: string
+  totalLabel?: string
 }
 
 export default function HoleSummaryStrip({
@@ -76,237 +34,162 @@ export default function HoleSummaryStrip({
   selectedPlayer,
   visibleHoleCount,
   scoringMode,
-  totalLabel,
-}: {
-  title: string
-  holes: { par: number }[]
-  scores: HoleScore[]
-  selectedPlayer: SelectedPlayer
-  visibleHoleCount: number
-  scoringMode: string
-  totalLabel: string
-}) {
-  const scrollRef = useRef<HTMLDivElement | null>(null)
-  const isDraggingRef = useRef(false)
-  const startXRef = useRef(0)
-  const startScrollLeftRef = useRef(0)
-
+}: Props) {
+  // Summera par och slag
   const parTotal = holes.reduce((sum, hole) => sum + hole.par, 0)
-  const strokesTotal = scores.reduce((sum, score) => sum + (score.strokes ?? 0), 0)
-  const pointsTotal = scores.reduce((sum, score) => {
+  const strokesTotal = scores.reduce((sum, score) => {
     if (score.strokes == null) return sum
-
-    return (
-      sum +
-      stablefordPoints(
-        score.strokes,
-        score.par,
-        receivedStrokesOnHole(
-          selectedPlayer.playingHandicap,
-          score.hcpIndex,
-          visibleHoleCount
-        )
-      )
-    )
+    return sum + score.strokes
   }, 0)
 
-  const startDrag = (clientX: number) => {
-    if (!scrollRef.current) return
-    isDraggingRef.current = true
-    startXRef.current = clientX
-    startScrollLeftRef.current = scrollRef.current.scrollLeft
-  }
+  // Beräkna Stableford-poäng per hål
+  const pointsPerHole = scores.map((score) => {
+    if (score.strokes == null) return null
+    return stablefordPoints(
+      score.strokes,
+      score.par,
+      receivedStrokesOnHole(
+        selectedPlayer.playingHandicap,
+        score.hcpIndex,
+        visibleHoleCount
+      )
+    )
+  })
+  const pointsTotal = pointsPerHole.reduce((sum, p) => sum + (p ?? 0), 0)
 
-  const moveDrag = (clientX: number) => {
-    if (!isDraggingRef.current || !scrollRef.current) return
-    const diff = clientX - startXRef.current
-    scrollRef.current.scrollLeft = startScrollLeftRef.current - diff
-  }
+  const showPoints = scoringMode === 'stableford'
+  const scoringLabel =
+    scoringMode === 'stableford'
+      ? 'Poängbogey'
+      : scoringMode === 'strokeplay'
+      ? 'Slagspel'
+      : scoringMode
 
-  const endDrag = () => {
-    isDraggingRef.current = false
+  // Funktionen för färgkodade celler baserat på markör
+  const getResultClass = (marker: string | null) => {
+    switch (marker) {
+      case 'circle':
+        return 'border-2 border-green-700 rounded-full'
+      case 'double-circle':
+        return 'border-2 border-green-700 rounded-full shadow-[0_0_0_4px_#d1fae5]'
+      case 'square':
+        return 'border-2 border-yellow-700 rounded-lg bg-yellow-50'
+      case 'double-square':
+        return 'border-2 border-red-700 rounded-lg bg-red-50 shadow-[0_0_0_4px_#fee2e2]'
+      default:
+        return ''
+    }
   }
 
   return (
     <div>
-      <div
-        style={{
-          marginBottom: 10,
-          fontSize: 16,
-          fontWeight: 800,
-          color: '#166534',
-        }}
-      >
-        {title}
+      {/* Titel på sektionen */}
+      <h3 className="mb-2 text-base font-bold text-green-700">{title}</h3>
+
+      {/* Scrollbar runt tabellen för små skärmar */}
+      <div className="overflow-x-auto border border-gray-300 rounded-2xl bg-white">
+        <table className="min-w-full text-sm">
+          <thead>
+            {/* Hålrader med sticky cell till vänster och total till höger */}
+            <tr className="bg-gray-50">
+              <th className="sticky left-0 z-10 px-2 py-1 text-left font-semibold bg-gray-50">
+                Hål
+              </th>
+              {scores.map((score) => (
+                <th
+                  key={`hole-${score.holeNumber}`}
+                  className="px-2 py-1 text-center font-semibold"
+                >
+                  {score.holeNumber}
+                </th>
+              ))}
+              <th className="px-2 py-1 text-center font-semibold text-green-700">
+                Σ
+              </th>
+            </tr>
+            <tr className="bg-gray-100">
+              <th className="sticky left-0 z-10 px-2 py-1 text-left font-semibold bg-gray-100">
+                Par
+              </th>
+              {scores.map((score) => (
+                <th
+                  key={`par-${score.holeNumber}`}
+                  className="px-2 py-1 text-center"
+                >
+                  {score.par}
+                </th>
+              ))}
+              <th className="px-2 py-1 text-center">{parTotal}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Resultatrad med färgkodade celler */}
+            <tr>
+              <td className="sticky left-0 z-10 px-2 py-1 font-medium bg-white">
+                Res
+              </td>
+              {scores.map((score) => (
+                <td key={`res-${score.holeNumber}`} className="px-2 py-1 text-center">
+                  {score.strokes == null ? (
+                    <span className="text-gray-400">-</span>
+                  ) : (
+                    <span
+                      className={`inline-flex w-9 h-9 items-center justify-center font-bold ${getResultClass(
+                        score.marker
+                      )}`}
+                    >
+                      {score.strokes}
+                    </span>
+                  )}
+                </td>
+              ))}
+              <td className="px-2 py-1 text-center font-semibold">{strokesTotal}</td>
+            </tr>
+
+            {/* Poängrad visas endast i Poängbogey-läge */}
+            {showPoints && (
+              <tr>
+                <td className="sticky left-0 z-10 px-2 py-1 font-medium bg-white">P</td>
+                {pointsPerHole.map((points, index) => (
+                  <td
+                    key={`points-${scores[index].holeNumber}`}
+                    className="px-2 py-1 text-center"
+                  >
+                    {points == null ? (
+                      <span className="text-gray-400">-</span>
+                    ) : (
+                      points
+                    )}
+                  </td>
+                ))}
+                <td className="px-2 py-1 text-center font-semibold">{pointsTotal}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
-      <div
-        ref={scrollRef}
-        onMouseDown={(e) => startDrag(e.clientX)}
-        onMouseMove={(e) => moveDrag(e.clientX)}
-        onMouseUp={endDrag}
-        onMouseLeave={endDrag}
-        onTouchStart={(e) => startDrag(e.touches[0].clientX)}
-        onTouchMove={(e) => moveDrag(e.touches[0].clientX)}
-        onTouchEnd={endDrag}
-        style={{
-          width: '100%',
-          overflowX: 'auto',
-          overflowY: 'hidden',
-          WebkitOverflowScrolling: 'touch',
-          touchAction: 'pan-x',
-          cursor: isDraggingRef.current ? 'grabbing' : 'grab',
-          paddingBottom: 10,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            gap: 10,
-            width: 'max-content',
-            minWidth: 'max-content',
-            paddingRight: 12,
-            userSelect: 'none',
-          }}
-        >
-          {scores.map((score) => {
-            const points =
-              score.strokes == null
-                ? null
-                : stablefordPoints(
-                    score.strokes,
-                    score.par,
-                    receivedStrokesOnHole(
-                      selectedPlayer.playingHandicap,
-                      score.hcpIndex,
-                      visibleHoleCount
-                    )
-                  )
-
-            return (
-              <div
-                key={`${selectedPlayer.id}-${score.holeNumber}`}
-                style={{
-                  width: 108,
-                  minWidth: 108,
-                  flex: '0 0 108px',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 18,
-                  background: '#fff',
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  style={{
-                    background: '#1f9d55',
-                    color: '#fff',
-                    textAlign: 'center',
-                    padding: '10px 8px',
-                    fontWeight: 800,
-                    fontSize: 15,
-                  }}
-                >
-                  Hål {score.holeNumber}
-                </div>
-
-                <div
-                  style={{
-                    padding: 12,
-                    display: 'grid',
-                    gap: 10,
-                    textAlign: 'center',
-                  }}
-                >
-                  <div>
-                    <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                      Par
-                    </div>
-                    <div style={{ fontSize: 20, fontWeight: 800 }}>{score.par}</div>
-                  </div>
-
-                  <div>
-                    <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                      Resultat
-                    </div>
-                    {score.strokes == null ? (
-                      <div style={{ fontSize: 24, fontWeight: 900 }}>-</div>
-                    ) : (
-                      <span style={getMarkerStyle(score.marker)}>{score.strokes}</span>
-                    )}
-                  </div>
-
-                  {scoringMode === 'stableford' ? (
-                    <div>
-                      <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                        Poäng
-                      </div>
-                      <div style={{ fontSize: 18, fontWeight: 800 }}>
-                        {points == null ? '-' : points}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            )
-          })}
-
-          <div
-            style={{
-              width: 124,
-              minWidth: 124,
-              flex: '0 0 124px',
-              border: '1px solid #cfe7d4',
-              borderRadius: 18,
-              background: '#f8fbf7',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                background: '#166534',
-                color: '#fff',
-                textAlign: 'center',
-                padding: '10px 8px',
-                fontWeight: 800,
-                fontSize: 15,
-              }}
-            >
-              {totalLabel}
-            </div>
-
-            <div
-              style={{
-                padding: 12,
-                display: 'grid',
-                gap: 10,
-                textAlign: 'center',
-              }}
-            >
-              <div>
-                <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                  Par
-                </div>
-                <div style={{ fontSize: 20, fontWeight: 900 }}>{parTotal}</div>
-              </div>
-
-              <div>
-                <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                  Resultat
-                </div>
-                <div style={{ fontSize: 20, fontWeight: 900 }}>{strokesTotal}</div>
-              </div>
-
-              {scoringMode === 'stableford' ? (
-                <div>
-                  <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                    Poäng
-                  </div>
-                  <div style={{ fontSize: 20, fontWeight: 900 }}>{pointsTotal}</div>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </div>
+      {/* Legend och scoreringsmetod längst ner */}
+      <div className="mt-3 flex flex-wrap gap-4 text-xs text-gray-600">
+        <span className="flex items-center gap-2">
+          <span className="inline-block w-4 h-4 rounded-full border-2 border-green-700" />
+          bättre hål
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="inline-block w-4 h-4 rounded-lg border-2 border-red-700 bg-red-50" />
+          svagare hål
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="inline-block w-4 h-4 rounded-full border-2 border-green-700 shadow-[0_0_0_3px_#d1fae5]" />
+          dubblat bättre hål
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="inline-block w-4 h-4 rounded-lg border-2 border-yellow-700 bg-yellow-50" />
+          dubblat svagare hål
+        </span>
+        <span className="ml-auto inline-flex items-center font-bold text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-1">
+          {scoringLabel}
+        </span>
       </div>
     </div>
   )

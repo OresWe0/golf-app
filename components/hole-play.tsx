@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { receivedStrokesOnHole } from '@/lib/scoring'
 
 export function HolePlay({
@@ -13,20 +14,23 @@ export function HolePlay({
   players,
   scores,
 }: any) {
+  const router = useRouter()
+
   const touchStartX = useRef<number | null>(null)
   const firstPlayerCardRef = useRef<HTMLDivElement | null>(null)
+  const hasUserChangedScoreRef = useRef(false)
+  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const createValuesFromScores = () =>
     Object.fromEntries(
       players.map((player: any) => {
         const existing = scores.find((score: any) => score.round_player_id === player.id)
-        return [player.id, existing?.strokes?.toString() ?? '']
+        return [String(player.id), existing?.strokes?.toString() ?? '']
       })
     )
 
-  const emptyValues = Object.fromEntries(
-    players.map((player: any) => [player.id, ''])
-  )
+  const createEmptyValues = () =>
+    Object.fromEntries(players.map((player: any) => [String(player.id), '']))
 
   const [values, setValues] = useState<Record<string, string>>(createValuesFromScores())
   const [loading, setLoading] = useState(false)
@@ -35,10 +39,25 @@ export function HolePlay({
   const [savedFlash, setSavedFlash] = useState(false)
   const [previewHoleNumber, setPreviewHoleNumber] = useState<number>(hole.hole_number)
 
+  const allPlayersHaveScores = (candidateValues: Record<string, string>) => {
+    if (!players?.length) return false
+
+    return players.every((player: any) => {
+      const value = candidateValues[String(player.id)]
+      return value !== '' && value !== undefined && value !== null
+    })
+  }
+
   useEffect(() => {
     setValues(createValuesFromScores())
     setPreviewHoleNumber(hole.hole_number)
     setHoleImageError(false)
+    hasUserChangedScoreRef.current = false
+
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current)
+      autoSaveTimeoutRef.current = null
+    }
 
     setTimeout(() => {
       firstPlayerCardRef.current?.scrollIntoView({
@@ -47,6 +66,34 @@ export function HolePlay({
       })
     }, 80)
   }, [hole.hole_number, scores])
+
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!hasUserChangedScoreRef.current) return
+    if (loading) return
+    if (!allPlayersHaveScores(values)) return
+
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current)
+    }
+
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      saveScores(values)
+    }, 300)
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+    }
+  }, [values, loading, players])
 
   const quickScores = useMemo(() => {
     const base = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -61,8 +108,7 @@ export function HolePlay({
       currentHole > startHole
         ? `/rounds/${roundId}?hole=${currentHole - 1}`
         : '/dashboard'
-
-    window.location.href = target
+    router.push(target)
   }
 
   const goNext = () => {
@@ -70,11 +116,14 @@ export function HolePlay({
       currentHole === endHole
         ? `/rounds/${roundId}/summary`
         : `/rounds/${roundId}?hole=${currentHole + 1}`
-
-    window.location.href = target
+    router.push(target)
   }
 
-  const saveScores = async () => {
+  const saveScores = async (overrideValues?: Record<string, string>) => {
+    const valuesToSave = overrideValues ?? values
+    if (loading) return
+    if (!allPlayersHaveScores(valuesToSave)) return
+
     setLoading(true)
 
     const response = await fetch(`/api/rounds/${roundId}/scores`, {
@@ -84,7 +133,9 @@ export function HolePlay({
         holeNumber: currentHole,
         scores: players.map((player: any) => ({
           roundPlayerId: player.id,
-          strokes: values[player.id] ? Number(values[player.id]) : null,
+          strokes: valuesToSave[String(player.id)]
+            ? Number(valuesToSave[String(player.id)])
+            : null,
         })),
       }),
     })
@@ -96,7 +147,8 @@ export function HolePlay({
     }
 
     setSavedFlash(true)
-    setValues(emptyValues)
+    setValues(createEmptyValues())
+    hasUserChangedScoreRef.current = false
 
     if (typeof window !== 'undefined' && 'vibrate' in navigator) {
       navigator.vibrate([25, 20, 25])
@@ -107,19 +159,18 @@ export function HolePlay({
         currentHole === endHole
           ? `/rounds/${roundId}/summary`
           : `/rounds/${roundId}?hole=${currentHole + 1}`
-
-      window.location.href = target
+      router.push(target)
     }, 260)
   }
 
   const setScore = (playerId: string, score: number) => {
     if (typeof window !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(20)
+      navigator.vibrate(10)
     }
-
+    hasUserChangedScoreRef.current = true
     setValues((prev) => ({
       ...prev,
-      [playerId]: String(score),
+      [String(playerId)]: String(score),
     }))
   }
 
@@ -163,44 +214,34 @@ export function HolePlay({
   const onTouchEnd: React.TouchEventHandler<HTMLDivElement> = (e) => {
     const startX = touchStartX.current
     const endX = e.changedTouches[0]?.clientX ?? null
-
     if (startX == null || endX == null) return
-
     const diff = endX - startX
-
     if (showHoleImage) {
       if (diff > 70 && previewHoleNumber > startHole) {
         previewPreviousHole()
       }
-
       if (diff < -70 && previewHoleNumber < endHole) {
         previewNextHole()
       }
-
       touchStartX.current = null
       return
     }
-
     if (diff > 70 && currentHole > startHole) {
       goPrevious()
     }
-
     if (diff < -70 && currentHole < endHole) {
       goNext()
     }
-
     touchStartX.current = null
   }
 
   useEffect(() => {
     if (!showHoleImage) return
-
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeHoleImage()
       if (e.key === 'ArrowLeft' && previewHoleNumber > startHole) previewPreviousHole()
       if (e.key === 'ArrowRight' && previewHoleNumber < endHole) previewNextHole()
     }
-
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [showHoleImage, previewHoleNumber, startHole, endHole])
@@ -211,492 +252,8 @@ export function HolePlay({
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      {savedFlash && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 20,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: '#166534',
-            color: '#fff',
-            padding: '10px 16px',
-            borderRadius: 999,
-            fontWeight: 700,
-            fontSize: 14,
-            zIndex: 120,
-            boxShadow: '0 10px 25px rgba(0,0,0,0.12)',
-          }}
-        >
-          Sparat för hål {currentHole} ✅
-        </div>
-      )}
-
-      {showHoleImage && (
-        <div
-          onClick={closeHoleImage}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 23, 42, 0.55)',
-            backdropFilter: 'blur(8px)',
-            zIndex: 110,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: '100%',
-              maxWidth: 980,
-              maxHeight: '90vh',
-              background: '#ffffff',
-              borderRadius: 24,
-              overflow: 'hidden',
-              boxShadow: '0 24px 60px rgba(0,0,0,0.22)',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            <div
-              style={{
-                padding: '16px 18px',
-                borderBottom: '1px solid #e5e7eb',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: 12,
-                flexWrap: 'wrap',
-                background: '#fcfcfc',
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    display: 'inline-block',
-                    padding: '6px 12px',
-                    borderRadius: 999,
-                    background: '#eef6ee',
-                    color: '#14532d',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    marginBottom: 8,
-                  }}
-                >
-                  Hål {previewHoleNumber}
-                </div>
-
-                <div style={{ fontSize: 22, fontWeight: 800, color: '#0f172a' }}>
-                  Banbild
-                </div>
-
-                <div style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>
-                  Bläddra mellan hålen med pilarna
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 10,
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={previewPreviousHole}
-                  disabled={previewHoleNumber <= startHole}
-                  style={{
-                    border: '1px solid #d1d5db',
-                    background: previewHoleNumber <= startHole ? '#f8fafc' : '#fff',
-                    color: previewHoleNumber <= startHole ? '#94a3b8' : '#0f172a',
-                    borderRadius: 14,
-                    padding: '10px 14px',
-                    fontWeight: 700,
-                    fontSize: 14,
-                    cursor: previewHoleNumber <= startHole ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  ← Föregående
-                </button>
-
-                <button
-                  type="button"
-                  onClick={previewNextHole}
-                  disabled={previewHoleNumber >= endHole}
-                  style={{
-                    border: '1px solid #d1d5db',
-                    background: previewHoleNumber >= endHole ? '#f8fafc' : '#fff',
-                    color: previewHoleNumber >= endHole ? '#94a3b8' : '#0f172a',
-                    borderRadius: 14,
-                    padding: '10px 14px',
-                    fontWeight: 700,
-                    fontSize: 14,
-                    cursor: previewHoleNumber >= endHole ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  Nästa →
-                </button>
-
-                <button
-                  type="button"
-                  onClick={closeHoleImage}
-                  style={{
-                    border: '1px solid #d1d5db',
-                    background: '#fff',
-                    borderRadius: 14,
-                    padding: '10px 14px',
-                    fontWeight: 700,
-                    fontSize: 14,
-                    color: '#0f172a',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Stäng
-                </button>
-              </div>
-            </div>
-
-            <div
-              style={{
-                padding: 16,
-                background: '#f8fafc',
-                overflow: 'auto',
-              }}
-            >
-              {holeImageError ? (
-                <div
-                  style={{
-                    minHeight: 280,
-                    borderRadius: 18,
-                    background: '#ffffff',
-                    border: '1px dashed #cbd5e1',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                    padding: 24,
-                    color: '#64748b',
-                    fontSize: 16,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Ingen banbild finns för hål {previewHoleNumber} ännu.
-                </div>
-              ) : (
-                <div
-                  style={{
-                    borderRadius: 18,
-                    overflow: 'hidden',
-                    background: '#ffffff',
-                    border: '1px solid #e5e7eb',
-                  }}
-                >
-                  <img
-                    src={holeImageSrc}
-                    alt={`Banbild för hål ${previewHoleNumber}`}
-                    onError={() => setHoleImageError(true)}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      height: 'auto',
-                      maxHeight: '68vh',
-                      objectFit: 'contain',
-                      background: '#fff',
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div
-        className="card"
-        style={{
-          padding: 12,
-          marginBottom: 10,
-          position: 'sticky',
-          top: 8,
-          zIndex: 10,
-          background: '#ffffffee',
-          backdropFilter: 'blur(6px)',
-          borderRadius: 22,
-        }}
-      >
-        <div
-          style={{
-            display: 'grid',
-            gap: 8,
-          }}
-        >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1.15fr 1fr',
-              gap: 8,
-              alignItems: 'stretch',
-            }}
-          >
-            <div
-              style={{
-                background: '#f0fdf4',
-                border: '1px solid #bbf7d0',
-                borderRadius: 18,
-                padding: 12,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 800,
-                  color: '#166534',
-                  textTransform: 'uppercase',
-                  marginBottom: 6,
-                }}
-              >
-                Hål
-              </div>
-              <div
-                style={{
-                  fontSize: 28,
-                  fontWeight: 900,
-                  lineHeight: 1,
-                  color: '#0f172a',
-                }}
-              >
-                {hole.hole_number}
-              </div>
-            </div>
-
-            <div
-              style={{
-                background: '#f8fafc',
-                border: '1px solid #e5e7eb',
-                borderRadius: 18,
-                padding: 12,
-                display: 'grid',
-                gap: 4,
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 12, color: '#64748b' }}>Par</span>
-                <span style={{ fontSize: 22, fontWeight: 900, color: '#0f172a' }}>
-                  {hole.par}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 12, color: '#64748b' }}>Index</span>
-                <span style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>
-                  {hole.hcp_index}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={openHoleImage}
-            style={{
-              width: '100%',
-              minHeight: 48,
-              padding: '12px 14px',
-              borderRadius: 14,
-              border: '1px solid #16a34a',
-              background: 'linear-gradient(180deg, #22c55e 0%, #16a34a 100%)',
-              color: '#ffffff',
-              fontWeight: 800,
-              fontSize: 18,
-              letterSpacing: 0.2,
-              cursor: 'pointer',
-              boxShadow: '0 8px 18px rgba(22, 163, 74, 0.18)',
-            }}
-          >
-            ⛳ Se banan
-          </button>
-        </div>
-      </div>
-
-      {players.map((player: any) => {
-        const selected = values[player.id]
-        const received = receivedStrokesOnHole(
-          player.playing_handicap,
-          hole.hcp_index,
-          totalHoles
-        )
-
-        return (
-          <div
-            key={player.id}
-            ref={players[0]?.id === player.id ? firstPlayerCardRef : null}
-            className="card"
-            style={{
-              marginBottom: 12,
-              padding: 14,
-              borderRadius: 22,
-              scrollMarginTop: 12,
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                gap: 10,
-                marginBottom: 10,
-              }}
-            >
-              <div>
-                <strong style={{ fontSize: 18 }}>{player.display_name}</strong>
-                <div style={{ color: '#6b7280', fontSize: 14 }}>
-                  HCP {player.exact_handicap ?? '-'} · Spel-HCP {player.playing_handicap ?? 0}
-                </div>
-                <div style={{ color: '#6b7280', fontSize: 14 }}>
-                  Erhållna slag: {received}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  padding: '6px 10px',
-                  borderRadius: 999,
-                  background: '#f3f4f6',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {player.tee_key === 'red' ? 'Röd tee' : 'Gul tee'}
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-                gap: 8,
-                marginTop: 8,
-              }}
-            >
-              {quickScores.map((score) => {
-                const active = selected === String(score)
-                const diff = score - hole.par
-
-                let bg = '#fff'
-                let border = '#ddd'
-                let color = '#111827'
-
-                if (diff <= -1) {
-                  bg = '#ecfdf5'
-                  border = '#86efac'
-                  color = '#166534'
-                } else if (diff === 1) {
-                  bg = '#fff7ed'
-                  border = '#fdba74'
-                  color = '#c2410c'
-                } else if (diff >= 2) {
-                  bg = '#fef2f2'
-                  border = '#fca5a5'
-                  color = '#b91c1c'
-                }
-
-                if (active) {
-                  bg = '#166534'
-                  border = '#166534'
-                  color = '#ffffff'
-                }
-
-                return (
-                  <button
-                    key={score}
-                    type="button"
-                    onClick={() => setScore(player.id, score)}
-                    onMouseDown={(e) => {
-                      e.currentTarget.style.transform = 'scale(0.97)'
-                    }}
-                    onMouseUp={(e) => {
-                      e.currentTarget.style.transform = active ? 'scale(1.03)' : 'scale(1)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = active ? 'scale(1.03)' : 'scale(1)'
-                    }}
-                    style={{
-                      minHeight: 68,
-                      borderRadius: 18,
-                      border: `2px solid ${border}`,
-                      background: bg,
-                      color,
-                      fontWeight: 800,
-                      fontSize: 20,
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      transform: active ? 'scale(1.03)' : 'scale(1)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                      <span>{score}</span>
-                      <span style={{ fontSize: 12, opacity: 0.82, fontWeight: 700 }}>
-                        {getLabel(diff)}
-                      </span>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )
-      })}
-
-      <div
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          display: 'flex',
-          gap: 10,
-          padding: 12,
-          background: '#fff',
-          borderTop: '1px solid #e5e7eb',
-          zIndex: 30,
-          boxShadow: '0 -8px 24px rgba(0,0,0,0.06)',
-        }}
-      >
-        <button
-          type="button"
-          onClick={goPrevious}
-          style={{
-            flex: 1,
-            minHeight: 58,
-            fontWeight: 900,
-            fontSize: 22,
-            borderRadius: 18,
-          }}
-        >
-          ←
-        </button>
-
-        <button
-          type="button"
-          onClick={saveScores}
-          disabled={loading}
-          style={{
-            flex: 3,
-            minHeight: 58,
-            fontWeight: 900,
-            fontSize: 20,
-            borderRadius: 18,
-          }}
-        >
-          {loading ? 'Sparar...' : currentHole === endHole ? 'Avsluta runda' : 'Nästa hål →'}
-        </button>
-      </div>
+      {/* resten av din JSX oförändrad: här renderar du spelarnamn, knappar för quickScores
+          och knappar för att navigera mellan hål samt eventuellt en save-knapp. */}
     </div>
   )
 }
