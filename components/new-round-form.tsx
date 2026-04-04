@@ -195,6 +195,8 @@ export function NewRoundForm({
     }))
     .filter((player) => player.name)
 
+  const selectedFriendsCount = Math.max(0, players.length - 1)
+
   const selectedCourseName =
     courses.find((course) => course.id === courseId)?.name ?? 'Ingen bana vald'
 
@@ -469,11 +471,26 @@ export function NewRoundForm({
                 👥 Mina vänner
               </div>
 
-              <h3 style={{ marginTop: 0, marginBottom: 6 }}>Lägg till från vänlistan</h3>
+              <h3 style={{ marginTop: 0, marginBottom: 6 }}>
+                Välj spelare från dina vänner
+              </h3>
 
               <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
-                Tryck på en vän för att lägga till personen direkt i bollen.
+                Tryck för att lägga till spelare direkt i rundan.
               </p>
+
+              {selectedFriendsCount > 0 && (
+                <div
+                  style={{
+                    marginTop: 6,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: '#166534',
+                  }}
+                >
+                  {selectedFriendsCount} spelare tillagda
+                </div>
+              )}
             </div>
 
             <div
@@ -529,16 +546,21 @@ export function NewRoundForm({
                       padding: '12px 16px',
                       borderRadius: 999,
                       border: alreadyAdded ? '1px solid #d1d5db' : '1px solid #86efac',
-                      background: alreadyAdded ? '#f3f4f6' : '#ffffff',
-                      color: alreadyAdded ? '#64748b' : '#166534',
+                      background: alreadyAdded ? '#ecfdf5' : '#ffffff',
+                      color: '#166534',
                       fontWeight: 800,
                       fontSize: 14,
                       cursor: alreadyAdded ? 'not-allowed' : 'pointer',
                       boxShadow: alreadyAdded ? 'none' : '0 4px 12px rgba(22, 101, 52, 0.06)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
                     }}
                   >
-                    {alreadyAdded ? '✓ Tillagd · ' : '+ Lägg till · '}
-                    {friend.friend_name?.trim() || friend.friend_email.split('@')[0]}
+                    {alreadyAdded ? '✅' : '➕'}
+                    <span>
+                      {friend.friend_name?.trim() || friend.friend_email.split('@')[0]}
+                    </span>
                   </button>
                 )
               })}
