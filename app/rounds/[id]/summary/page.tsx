@@ -159,7 +159,7 @@ function SummaryTableSection({
     <div>
       <div
         style={{
-          marginBottom: 10,
+          marginBottom: 12,
           fontSize: 18,
           fontWeight: 900,
           color: '#166534',
@@ -170,214 +170,128 @@ function SummaryTableSection({
 
       <div
         style={{
-          overflowX: 'auto',
-          border: '1px solid #dbe4dd',
-          borderRadius: 18,
-          background: '#fff',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(88px, 1fr))',
+          gap: 10,
         }}
       >
-        <table
+        {scores.map((score, index) => (
+          <div
+            key={`hole-card-${score.holeNumber}`}
+            style={{
+              border: '1px solid #dbe4dd',
+              borderRadius: 16,
+              background: '#ffffff',
+              overflow: 'hidden',
+              minWidth: 0,
+            }}
+          >
+            <div
+              style={{
+                background: '#f8fbf7',
+                borderBottom: '1px solid #e5e7eb',
+                padding: '10px 8px',
+                textAlign: 'center',
+                fontWeight: 900,
+                color: '#166534',
+              }}
+            >
+              Hål {score.holeNumber}
+            </div>
+
+            <div
+              style={{
+                padding: 10,
+                display: 'grid',
+                gap: 10,
+                textAlign: 'center',
+              }}
+            >
+              <div>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                  Par
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 800 }}>{score.par}</div>
+              </div>
+
+              <div>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                  Res
+                </div>
+                {score.strokes == null ? (
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#94a3b8' }}>-</div>
+                ) : (
+                  <span style={markerStyle(score.marker)}>{score.strokes}</span>
+                )}
+              </div>
+
+              {showPoints ? (
+                <div>
+                  <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                    P
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 800 }}>
+                    {pointsPerHole[index] == null ? '-' : pointsPerHole[index]}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ))}
+
+        <div
           style={{
-            width: '100%',
-            minWidth: 560,
-            borderCollapse: 'separate',
-            borderSpacing: 0,
-            fontSize: 14,
+            border: '1px solid #bbf7d0',
+            borderRadius: 16,
+            background: '#f0fdf4',
+            overflow: 'hidden',
+            minWidth: 0,
           }}
         >
-          <thead>
-            <tr style={{ background: '#f8fbf7' }}>
-              <th
-                style={{
-                  position: 'sticky',
-                  left: 0,
-                  zIndex: 2,
-                  background: '#f8fbf7',
-                  textAlign: 'left',
-                  padding: '12px 12px',
-                  fontWeight: 800,
-                  borderBottom: '1px solid #e5e7eb',
-                }}
-              >
-                Hål
-              </th>
+          <div
+            style={{
+              background: '#166534',
+              color: '#ffffff',
+              padding: '10px 8px',
+              textAlign: 'center',
+              fontWeight: 900,
+            }}
+          >
+            {totalLabel}
+          </div>
 
-              {scores.map((score) => (
-                <th
-                  key={`hole-${score.holeNumber}`}
-                  style={{
-                    padding: '12px 10px',
-                    textAlign: 'center',
-                    fontWeight: 800,
-                    borderBottom: '1px solid #e5e7eb',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {score.holeNumber}
-                </th>
-              ))}
-
-              <th
-                style={{
-                  padding: '12px 12px',
-                  textAlign: 'center',
-                  fontWeight: 900,
-                  color: '#166534',
-                  borderBottom: '1px solid #e5e7eb',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Σ
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr>
-              <td
-                style={{
-                  position: 'sticky',
-                  left: 0,
-                  zIndex: 1,
-                  background: '#fff',
-                  padding: '12px 12px',
-                  fontWeight: 700,
-                  borderBottom: '1px solid #f1f5f9',
-                }}
-              >
+          <div
+            style={{
+              padding: 10,
+              display: 'grid',
+              gap: 10,
+              textAlign: 'center',
+            }}
+          >
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
                 Par
-              </td>
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 900 }}>{parTotal}</div>
+            </div>
 
-              {scores.map((score) => (
-                <td
-                  key={`par-${score.holeNumber}`}
-                  style={{
-                    padding: '12px 10px',
-                    textAlign: 'center',
-                    borderBottom: '1px solid #f1f5f9',
-                    color: '#334155',
-                  }}
-                >
-                  {score.par}
-                </td>
-              ))}
-
-              <td
-                style={{
-                  padding: '12px 12px',
-                  textAlign: 'center',
-                  fontWeight: 900,
-                  borderBottom: '1px solid #f1f5f9',
-                }}
-              >
-                {parTotal}
-              </td>
-            </tr>
-
-            <tr>
-              <td
-                style={{
-                  position: 'sticky',
-                  left: 0,
-                  zIndex: 1,
-                  background: '#fff',
-                  padding: '12px 12px',
-                  fontWeight: 700,
-                  borderBottom: '1px solid #f1f5f9',
-                }}
-              >
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
                 Res
-              </td>
-
-              {scores.map((score) => (
-                <td
-                  key={`res-${score.holeNumber}`}
-                  style={{
-                    padding: '12px 10px',
-                    textAlign: 'center',
-                    borderBottom: '1px solid #f1f5f9',
-                  }}
-                >
-                  {score.strokes == null ? (
-                    <span style={{ color: '#94a3b8', fontWeight: 700 }}>-</span>
-                  ) : (
-                    <span style={markerStyle(score.marker)}>{score.strokes}</span>
-                  )}
-                </td>
-              ))}
-
-              <td
-                style={{
-                  padding: '12px 12px',
-                  textAlign: 'center',
-                  fontWeight: 900,
-                  fontSize: 18,
-                  borderBottom: '1px solid #f1f5f9',
-                }}
-              >
-                {strokesTotal}
-              </td>
-            </tr>
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 900 }}>{strokesTotal}</div>
+            </div>
 
             {showPoints ? (
-              <tr>
-                <td
-                  style={{
-                    position: 'sticky',
-                    left: 0,
-                    zIndex: 1,
-                    background: '#fff',
-                    padding: '12px 12px',
-                    fontWeight: 700,
-                    borderBottom: '1px solid #f1f5f9',
-                  }}
-                >
+              <div>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
                   P
-                </td>
-
-                {pointsPerHole.map((points, index) => (
-                  <td
-                    key={`points-${scores[index].holeNumber}`}
-                    style={{
-                      padding: '12px 10px',
-                      textAlign: 'center',
-                      borderBottom: '1px solid #f1f5f9',
-                      fontWeight: 700,
-                    }}
-                  >
-                    {points == null ? (
-                      <span style={{ color: '#94a3b8' }}>-</span>
-                    ) : (
-                      points
-                    )}
-                  </td>
-                ))}
-
-                <td
-                  style={{
-                    padding: '12px 12px',
-                    textAlign: 'center',
-                    fontWeight: 900,
-                    fontSize: 18,
-                    borderBottom: '1px solid #f1f5f9',
-                  }}
-                >
-                  {pointsTotal}
-                </td>
-              </tr>
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 900 }}>{pointsTotal}</div>
+              </div>
             ) : null}
-          </tbody>
-        </table>
-      </div>
-
-      <div
-        className="muted"
-        style={{
-          fontSize: 12,
-          marginTop: 8,
-        }}
-      >
-        Scrolla i sidled i tabellen för alla hål på mobil.
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -1006,7 +920,7 @@ export default async function SummaryPage({
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(76px, 1fr))',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))',
                       gap: 10,
                     }}
                   >
