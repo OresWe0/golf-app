@@ -83,6 +83,7 @@ export function HolePlay({
     setPreviewHoleNumber(hole.hole_number)
     setHoleImageError(false)
     hasUserChangedScoreRef.current = false
+    setSavedFlash(false)
 
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current)
@@ -196,7 +197,7 @@ export function HolePlay({
   }
 
   const setScore = (playerId: string, score: number) => {
-    if (typeof window !== 'undefined' && navigator.vibrate) {
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
       navigator.vibrate(10)
     }
 
@@ -208,46 +209,45 @@ export function HolePlay({
   }
 
   const getLabel = (diff: number) => {
-    if (diff === 0) return 'Par'
-    if (diff === -1) return 'Birdie'
-    if (diff === -2) return 'Eagle'
     if (diff <= -3) return 'Albatross'
+    if (diff === -2) return 'Eagle'
+    if (diff === -1) return 'Birdie'
+    if (diff === 0) return 'Par'
     if (diff === 1) return 'Bogey'
-    if (diff >= 2) return 'Double+'
-    return ''
+    return 'Double+'
   }
 
-  const getScoreButtonStyle = (score: number, isSelected: boolean) => {
+  const getScoreTone = (score: number) => {
     const diff = score - hole.par
 
-    if (isSelected) {
-      if (diff <= -1) {
-        return {
-          background: '#dcfce7',
-          border: '2px solid #22c55e',
-          color: '#166534',
-        }
-      }
-
-      if (diff === 0) {
-        return {
-          background: '#f8fafc',
-          border: '2px solid #94a3b8',
-          color: '#0f172a',
-        }
-      }
-
+    if (diff <= -1) {
       return {
-        background: '#fee2e2',
-        border: '2px solid #f87171',
-        color: '#991b1b',
+        background: '#f0fdf4',
+        border: '1px solid #86efac',
+        color: '#166534',
+      }
+    }
+
+    if (diff === 0) {
+      return {
+        background: '#f8fafc',
+        border: '1px solid #cbd5e1',
+        color: '#0f172a',
+      }
+    }
+
+    if (diff === 1) {
+      return {
+        background: '#fff7ed',
+        border: '1px solid #fdba74',
+        color: '#9a3412',
       }
     }
 
     return {
-      background: '#ffffff',
-      border: '1px solid #d1d5db',
-      color: '#0f172a',
+      background: '#fef2f2',
+      border: '1px solid #fca5a5',
+      color: '#991b1b',
     }
   }
 
@@ -318,7 +318,7 @@ export function HolePlay({
         style={{
           paddingBottom: 120,
           display: 'grid',
-          gap: 16,
+          gap: 14,
         }}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
@@ -361,7 +361,7 @@ export function HolePlay({
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)',
+              gridTemplateColumns: 'minmax(0, 1.15fr) minmax(0, 0.95fr)',
               gap: 12,
             }}
           >
@@ -380,12 +380,12 @@ export function HolePlay({
                   color: '#166534',
                   letterSpacing: 0.5,
                   textTransform: 'uppercase',
-                  marginBottom: 8,
+                  marginBottom: 6,
                 }}
               >
                 Hål
               </div>
-              <div style={{ fontSize: 52, lineHeight: 1, fontWeight: 900 }}>
+              <div style={{ fontSize: 56, lineHeight: 1, fontWeight: 900 }}>
                 {hole.hole_number}
               </div>
               <div className="muted" style={{ marginTop: 8 }}>
@@ -400,15 +400,16 @@ export function HolePlay({
                 border: '1px solid #d1d5db',
                 padding: 16,
                 display: 'grid',
-                gap: 14,
-                alignContent: 'space-between',
+                gap: 12,
+                alignContent: 'center',
               }}
             >
               <div
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
-                  gap: 12,
+                  gap: 10,
+                  alignItems: 'baseline',
                 }}
               >
                 <div className="muted">Par</div>
@@ -419,7 +420,8 @@ export function HolePlay({
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
-                  gap: 12,
+                  gap: 10,
+                  alignItems: 'baseline',
                 }}
               >
                 <div className="muted">Index</div>
@@ -434,8 +436,8 @@ export function HolePlay({
             style={{
               border: 'none',
               borderRadius: 20,
-              padding: '18px 20px',
-              background: '#3fb950',
+              padding: '16px 18px',
+              background: '#4dbd4a',
               color: '#fff',
               fontSize: 18,
               fontWeight: 900,
@@ -446,10 +448,11 @@ export function HolePlay({
           </button>
         </div>
 
-        <div style={{ display: 'grid', gap: 16 }}>
+        <div style={{ display: 'grid', gap: 14 }}>
           {players.map((player, index) => {
             const playerId = String(player.id)
             const selectedValue = values[playerId]
+            const selectedScore = selectedValue ? Number(selectedValue) : null
             const received = receivedStrokesOnHole(
               player.playing_handicap ?? 0,
               hole.hcp_index,
@@ -466,7 +469,7 @@ export function HolePlay({
                   background: '#ffffff',
                   padding: 16,
                   display: 'grid',
-                  gap: 16,
+                  gap: 14,
                 }}
               >
                 <div
@@ -493,7 +496,16 @@ export function HolePlay({
                     <div className="muted" style={{ marginTop: 4, lineHeight: 1.35 }}>
                       HCP {player.exact_handicap ?? '-'} · Spel-HCP{' '}
                       {player.playing_handicap ?? 0}
-                      <br />
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 4,
+                        color: '#475569',
+                        fontWeight: 700,
+                        fontSize: 15,
+                      }}
+                    >
                       Erhållna slag: {received}
                     </div>
                   </div>
@@ -514,7 +526,7 @@ export function HolePlay({
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))',
+                    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
                     gap: 10,
                   }}
                 >
@@ -522,7 +534,7 @@ export function HolePlay({
                     const diff = score - hole.par
                     const label = getLabel(diff)
                     const isSelected = selectedValue === String(score)
-                    const styles = getScoreButtonStyle(score, isSelected)
+                    const tone = getScoreTone(score)
 
                     return (
                       <button
@@ -530,20 +542,40 @@ export function HolePlay({
                         type="button"
                         onClick={() => setScore(playerId, score)}
                         style={{
-                          borderRadius: 22,
-                          padding: '18px 10px',
+                          borderRadius: 20,
+                          padding: '16px 8px',
                           cursor: 'pointer',
-                          minHeight: 110,
+                          minHeight: 92,
                           display: 'grid',
                           placeItems: 'center',
-                          gap: 6,
-                          fontWeight: 900,
-                          ...styles,
+                          gap: 4,
+                          background: isSelected ? tone.background : '#fff',
+                          border: isSelected ? `2px solid ${tone.border.split(' ').pop()}` : '1px solid #d1d5db',
+                          color: isSelected ? tone.color : '#0f172a',
+                          boxShadow: isSelected
+                            ? '0 8px 20px rgba(15, 23, 42, 0.08)'
+                            : 'none',
+                          transform: isSelected ? 'translateY(-1px)' : 'none',
                         }}
                       >
-                        <div style={{ fontSize: 18 }}>{score}</div>
-                        <div style={{ fontSize: 13, opacity: label ? 1 : 0.55 }}>
-                          {label || ' '}
+                        <div
+                          style={{
+                            fontSize: 18,
+                            fontWeight: 900,
+                            lineHeight: 1,
+                          }}
+                        >
+                          {score}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 800,
+                            textAlign: 'center',
+                            opacity: isSelected ? 1 : 0.9,
+                          }}
+                        >
+                          {label}
                         </div>
                       </button>
                     )
@@ -555,22 +587,40 @@ export function HolePlay({
                     display: 'grid',
                     gridTemplateColumns: '1fr auto',
                     gap: 12,
-                    alignItems: 'center',
+                    alignItems: 'stretch',
                   }}
                 >
                   <div
                     style={{
-                      border: '1px solid #e5e7eb',
-                      borderRadius: 16,
+                      border: selectedScore == null ? '1px solid #e5e7eb' : '2px solid #bbf7d0',
+                      borderRadius: 18,
                       padding: '12px 14px',
-                      background: '#f8fafc',
+                      background: selectedScore == null ? '#f8fafc' : '#f0fdf4',
+                      display: 'grid',
+                      gap: 4,
                     }}
                   >
-                    <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
+                    <div className="muted" style={{ fontSize: 13 }}>
                       Vald score
                     </div>
-                    <div style={{ fontSize: 24, fontWeight: 900 }}>
-                      {selectedValue || '-'}
+                    <div
+                      style={{
+                        fontSize: 30,
+                        fontWeight: 900,
+                        lineHeight: 1,
+                        color: selectedScore == null ? '#0f172a' : '#166534',
+                      }}
+                    >
+                      {selectedScore ?? '-'}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: selectedScore == null ? '#64748b' : '#166534',
+                      }}
+                    >
+                      {selectedScore == null ? 'Välj antal slag' : `${getLabel(selectedScore - hole.par)}`}
                     </div>
                   </div>
 
@@ -583,8 +633,9 @@ export function HolePlay({
                     style={{
                       border: '1px solid #d1d5db',
                       background: '#fff',
-                      borderRadius: 14,
-                      padding: '12px 14px',
+                      borderRadius: 18,
+                      padding: '0 16px',
+                      minWidth: 86,
                       fontWeight: 800,
                       cursor: 'pointer',
                     }}
@@ -612,7 +663,7 @@ export function HolePlay({
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '110px 1fr',
+              gridTemplateColumns: '96px 1fr',
               gap: 12,
               maxWidth: 960,
               margin: '0 auto',
@@ -623,8 +674,8 @@ export function HolePlay({
               onClick={goPrevious}
               style={{
                 border: 'none',
-                borderRadius: 24,
-                minHeight: 72,
+                borderRadius: 22,
+                minHeight: 68,
                 background: '#1f6f32',
                 color: '#fff',
                 fontSize: 28,
@@ -641,8 +692,8 @@ export function HolePlay({
               disabled={loading || !allPlayersHaveScores(values)}
               style={{
                 border: 'none',
-                borderRadius: 24,
-                minHeight: 72,
+                borderRadius: 22,
+                minHeight: 68,
                 background:
                   loading || !allPlayersHaveScores(values) ? '#94a3b8' : '#166534',
                 color: '#fff',
