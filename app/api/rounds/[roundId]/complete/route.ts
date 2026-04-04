@@ -3,9 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ roundId: string }> }
 ) {
-  const { id } = await params
+  const { roundId } = await params
   const supabase = await createClient()
 
   const {
@@ -19,7 +19,7 @@ export async function POST(
   const { error } = await supabase
     .from('rounds')
     .update({ status: 'completed' })
-    .eq('id', id)
+    .eq('id', roundId)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 })
