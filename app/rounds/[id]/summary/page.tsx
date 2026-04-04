@@ -155,6 +155,13 @@ function ScoreTable({
 
   const showPoints = scoringMode === 'stableford'
 
+  const stickyBase: CSSProperties = {
+    position: 'sticky',
+    left: 0,
+    zIndex: 2,
+    boxShadow: '10px 0 14px -14px rgba(15, 23, 42, 0.18)',
+  }
+
   return (
     <div
       style={{
@@ -162,7 +169,7 @@ function ScoreTable({
         borderRadius: 18,
         overflow: 'hidden',
         background: '#fff',
-        boxShadow: '0 6px 18px rgba(15, 23, 42, 0.04)',
+        boxShadow: '0 8px 22px rgba(15, 23, 42, 0.04)',
       }}
     >
       <div
@@ -208,6 +215,7 @@ function ScoreTable({
           style={{
             overflowX: 'auto',
             WebkitOverflowScrolling: 'touch',
+            scrollBehavior: 'smooth',
           }}
         >
           <table
@@ -222,15 +230,13 @@ function ScoreTable({
               <tr style={{ background: '#f8fbf7' }}>
                 <th
                   style={{
+                    ...stickyBase,
                     textAlign: 'left',
                     padding: '12px 14px',
                     fontSize: 16,
                     fontWeight: 900,
                     whiteSpace: 'nowrap',
-                    position: 'sticky',
-                    left: 0,
                     background: '#f8fbf7',
-                    zIndex: 2,
                   }}
                 >
                   Hål
@@ -257,6 +263,7 @@ function ScoreTable({
                     fontWeight: 900,
                     whiteSpace: 'nowrap',
                     color: '#166534',
+                    background: '#ecfdf3',
                   }}
                 >
                   {totalLabel}
@@ -266,14 +273,12 @@ function ScoreTable({
               <tr>
                 <td
                   style={{
-                    padding: '12px 14px',
+                    ...stickyBase,
+                    padding: '11px 14px',
                     fontWeight: 700,
                     whiteSpace: 'nowrap',
                     borderTop: '1px solid #e5e7eb',
-                    position: 'sticky',
-                    left: 0,
                     background: '#ffffff',
-                    zIndex: 1,
                     color: '#64748b',
                   }}
                 >
@@ -283,7 +288,7 @@ function ScoreTable({
                   <td
                     key={`hcp-${score.holeNumber}`}
                     style={{
-                      padding: '12px 8px',
+                      padding: '11px 8px',
                       textAlign: 'center',
                       color: '#64748b',
                       borderTop: '1px solid #e5e7eb',
@@ -294,11 +299,12 @@ function ScoreTable({
                 ))}
                 <td
                   style={{
-                    padding: '12px 10px',
+                    padding: '11px 10px',
                     textAlign: 'center',
                     color: '#94a3b8',
                     borderTop: '1px solid #e5e7eb',
                     fontWeight: 700,
+                    background: '#fafafa',
                   }}
                 >
                   —
@@ -308,14 +314,12 @@ function ScoreTable({
               <tr style={{ background: '#fcfcfc' }}>
                 <td
                   style={{
-                    padding: '12px 14px',
+                    ...stickyBase,
+                    padding: '11px 14px',
                     fontWeight: 700,
                     whiteSpace: 'nowrap',
                     borderTop: '1px solid #e5e7eb',
-                    position: 'sticky',
-                    left: 0,
                     background: '#fcfcfc',
-                    zIndex: 1,
                     color: '#475569',
                   }}
                 >
@@ -325,7 +329,7 @@ function ScoreTable({
                   <td
                     key={`par-${score.holeNumber}`}
                     style={{
-                      padding: '12px 8px',
+                      padding: '11px 8px',
                       textAlign: 'center',
                       color: '#334155',
                       borderTop: '1px solid #e5e7eb',
@@ -336,7 +340,7 @@ function ScoreTable({
                 ))}
                 <td
                   style={{
-                    padding: '12px 10px',
+                    padding: '11px 10px',
                     textAlign: 'center',
                     fontWeight: 900,
                     borderTop: '1px solid #e5e7eb',
@@ -351,15 +355,14 @@ function ScoreTable({
               <tr style={{ background: '#ffffff' }}>
                 <td
                   style={{
+                    ...stickyBase,
                     padding: '12px 14px',
                     fontWeight: 900,
                     whiteSpace: 'nowrap',
                     borderTop: '2px solid #d1fae5',
-                    position: 'sticky',
-                    left: 0,
                     background: '#ffffff',
-                    zIndex: 1,
                     color: '#0f172a',
+                    fontSize: 16,
                   }}
                 >
                   Resultat
@@ -368,9 +371,10 @@ function ScoreTable({
                   <td
                     key={`res-${score.holeNumber}`}
                     style={{
-                      padding: '10px 8px',
+                      padding: '12px 8px',
                       textAlign: 'center',
                       borderTop: '2px solid #d1fae5',
+                      fontWeight: 800,
                     }}
                   >
                     {score.strokes == null ? (
@@ -385,7 +389,7 @@ function ScoreTable({
                     padding: '12px 10px',
                     textAlign: 'center',
                     fontWeight: 900,
-                    fontSize: 20,
+                    fontSize: 22,
                     borderTop: '2px solid #d1fae5',
                     background: '#f0fdf4',
                     color: '#166534',
@@ -399,15 +403,14 @@ function ScoreTable({
                 <tr style={{ background: '#f7fbff' }}>
                   <td
                     style={{
+                      ...stickyBase,
                       padding: '12px 14px',
                       fontWeight: 800,
                       whiteSpace: 'nowrap',
                       borderTop: '1px solid #dbeafe',
-                      position: 'sticky',
-                      left: 0,
                       background: '#f7fbff',
-                      zIndex: 1,
                       color: '#0f172a',
+                      fontSize: 16,
                     }}
                   >
                     Poäng
@@ -435,7 +438,7 @@ function ScoreTable({
                       padding: '12px 10px',
                       textAlign: 'center',
                       fontWeight: 900,
-                      fontSize: 20,
+                      fontSize: 22,
                       borderTop: '1px solid #dbeafe',
                       background: '#eff6ff',
                       color: '#1d4ed8',
@@ -458,7 +461,7 @@ function ScoreTable({
             width: 18,
             pointerEvents: 'none',
             background:
-              'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.95) 100%)',
+              'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.96) 100%)',
           }}
         />
       </div>
@@ -613,13 +616,13 @@ export default async function SummaryPage({
         <div
           style={{
             display: 'grid',
-            gap: 14,
-            marginBottom: 16,
+            gap: 12,
+            marginBottom: 14,
           }}
         >
           <div>
             <h1 style={{ marginBottom: 6 }}>{round.title}</h1>
-            <p className="muted" style={{ margin: 0, fontSize: 18, lineHeight: 1.4 }}>
+            <p className="muted" style={{ margin: 0, fontSize: 18, lineHeight: 1.35 }}>
               {course.name} · {roundTypeLabel} · {holesLabel}
             </p>
           </div>
@@ -636,7 +639,7 @@ export default async function SummaryPage({
               href={`/rounds/${id}?hole=${returnHole}`}
               style={{
                 width: '100%',
-                minHeight: 52,
+                minHeight: 50,
                 fontSize: 17,
                 fontWeight: 800,
               }}
@@ -649,7 +652,7 @@ export default async function SummaryPage({
               href="/dashboard"
               style={{
                 width: '100%',
-                minHeight: 52,
+                minHeight: 50,
                 fontSize: 17,
                 fontWeight: 800,
               }}
@@ -663,7 +666,7 @@ export default async function SummaryPage({
           <div
             className="card"
             style={{
-              marginBottom: 16,
+              marginBottom: 14,
               border: '2px solid #bbf7d0',
               background: 'linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%)',
             }}
@@ -675,7 +678,7 @@ export default async function SummaryPage({
                 gap: 12,
                 alignItems: 'flex-start',
                 flexWrap: 'wrap',
-                marginBottom: 12,
+                marginBottom: 10,
               }}
             >
               <div
@@ -711,7 +714,7 @@ export default async function SummaryPage({
 
             <div
               style={{
-                fontSize: 34,
+                fontSize: 32,
                 fontWeight: 900,
                 lineHeight: 1.05,
                 marginBottom: 8,
@@ -721,7 +724,7 @@ export default async function SummaryPage({
               {winner.name}
             </div>
 
-            <div className="muted" style={{ marginBottom: 14 }}>
+            <div className="muted" style={{ marginBottom: 12 }}>
               {winner.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Exakt HCP{' '}
               {winner.exactHandicap ?? '-'} · Spel-HCP {winner.playingHandicap ?? 0}
             </div>
@@ -784,7 +787,7 @@ export default async function SummaryPage({
           </div>
         ) : null}
 
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card" style={{ marginBottom: 14 }}>
           <div
             style={{
               display: 'flex',
@@ -792,7 +795,7 @@ export default async function SummaryPage({
               gap: 12,
               alignItems: 'center',
               flexWrap: 'wrap',
-              marginBottom: 14,
+              marginBottom: 12,
             }}
           >
             <h2 style={{ margin: 0 }}>Leaderboard</h2>
@@ -938,7 +941,7 @@ export default async function SummaryPage({
 
         {selectedPlayer ? (
           <div className="card">
-            <div style={{ marginBottom: 14 }}>
+            <div style={{ marginBottom: 12 }}>
               <h2 style={{ marginTop: 0, marginBottom: 8 }}>Scorekort</h2>
 
               <div
@@ -993,7 +996,7 @@ export default async function SummaryPage({
               >
                 <div
                   style={{
-                    fontSize: 30,
+                    fontSize: 28,
                     fontWeight: 900,
                     lineHeight: 1.05,
                     marginBottom: 6,
@@ -1085,7 +1088,7 @@ export default async function SummaryPage({
                 </div>
               </div>
 
-              <div style={{ padding: 14, display: 'grid', gap: 14 }}>
+              <div style={{ padding: 14, display: 'grid', gap: 12 }}>
                 <ScoreTable
                   title="Främre 9"
                   holes={firstHalf}
