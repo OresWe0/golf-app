@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { receivedStrokesOnHole } from '@/lib/scoring'
@@ -536,6 +538,8 @@ export function HolePlay({
                     const label = getLabel(score, hole.par)
                     const isSelected = selectedValue === String(score)
                     const tone = getScoreTone(score)
+                    const selectedBorderColor =
+                      tone.border.split(' ').pop() ?? '#d1d5db'
 
                     return (
                       <button
@@ -552,7 +556,7 @@ export function HolePlay({
                           gap: 4,
                           background: isSelected ? tone.background : '#fff',
                           border: isSelected
-                            ? `2px solid ${tone.border.split(' ').pop()}`
+                            ? `2px solid ${selectedBorderColor}`
                             : '1px solid #d1d5db',
                           color: isSelected ? tone.color : '#0f172a',
                           boxShadow: isSelected
@@ -596,7 +600,10 @@ export function HolePlay({
                 >
                   <div
                     style={{
-                      border: selectedScore == null ? '1px solid #d1d5db' : '2px solid #86efac',
+                      border:
+                        selectedScore == null
+                          ? '1px solid #d1d5db'
+                          : '2px solid #86efac',
                       borderRadius: 18,
                       padding: '12px 14px',
                       background: selectedScore == null ? '#f8fafc' : '#f0fdf4',
@@ -714,14 +721,16 @@ export function HolePlay({
                 fontSize: 18,
                 fontWeight: 900,
                 cursor:
-                  loading || !allPlayersHaveScores(values) ? 'not-allowed' : 'pointer',
+                  loading || !allPlayersHaveScores(values)
+                    ? 'not-allowed'
+                    : 'pointer',
               }}
             >
               {loading
                 ? 'Sparar...'
                 : currentHole === endHole
-                ? 'Avsluta runda →'
-                : 'Nästa hål →'}
+                  ? 'Avsluta runda →'
+                  : 'Nästa hål →'}
             </button>
           </div>
         </div>
