@@ -45,13 +45,13 @@ function getScoreMarker(strokes: number | null, par: number) {
 
 function markerStyle(marker: string | null): CSSProperties {
   const base: CSSProperties = {
-    width: 34,
-    height: 34,
+    width: 32,
+    height: 32,
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontWeight: 800,
-    fontSize: 16,
+    fontSize: 15,
     background: '#fff',
     margin: '0 auto',
     flexShrink: 0,
@@ -172,14 +172,14 @@ function SummaryTableSection({
         style={{
           overflowX: 'auto',
           border: '1px solid #dbe4dd',
-          borderRadius: 20,
+          borderRadius: 18,
           background: '#fff',
         }}
       >
         <table
           style={{
             width: '100%',
-            minWidth: 720,
+            minWidth: 560,
             borderCollapse: 'separate',
             borderSpacing: 0,
             fontSize: 14,
@@ -194,7 +194,7 @@ function SummaryTableSection({
                   zIndex: 2,
                   background: '#f8fbf7',
                   textAlign: 'left',
-                  padding: '12px 14px',
+                  padding: '12px 12px',
                   fontWeight: 800,
                   borderBottom: '1px solid #e5e7eb',
                 }}
@@ -219,7 +219,7 @@ function SummaryTableSection({
 
               <th
                 style={{
-                  padding: '12px 14px',
+                  padding: '12px 12px',
                   textAlign: 'center',
                   fontWeight: 900,
                   color: '#166534',
@@ -227,7 +227,7 @@ function SummaryTableSection({
                   whiteSpace: 'nowrap',
                 }}
               >
-                {totalLabel}
+                Σ
               </th>
             </tr>
           </thead>
@@ -240,7 +240,7 @@ function SummaryTableSection({
                   left: 0,
                   zIndex: 1,
                   background: '#fff',
-                  padding: '12px 14px',
+                  padding: '12px 12px',
                   fontWeight: 700,
                   borderBottom: '1px solid #f1f5f9',
                 }}
@@ -264,7 +264,7 @@ function SummaryTableSection({
 
               <td
                 style={{
-                  padding: '12px 14px',
+                  padding: '12px 12px',
                   textAlign: 'center',
                   fontWeight: 900,
                   borderBottom: '1px solid #f1f5f9',
@@ -281,12 +281,12 @@ function SummaryTableSection({
                   left: 0,
                   zIndex: 1,
                   background: '#fff',
-                  padding: '12px 14px',
+                  padding: '12px 12px',
                   fontWeight: 700,
                   borderBottom: '1px solid #f1f5f9',
                 }}
               >
-                Resultat
+                Res
               </td>
 
               {scores.map((score) => (
@@ -299,14 +299,7 @@ function SummaryTableSection({
                   }}
                 >
                   {score.strokes == null ? (
-                    <span
-                      style={{
-                        color: '#94a3b8',
-                        fontWeight: 700,
-                      }}
-                    >
-                      -
-                    </span>
+                    <span style={{ color: '#94a3b8', fontWeight: 700 }}>-</span>
                   ) : (
                     <span style={markerStyle(score.marker)}>{score.strokes}</span>
                   )}
@@ -315,7 +308,7 @@ function SummaryTableSection({
 
               <td
                 style={{
-                  padding: '12px 14px',
+                  padding: '12px 12px',
                   textAlign: 'center',
                   fontWeight: 900,
                   fontSize: 18,
@@ -334,12 +327,12 @@ function SummaryTableSection({
                     left: 0,
                     zIndex: 1,
                     background: '#fff',
-                    padding: '12px 14px',
+                    padding: '12px 12px',
                     fontWeight: 700,
                     borderBottom: '1px solid #f1f5f9',
                   }}
                 >
-                  Poäng
+                  P
                 </td>
 
                 {pointsPerHole.map((points, index) => (
@@ -362,7 +355,7 @@ function SummaryTableSection({
 
                 <td
                   style={{
-                    padding: '12px 14px',
+                    padding: '12px 12px',
                     textAlign: 'center',
                     fontWeight: 900,
                     fontSize: 18,
@@ -375,6 +368,16 @@ function SummaryTableSection({
             ) : null}
           </tbody>
         </table>
+      </div>
+
+      <div
+        className="muted"
+        style={{
+          fontSize: 12,
+          marginTop: 8,
+        }}
+      >
+        Scrolla i sidled i tabellen för alla hål på mobil.
       </div>
     </div>
   )
@@ -582,7 +585,7 @@ export default async function SummaryPage({
               boxShadow: '0 10px 30px rgba(22, 101, 52, 0.08)',
             }}
           >
-            <div style={{ display: 'grid', gap: 16 }}>
+            <div style={{ display: 'grid', gap: 14 }}>
               <div
                 style={{
                   display: 'flex',
@@ -626,7 +629,7 @@ export default async function SummaryPage({
               <div>
                 <div
                   style={{
-                    fontSize: 38,
+                    fontSize: 34,
                     fontWeight: 900,
                     lineHeight: 1.05,
                     color: '#0f172a',
@@ -646,8 +649,8 @@ export default async function SummaryPage({
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                  gap: 12,
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                  gap: 10,
                 }}
               >
                 <div
@@ -658,19 +661,10 @@ export default async function SummaryPage({
                     padding: 14,
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: '#64748b',
-                      fontWeight: 800,
-                      textTransform: 'uppercase',
-                      letterSpacing: 0.5,
-                      marginBottom: 6,
-                    }}
-                  >
-                    Resultat
+                  <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                    RESULTAT
                   </div>
-                  <div style={{ fontSize: 26, fontWeight: 900 }}>
+                  <div style={{ fontSize: 24, fontWeight: 900 }}>
                     {round.scoring_mode === 'stableford'
                       ? `${winner.points} p`
                       : `${winner.strokes} slag`}
@@ -685,19 +679,10 @@ export default async function SummaryPage({
                     padding: 14,
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: '#64748b',
-                      fontWeight: 800,
-                      textTransform: 'uppercase',
-                      letterSpacing: 0.5,
-                      marginBottom: 6,
-                    }}
-                  >
-                    Mot par
+                  <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                    MOT PAR
                   </div>
-                  <div style={{ fontSize: 26, fontWeight: 900 }}>
+                  <div style={{ fontSize: 24, fontWeight: 900 }}>
                     {formatVsPar(winner.vsPar)}
                   </div>
                 </div>
@@ -710,19 +695,10 @@ export default async function SummaryPage({
                     padding: 14,
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: '#64748b',
-                      fontWeight: 800,
-                      textTransform: 'uppercase',
-                      letterSpacing: 0.5,
-                      marginBottom: 6,
-                    }}
-                  >
-                    Position
+                  <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                    POSITION
                   </div>
-                  <div style={{ fontSize: 26, fontWeight: 900 }}>1</div>
+                  <div style={{ fontSize: 24, fontWeight: 900 }}>1</div>
                 </div>
               </div>
             </div>
@@ -769,11 +745,6 @@ export default async function SummaryPage({
                 <div
                   key={player.id}
                   style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'auto 1fr auto',
-                    gap: 12,
-                    alignItems: 'center',
-                    padding: index === 0 ? '16px' : '14px',
                     borderRadius: 18,
                     border: index === 0 ? '2px solid #86efac' : '1px solid #e5e7eb',
                     background:
@@ -782,165 +753,154 @@ export default async function SummaryPage({
                         : '#ffffff',
                     boxShadow:
                       index === 0 ? '0 8px 24px rgba(22, 101, 52, 0.08)' : 'none',
+                    padding: 14,
+                    display: 'grid',
+                    gap: 12,
                   }}
                 >
                   <div
                     style={{
-                      width: 46,
-                      height: 46,
-                      borderRadius: 999,
                       display: 'flex',
+                      gap: 12,
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      background:
-                        index === 0 ? '#166534' : index < 3 ? '#f3f4f6' : '#f8fafc',
-                      color: index === 0 ? '#ffffff' : '#0f172a',
-                      fontWeight: 900,
-                      fontSize: 18,
-                      flexShrink: 0,
+                      flexWrap: 'wrap',
                     }}
                   >
-                    {medal ?? index + 1}
-                  </div>
-
-                  <div style={{ minWidth: 0 }}>
                     <div
                       style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: 999,
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 8,
-                        flexWrap: 'wrap',
-                        marginBottom: 4,
+                        justifyContent: 'center',
+                        background:
+                          index === 0 ? '#166534' : index < 3 ? '#f3f4f6' : '#f8fafc',
+                        color: index === 0 ? '#ffffff' : '#0f172a',
+                        fontWeight: 900,
+                        fontSize: 18,
+                        flexShrink: 0,
                       }}
                     >
+                      {medal ?? index + 1}
+                    </div>
+
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          flexWrap: 'wrap',
+                          marginBottom: 4,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: index === 0 ? 24 : 20,
+                            fontWeight: 900,
+                            lineHeight: 1.1,
+                            color: '#0f172a',
+                            wordBreak: 'break-word',
+                          }}
+                        >
+                          {player.name}
+                        </div>
+
+                        {index === 0 ? (
+                          <span
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: 999,
+                              background: '#dcfce7',
+                              color: '#166534',
+                              fontSize: 12,
+                              fontWeight: 800,
+                            }}
+                          >
+                            Leder
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div className="muted" style={{ fontSize: 14, lineHeight: 1.4 }}>
+                        {player.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Exakt HCP{' '}
+                        {player.exactHandicap ?? '-'} · Spel-HCP {player.playingHandicap ?? 0}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        minWidth: 90,
+                        textAlign: 'left',
+                      }}
+                    >
+                      <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                        RESULTAT
+                      </div>
                       <div
                         style={{
                           fontSize: index === 0 ? 24 : 20,
                           fontWeight: 900,
-                          lineHeight: 1.1,
-                          color: '#0f172a',
-                          wordBreak: 'break-word',
+                          color: '#166534',
+                          whiteSpace: 'nowrap',
                         }}
                       >
-                        {player.name}
-                      </div>
-
-                      {index === 0 ? (
-                        <span
-                          style={{
-                            padding: '4px 8px',
-                            borderRadius: 999,
-                            background: '#dcfce7',
-                            color: '#166534',
-                            fontSize: 12,
-                            fontWeight: 800,
-                          }}
-                        >
-                          Leder
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <div
-                      className="muted"
-                      style={{
-                        fontSize: 14,
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {player.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Exakt HCP{' '}
-                      {player.exactHandicap ?? '-'} · Spel-HCP {player.playingHandicap ?? 0}
-                    </div>
-
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: 8,
-                        marginTop: 10,
-                      }}
-                    >
-                      <div
-                        style={{
-                          padding: '8px 10px',
-                          borderRadius: 12,
-                          background: '#f8fafc',
-                          border: '1px solid #e5e7eb',
-                          minWidth: 78,
-                        }}
-                      >
-                        <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>
-                          Slag
-                        </div>
-                        <div style={{ fontWeight: 900, fontSize: 18 }}>
-                          {player.strokes}
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          padding: '8px 10px',
-                          borderRadius: 12,
-                          background: '#f8fafc',
-                          border: '1px solid #e5e7eb',
-                          minWidth: 78,
-                        }}
-                      >
-                        <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>
-                          Mot par
-                        </div>
-                        <div style={{ fontWeight: 900, fontSize: 18 }}>
-                          {formatVsPar(player.vsPar)}
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          padding: '8px 10px',
-                          borderRadius: 12,
-                          background:
-                            round.scoring_mode === 'stableford' ? '#eff6ff' : '#f8fafc',
-                          border: '1px solid #e5e7eb',
-                          minWidth: 78,
-                        }}
-                      >
-                        <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>
-                          Poäng
-                        </div>
-                        <div style={{ fontWeight: 900, fontSize: 18 }}>
-                          {player.points}
-                        </div>
+                        {scoreValue}
                       </div>
                     </div>
                   </div>
 
                   <div
                     style={{
-                      textAlign: 'right',
-                      minWidth: 82,
-                      alignSelf: 'center',
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))',
+                      gap: 8,
                     }}
                   >
                     <div
-                      className="muted"
                       style={{
-                        fontSize: 12,
-                        marginBottom: 4,
-                        textTransform: 'uppercase',
-                        letterSpacing: 0.5,
+                        padding: '10px 10px',
+                        borderRadius: 12,
+                        background: '#f8fafc',
+                        border: '1px solid #e5e7eb',
                       }}
                     >
-                      Resultat
+                      <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>
+                        Slag
+                      </div>
+                      <div style={{ fontWeight: 900, fontSize: 18 }}>{player.strokes}</div>
                     </div>
+
                     <div
                       style={{
-                        fontSize: index === 0 ? 24 : 20,
-                        fontWeight: 900,
-                        color: '#166534',
-                        whiteSpace: 'nowrap',
+                        padding: '10px 10px',
+                        borderRadius: 12,
+                        background: '#f8fafc',
+                        border: '1px solid #e5e7eb',
                       }}
                     >
-                      {scoreValue}
+                      <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>
+                        Mot par
+                      </div>
+                      <div style={{ fontWeight: 900, fontSize: 18 }}>
+                        {formatVsPar(player.vsPar)}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        padding: '10px 10px',
+                        borderRadius: 12,
+                        background:
+                          round.scoring_mode === 'stableford' ? '#eff6ff' : '#f8fafc',
+                        border: '1px solid #e5e7eb',
+                      }}
+                    >
+                      <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>
+                        Poäng
+                      </div>
+                      <div style={{ fontWeight: 900, fontSize: 18 }}>{player.points}</div>
                     </div>
                   </div>
                 </div>
@@ -987,9 +947,7 @@ export default async function SummaryPage({
                         flex: '0 0 auto',
                         padding: '10px 14px',
                         borderRadius: 999,
-                        border: isActive
-                          ? '1px solid #166534'
-                          : '1px solid #d1d5db',
+                        border: isActive ? '1px solid #166534' : '1px solid #d1d5db',
                         background: isActive ? '#166534' : '#ffffff',
                         color: isActive ? '#ffffff' : '#0f172a',
                         fontWeight: 800,
@@ -1023,11 +981,8 @@ export default async function SummaryPage({
               >
                 <div
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: 12,
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
+                    display: 'grid',
+                    gap: 14,
                   }}
                 >
                   <div>
@@ -1051,7 +1006,7 @@ export default async function SummaryPage({
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(4, auto)',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(76px, 1fr))',
                       gap: 10,
                     }}
                   >
@@ -1060,9 +1015,8 @@ export default async function SummaryPage({
                         background: '#fff',
                         border: '1px solid #e5e7eb',
                         borderRadius: 14,
-                        padding: '10px 14px',
+                        padding: '10px 12px',
                         textAlign: 'center',
-                        minWidth: 76,
                       }}
                     >
                       <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
@@ -1078,9 +1032,8 @@ export default async function SummaryPage({
                         background: '#fff',
                         border: '1px solid #e5e7eb',
                         borderRadius: 14,
-                        padding: '10px 14px',
+                        padding: '10px 12px',
                         textAlign: 'center',
-                        minWidth: 76,
                       }}
                     >
                       <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
@@ -1096,9 +1049,8 @@ export default async function SummaryPage({
                         background: '#fff',
                         border: '1px solid #e5e7eb',
                         borderRadius: 14,
-                        padding: '10px 14px',
+                        padding: '10px 12px',
                         textAlign: 'center',
-                        minWidth: 76,
                       }}
                     >
                       <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
@@ -1114,9 +1066,8 @@ export default async function SummaryPage({
                         background: '#fff',
                         border: '1px solid #e5e7eb',
                         borderRadius: 14,
-                        padding: '10px 14px',
+                        padding: '10px 12px',
                         textAlign: 'center',
-                        minWidth: 76,
                       }}
                     >
                       <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
@@ -1138,7 +1089,7 @@ export default async function SummaryPage({
                   selectedPlayer={selectedPlayer}
                   visibleHoleCount={visibleHoles.length}
                   scoringMode={round.scoring_mode}
-                  totalLabel="Summa främre"
+                  totalLabel="Summa"
                 />
 
                 {secondHalf.length > 0 ? (
@@ -1149,14 +1100,14 @@ export default async function SummaryPage({
                     selectedPlayer={selectedPlayer}
                     visibleHoleCount={visibleHoles.length}
                     scoringMode={round.scoring_mode}
-                    totalLabel="Summa bakre"
+                    totalLabel="Summa"
                   />
                 ) : null}
 
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
                     gap: 12,
                   }}
                 >
