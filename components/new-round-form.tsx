@@ -60,6 +60,7 @@ export function NewRoundForm({
   const [error, setError] = useState<string | null>(null)
   const [highlightedPlayerIndex, setHighlightedPlayerIndex] = useState<number | null>(null)
   const [recentlyAddedType, setRecentlyAddedType] = useState<'guest' | 'registered' | null>(null)
+  const [recentlyAddedFriendEmail, setRecentlyAddedFriendEmail] = useState<string | null>(null)
 
   const playerRefs = useRef<(HTMLDivElement | null)[]>([])
 
@@ -112,6 +113,14 @@ export function NewRoundForm({
 
     setTimeout(() => {
       setRecentlyAddedType((current) => (current === type ? null : current))
+    }, 1800)
+  }
+
+  const showFriendFeedback = (friendEmail: string) => {
+    setRecentlyAddedFriendEmail(friendEmail)
+
+    setTimeout(() => {
+      setRecentlyAddedFriendEmail((current) => (current === friendEmail ? null : current))
     }, 1800)
   }
 
@@ -204,6 +213,8 @@ export function NewRoundForm({
     const fallbackName = friend.friend_email.split('@')[0] || 'Vän'
     const teeKey: 'yellow' | 'red' =
       friend.friend_default_tee === 'red' ? 'red' : 'yellow'
+
+    showFriendFeedback(friendEmail)
 
     setPlayers((prev) => {
       const newIndex = prev.length
@@ -589,11 +600,11 @@ export function NewRoundForm({
               }}
             >
               {friends.map((friend) => {
+                const friendEmail = friend.friend_email.trim().toLowerCase()
                 const alreadyAdded = players.some(
-                  (player) =>
-                    player.email.trim().toLowerCase() ===
-                    friend.friend_email.trim().toLowerCase()
+                  (player) => player.email.trim().toLowerCase() === friendEmail
                 )
+                const wasJustAdded = recentlyAddedFriendEmail === friendEmail
 
                 return (
                   <button
@@ -605,20 +616,28 @@ export function NewRoundForm({
                       padding: '12px 16px',
                       borderRadius: 999,
                       border: alreadyAdded ? '1px solid #d1d5db' : '1px solid #86efac',
-                      background: alreadyAdded ? '#ecfdf5' : '#ffffff',
+                      background: wasJustAdded ? '#dcfce7' : alreadyAdded ? '#ecfdf5' : '#ffffff',
                       color: '#166534',
                       fontWeight: 800,
                       fontSize: 14,
                       cursor: alreadyAdded ? 'not-allowed' : 'pointer',
-                      boxShadow: alreadyAdded ? 'none' : '0 4px 12px rgba(22, 101, 52, 0.06)',
+                      boxShadow: wasJustAdded
+                        ? '0 0 0 4px rgba(34, 197, 94, 0.12)'
+                        : alreadyAdded
+                        ? 'none'
+                        : '0 4px 12px rgba(22, 101, 52, 0.06)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 6,
+                      transform: wasJustAdded ? 'scale(1.02)' : 'scale(1)',
+                      transition: 'all 0.2s ease',
                     }}
                   >
-                    {alreadyAdded ? '✅' : '➕'}
+                    {wasJustAdded ? '✓' : alreadyAdded ? '✅' : '➕'}
                     <span>
-                      {friend.friend_name?.trim() || friend.friend_email.split('@')[0]}
+                      {wasJustAdded
+                        ? `${friend.friend_name?.trim() || friend.friend_email.split('@')[0]} · Tillagd nu`
+                        : friend.friend_name?.trim() || friend.friend_email.split('@')[0]}
                     </span>
                   </button>
                 )
