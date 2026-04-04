@@ -123,10 +123,10 @@ function SummaryTableSection({
     )
   })
 
-  const pointsTotal = pointsPerHole.reduce<number>(
-  (sum, points) => sum + (points ?? 0),
-  0
-)
+  const pointsTotal = pointsPerHole.reduce<number>((sum, points) => {
+  return sum + (points ?? 0)
+}, 0)
+F
   const showPoints = scoringMode === 'stableford'
 
   return (
