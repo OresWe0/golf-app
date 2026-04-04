@@ -1,77 +1,77 @@
-export type Course = {
-  id: string
-  name: string
-  club_name: string
-  total_par: number
-  holes_count: number
+export function scoreVsPar(strokes: number | null, par: number) {
+  if (strokes == null) return null
+  return strokes - par
 }
 
-export type CourseHole = {
-  id: string
-  course_id: string
-  hole_number: number
+export function stablefordPoints(
+  strokes: number | null,
+  par: number,
+  receivedStrokes = 0
+) {
+  if (strokes == null) return 0
+
+  const net = strokes - receivedStrokes
+  const diff = net - par
+
+  if (diff <= -3) return 5
+  if (diff === -2) return 4
+  if (diff === -1) return 3
+  if (diff === 0) return 2
+  if (diff === 1) return 1
+  return 0
+}
+
+export function calculatePlayingHandicap({
+  handicapIndex,
+  slopeRating,
+  courseRating,
+  par,
+}: {
+  handicapIndex: number | null
+  slopeRating: number | null
+  courseRating: number | null
   par: number
-  hcp_index: number
-  length_yellow: number | null
-  length_red: number | null
-  description: string | null
+}) {
+  if (handicapIndex == null || slopeRating == null || courseRating == null) {
+    return handicapIndex == null ? 0 : Math.round(handicapIndex)
+  }
+
+  const courseHandicap =
+    handicapIndex * (slopeRating / 113) + (courseRating - par)
+
+  return Math.round(courseHandicap)
 }
 
-export type CourseTee = {
-  id: string
-  course_id: string
-  tee_key: string
-  label: string
-  course_rating: number | null
-  slope_rating: number | null
-  tee_par: number
-}
+export function receivedStrokesOnHole(
+  playingHandicap: number | null,
+  holeIndex: number,
+  holesCount: number
+) {
+  if (playingHandicap == null || playingHandicap <= 0) return 0
 
-export type Round = {
-  id: string
-  owner_id: string
-  course_id: string
-  title: string
-  scoring_mode: 'strokeplay' | 'stableford'
-  status: 'active' | 'completed'
-  current_hole: number
-  created_at: string
-}
+  let normalizedHoleIndex = holeIndex
 
-export type Profile = {
-  id: string
-  email: string | null
-  display_name: string | null
-  handicap_index: number | null
-  default_tee: string | null
-  created_at: string
-}
+  // Viktigt för 9 hål:
+  // På många banor ligger hålens hcp_index fortfarande som 1–18 för hela banan,
+  // medan en 9-hålsrunda bara spelar halva banan.
+  //
+  // Exempel främre 9:
+  // 12, 8, 18, 10, 2, 14, 4, 16, 6
+  //
+  // Då måste indexen normaliseras inom just de spelade 9 hålen:
+  // 6, 4, 9, 5, 1, 7, 2, 8, 3
+  //
+  // För den här typen av indexfördelning fungerar ceil(index / 2).
+  if (holesCount === 9) {
+    normalizedHoleIndex = Math.ceil(holeIndex / 2)
+  }
 
-export type RoundMember = {
-  id: string
-  round_id: string
-  user_id: string
-  role: 'owner' | 'player'
-  created_at: string
-}
+  let strokes = Math.floor(playingHandicap / holesCount)
+  const remainder = playingHandicap % holesCount
 
-export type RoundPlayer = {
-  id: string
-  round_id: string
-  user_id: string | null
-  invited_email: string | null
-  display_name: string
-  handicap_index: number | null
-  exact_handicap: number | null
-  tee_key: string | null
-  playing_handicap: number | null
-  sort_order: number
-}
+  if (remainder > 0 && normalizedHoleIndex <= remainder) {
+    strokes += 1
+  }
 
-export type HoleScore = {
-  id: string
-  round_id: string
-  round_player_id: string
-  hole_number: number
-  strokes: number | null
+  return strokes
 }
