@@ -154,9 +154,18 @@ export function HolePlay({
     router.push(target)
   }
 
-  const confirmFinishRound = () => {
-    router.push(`/rounds/${roundId}/summary`)
+  const confirmFinishRound = async () => {
+  const response = await fetch(`/api/rounds/${roundId}/complete`, {
+    method: 'POST',
+  })
+
+  if (!response.ok) {
+    alert('Kunde inte avsluta rundan.')
+    return
   }
+
+  router.push(`/rounds/${roundId}/summary`)
+}
 
   const saveScores = async (overrideValues?: Record<string, string>) => {
     const valuesToSave = overrideValues ?? values

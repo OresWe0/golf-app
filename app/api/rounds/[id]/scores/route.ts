@@ -34,7 +34,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const { data: course } = await supabase.from('courses').select('holes_count').eq('id', round.course_id).single()
   const nextHole = Math.min((course?.holes_count ?? holeNumber), holeNumber + 1)
-  const status = holeNumber >= (course?.holes_count ?? holeNumber) ? 'completed' : 'active'
+  const status = 'active'
 
   await supabase.from('rounds').update({ current_hole: nextHole, status }).eq('id', id)
 
