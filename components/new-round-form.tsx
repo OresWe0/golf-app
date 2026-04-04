@@ -16,6 +16,8 @@ type FriendInput = {
   id: string
   friend_email: string
   friend_name: string | null
+  friend_handicap_index?: number | null
+  friend_default_tee?: string | null
 }
 
 export function NewRoundForm({
@@ -153,6 +155,8 @@ export function NewRoundForm({
     if (alreadyExists) return
 
     const fallbackName = friend.friend_email.split('@')[0] || 'Vän'
+    const teeKey: 'yellow' | 'red' =
+      friend.friend_default_tee === 'red' ? 'red' : 'yellow'
 
     setPlayers((prev) => [
       ...prev,
@@ -160,8 +164,11 @@ export function NewRoundForm({
         kind: 'registered',
         name: friend.friend_name?.trim() || fallbackName,
         email: friendEmail,
-        handicapIndex: '',
-        teeKey: 'yellow',
+        handicapIndex:
+          friend.friend_handicap_index == null
+            ? ''
+            : String(friend.friend_handicap_index),
+        teeKey,
       },
     ])
   }
