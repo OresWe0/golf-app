@@ -3,7 +3,6 @@
 import React from 'react'
 import { receivedStrokesOnHole, stablefordPoints } from '@/lib/scoring'
 
-// Typer för hålpoäng och spelare
 type HoleScore = {
   holeNumber: number
   par: number
@@ -35,16 +34,16 @@ export default function HoleSummaryStrip({
   visibleHoleCount,
   scoringMode,
 }: Props) {
-  // Summera par och slag
   const parTotal = holes.reduce((sum, hole) => sum + hole.par, 0)
+
   const strokesTotal = scores.reduce((sum, score) => {
     if (score.strokes == null) return sum
     return sum + score.strokes
   }, 0)
 
-  // Beräkna Stableford-poäng per hål
-  const pointsPerHole = scores.map((score) => {
+  const pointsPerHole: Array<number | null> = scores.map((score) => {
     if (score.strokes == null) return null
+
     return stablefordPoints(
       score.strokes,
       score.par,
@@ -55,7 +54,10 @@ export default function HoleSummaryStrip({
       )
     )
   })
-  const pointsTotal = pointsPerHole.reduce((sum, p) => sum + (p ?? 0), 0)
+
+  const pointsTotal = pointsPerHole.reduce((sum: number, p: number | null) => {
+    return sum + (p ?? 0)
+  }, 0)
 
   const showPoints = scoringMode === 'stableford'
   const scoringLabel =
@@ -65,7 +67,6 @@ export default function HoleSummaryStrip({
       ? 'Slagspel'
       : scoringMode
 
-  // Funktionen för färgkodade celler baserat på markör
   const getResultClass = (marker: string | null) => {
     switch (marker) {
       case 'circle':
@@ -83,14 +84,11 @@ export default function HoleSummaryStrip({
 
   return (
     <div>
-      {/* Titel på sektionen */}
       <h3 className="mb-2 text-base font-bold text-green-700">{title}</h3>
 
-      {/* Scrollbar runt tabellen för små skärmar */}
       <div className="overflow-x-auto border border-gray-300 rounded-2xl bg-white">
         <table className="min-w-full text-sm">
           <thead>
-            {/* Hålrader med sticky cell till vänster och total till höger */}
             <tr className="bg-gray-50">
               <th className="sticky left-0 z-10 px-2 py-1 text-left font-semibold bg-gray-50">
                 Hål
@@ -107,6 +105,7 @@ export default function HoleSummaryStrip({
                 Σ
               </th>
             </tr>
+
             <tr className="bg-gray-100">
               <th className="sticky left-0 z-10 px-2 py-1 text-left font-semibold bg-gray-100">
                 Par
@@ -122,8 +121,8 @@ export default function HoleSummaryStrip({
               <th className="px-2 py-1 text-center">{parTotal}</th>
             </tr>
           </thead>
+
           <tbody>
-            {/* Resultatrad med färgkodade celler */}
             <tr>
               <td className="sticky left-0 z-10 px-2 py-1 font-medium bg-white">
                 Res
@@ -146,7 +145,6 @@ export default function HoleSummaryStrip({
               <td className="px-2 py-1 text-center font-semibold">{strokesTotal}</td>
             </tr>
 
-            {/* Poängrad visas endast i Poängbogey-läge */}
             {showPoints && (
               <tr>
                 <td className="sticky left-0 z-10 px-2 py-1 font-medium bg-white">P</td>
@@ -169,7 +167,6 @@ export default function HoleSummaryStrip({
         </table>
       </div>
 
-      {/* Legend och scoreringsmetod längst ner */}
       <div className="mt-3 flex flex-wrap gap-4 text-xs text-gray-600">
         <span className="flex items-center gap-2">
           <span className="inline-block w-4 h-4 rounded-full border-2 border-green-700" />
