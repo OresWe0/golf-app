@@ -1,5 +1,3 @@
-'use client'
-
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { receivedStrokesOnHole } from '@/lib/scoring'
@@ -208,7 +206,11 @@ export function HolePlay({
     }))
   }
 
-  const getLabel = (diff: number) => {
+  const getLabel = (score: number, par: number) => {
+    if (score === 1) return 'HIO'
+
+    const diff = score - par
+
     if (diff <= -3) return 'Albatross'
     if (diff === -2) return 'Eagle'
     if (diff === -1) return 'Birdie'
@@ -531,8 +533,7 @@ export function HolePlay({
                   }}
                 >
                   {quickScores.map((score) => {
-                    const diff = score - hole.par
-                    const label = getLabel(diff)
+                    const label = getLabel(score, hole.par)
                     const isSelected = selectedValue === String(score)
                     const tone = getScoreTone(score)
 
@@ -550,7 +551,9 @@ export function HolePlay({
                           placeItems: 'center',
                           gap: 4,
                           background: isSelected ? tone.background : '#fff',
-                          border: isSelected ? `2px solid ${tone.border.split(' ').pop()}` : '1px solid #d1d5db',
+                          border: isSelected
+                            ? `2px solid ${tone.border.split(' ').pop()}`
+                            : '1px solid #d1d5db',
                           color: isSelected ? tone.color : '#0f172a',
                           boxShadow: isSelected
                             ? '0 8px 20px rgba(15, 23, 42, 0.08)'
@@ -569,10 +572,11 @@ export function HolePlay({
                         </div>
                         <div
                           style={{
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight: 800,
                             textAlign: 'center',
-                            opacity: isSelected ? 1 : 0.9,
+                            opacity: isSelected ? 1 : 0.75,
+                            letterSpacing: 0.2,
                           }}
                         >
                           {label}
@@ -592,20 +596,22 @@ export function HolePlay({
                 >
                   <div
                     style={{
-                      border: selectedScore == null ? '1px solid #e5e7eb' : '2px solid #bbf7d0',
+                      border: selectedScore == null ? '1px solid #d1d5db' : '2px solid #86efac',
                       borderRadius: 18,
                       padding: '12px 14px',
                       background: selectedScore == null ? '#f8fafc' : '#f0fdf4',
                       display: 'grid',
-                      gap: 4,
+                      gap: 6,
+                      alignContent: 'center',
                     }}
                   >
                     <div className="muted" style={{ fontSize: 13 }}>
                       Vald score
                     </div>
+
                     <div
                       style={{
-                        fontSize: 30,
+                        fontSize: 34,
                         fontWeight: 900,
                         lineHeight: 1,
                         color: selectedScore == null ? '#0f172a' : '#166534',
@@ -613,14 +619,17 @@ export function HolePlay({
                     >
                       {selectedScore ?? '-'}
                     </div>
+
                     <div
                       style={{
-                        fontSize: 13,
-                        fontWeight: 700,
+                        fontSize: 14,
+                        fontWeight: 800,
                         color: selectedScore == null ? '#64748b' : '#166534',
                       }}
                     >
-                      {selectedScore == null ? 'Välj antal slag' : `${getLabel(selectedScore - hole.par)}`}
+                      {selectedScore == null
+                        ? 'Välj antal slag'
+                        : getLabel(selectedScore, hole.par)}
                     </div>
                   </div>
 
@@ -632,15 +641,20 @@ export function HolePlay({
                     }}
                     style={{
                       border: '1px solid #d1d5db',
-                      background: '#fff',
+                      background: '#ffffff',
                       borderRadius: 18,
-                      padding: '0 16px',
-                      minWidth: 86,
+                      padding: '12px 14px',
+                      minWidth: 92,
                       fontWeight: 800,
                       cursor: 'pointer',
+                      display: 'grid',
+                      placeItems: 'center',
+                      gap: 4,
+                      color: '#475569',
                     }}
                   >
-                    Rensa
+                    <span style={{ fontSize: 18, lineHeight: 1 }}>↺</span>
+                    <span style={{ fontSize: 13 }}>Rensa</span>
                   </button>
                 </div>
               </div>
