@@ -598,6 +598,13 @@ export default async function SummaryPage({
         ? '9 hål · Främre 9'
         : '9 hål · Bakre 9'
 
+  const scorecardModeLabel =
+    round.holes_mode === 18
+      ? '18 hål'
+      : startHole === 1
+        ? '9 hål · Främre'
+        : '9 hål · Bakre'
+
   const totalPar = sumPar(visibleHoles)
 
   const selectedFrontScores = selectedPlayer
@@ -701,6 +708,9 @@ export default async function SummaryPage({
 
               <div
                 style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
                   padding: '6px 12px',
                   borderRadius: 999,
                   border: '1px solid #d1fae5',
@@ -708,9 +718,12 @@ export default async function SummaryPage({
                   color: '#166534',
                   fontWeight: 800,
                   fontSize: 13,
+                  flexWrap: 'wrap',
                 }}
               >
-                {roundTypeLabel}
+                <span>{roundTypeLabel}</span>
+                <span style={{ opacity: 0.5 }}>•</span>
+                <span>{scorecardModeLabel}</span>
               </div>
             </div>
 
@@ -804,6 +817,9 @@ export default async function SummaryPage({
 
             <div
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
                 padding: '6px 12px',
                 borderRadius: 999,
                 border: '1px solid #bbf7d0',
@@ -811,9 +827,12 @@ export default async function SummaryPage({
                 color: '#166534',
                 fontWeight: 800,
                 fontSize: 13,
+                flexWrap: 'wrap',
               }}
             >
-              {roundTypeLabel}
+              <span>{roundTypeLabel}</span>
+              <span style={{ opacity: 0.5 }}>•</span>
+              <span>{scorecardModeLabel}</span>
             </div>
           </div>
 
@@ -1119,7 +1138,7 @@ export default async function SummaryPage({
                   />
                 ) : null}
 
-                <h3 style={{ marginBottom: 8 }}>
+                <h3 style={{ margin: '4px 0 2px 0' }}>
                   {isNineHoleRound ? 'Summa 9 hål' : 'Total'}
                 </h3>
 
