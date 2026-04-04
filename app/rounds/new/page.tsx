@@ -7,6 +7,8 @@ type FriendRow = {
   id: string
   friend_email: string
   friend_name: string | null
+  friend_handicap_index: number | null
+  friend_default_tee: string | null
 }
 
 export default async function NewRoundPage() {
@@ -17,7 +19,7 @@ export default async function NewRoundPage() {
 
   if (!user) redirect('/login')
 
-  const [{ data: courses }, { data: profile }, { data: friends }] = await Promise.all([
+  const [{ data: courses }, { data: profile }, { data: friendsRaw }] = await Promise.all([
     supabase.from('courses').select('*').order('name'),
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase
@@ -26,6 +28,37 @@ export default async function NewRoundPage() {
       .eq('user_id', user.id)
       .order('created_at', { ascending: true }),
   ])
+
+  const friendEmails =
+    friendsRaw
+      ?.map((friend) => friend.friend_email?.trim().toLowerCase())
+      .filter(Boolean) ?? []
+
+  const { data: friendProfiles } =
+    friendEmails.length > 0
+      ? await supabase
+          .from('profiles')
+          .select('email, display_name, handicap_index, default_tee')
+          .in('email', friendEmails)
+      : { data: [] }
+
+  const friends: FriendRow[] =
+    friendsRaw?.map((friend) => {
+      const email = friend.friend_email.trim().toLowerCase()
+
+      const matchedProfile =
+        friendProfiles?.find(
+          (profile: any) => profile.email?.trim().toLowerCase() === email
+        ) ?? null
+
+      return {
+        id: friend.id,
+        friend_email: friend.friend_email,
+        friend_name: friend.friend_name ?? matchedProfile?.display_name ?? null,
+        friend_handicap_index: matchedProfile?.handicap_index ?? null,
+        friend_default_tee: matchedProfile?.default_tee ?? null,
+      }
+    }) ?? []
 
   return (
     <main>
@@ -40,7 +73,7 @@ export default async function NewRoundPage() {
 
           <NewRoundForm
             courses={(courses as Course[] | null) ?? []}
-            friends={(friends as FriendRow[] | null) ?? []}
+            friends={friends}
             currentUser={{
               email: user.email ?? '',
               displayName:
