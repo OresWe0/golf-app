@@ -513,8 +513,10 @@ export default async function SummaryPage({
     (hole: HoleLike) => hole.hole_number >= startHole && hole.hole_number <= endHole
   )
 
-  const firstHalf = visibleHoles.slice(0, Math.ceil(visibleHoles.length / 2))
-  const secondHalf = visibleHoles.slice(Math.ceil(visibleHoles.length / 2))
+  const isNineHoleRound = round.holes_mode === 9
+
+  const firstHalf = isNineHoleRound ? visibleHoles : visibleHoles.slice(0, 9)
+  const secondHalf = isNineHoleRound ? [] : visibleHoles.slice(9)
 
   const summary: SummaryPlayer[] = players
     .map((player: any) => {
@@ -593,8 +595,8 @@ export default async function SummaryPage({
     round.holes_mode === 18
       ? '18 hål'
       : startHole === 1
-      ? '9 hål · Främre 9'
-      : '9 hål · Bakre 9'
+        ? '9 hål · Främre 9'
+        : '9 hål · Bakre 9'
 
   const totalPar = sumPar(visibleHoles)
 
@@ -1090,16 +1092,22 @@ export default async function SummaryPage({
 
               <div style={{ padding: 14, display: 'grid', gap: 12 }}>
                 <ScoreTable
-                  title="Främre 9"
+                  title={
+                    isNineHoleRound
+                      ? startHole === 1
+                        ? 'Främre 9'
+                        : 'Bakre 9'
+                      : 'Främre 9'
+                  }
                   holes={firstHalf}
                   scores={selectedFrontScores}
                   selectedPlayer={selectedPlayer}
                   visibleHoleCount={visibleHoles.length}
                   scoringMode={round.scoring_mode}
-                  totalLabel="Ut"
+                  totalLabel={isNineHoleRound ? 'Summa' : 'Ut'}
                 />
 
-                {secondHalf.length > 0 ? (
+                {!isNineHoleRound && secondHalf.length > 0 ? (
                   <ScoreTable
                     title="Bakre 9"
                     holes={secondHalf}
@@ -1111,74 +1119,64 @@ export default async function SummaryPage({
                   />
                 ) : null}
 
+                <h3 style={{ marginBottom: 8 }}>
+                  {isNineHoleRound ? 'Summa 9 hål' : 'Total'}
+                </h3>
+
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-                    gap: 8,
+                    gridTemplateColumns: isNineHoleRound ? '1fr 1fr' : '1fr 1fr 1fr',
+                    gap: 12,
                   }}
                 >
                   <div
                     style={{
-                      background: '#fff',
+                      background: '#f8fafc',
                       border: '1px solid #e5e7eb',
-                      borderRadius: 12,
-                      padding: 12,
+                      borderRadius: 14,
+                      padding: 14,
                     }}
                   >
-                    <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                      Par
+                    <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
+                      {isNineHoleRound ? 'Par (9 hål)' : 'Total par'}
                     </div>
-                    <div style={{ fontSize: 20, fontWeight: 900 }}>{totalPar}</div>
+                    <div style={{ fontSize: 24, fontWeight: 900 }}>{totalPar}</div>
                   </div>
 
                   <div
                     style={{
-                      background: '#fff',
+                      background: '#f8fafc',
                       border: '1px solid #e5e7eb',
-                      borderRadius: 12,
-                      padding: 12,
+                      borderRadius: 14,
+                      padding: 14,
                     }}
                   >
-                    <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                      Resultat
+                    <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
+                      {isNineHoleRound ? 'Resultat (9 hål)' : 'Resultat'}
                     </div>
-                    <div style={{ fontSize: 20, fontWeight: 900 }}>
+                    <div style={{ fontSize: 24, fontWeight: 900 }}>
                       {selectedPlayer.strokes}
                     </div>
                   </div>
 
-                  <div
-                    style={{
-                      background: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: 12,
-                      padding: 12,
-                    }}
-                  >
-                    <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                      Till par
+                  {!isNineHoleRound && (
+                    <div
+                      style={{
+                        background: '#f8fafc',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: 14,
+                        padding: 14,
+                      }}
+                    >
+                      <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
+                        Position
+                      </div>
+                      <div style={{ fontSize: 24, fontWeight: 900 }}>
+                        {selectedIndex + 1}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 20, fontWeight: 900 }}>
-                      {formatVsPar(selectedPlayer.vsPar)}
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      background: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: 12,
-                      padding: 12,
-                    }}
-                  >
-                    <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                      Position
-                    </div>
-                    <div style={{ fontSize: 20, fontWeight: 900 }}>
-                      {selectedIndex + 1}
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
