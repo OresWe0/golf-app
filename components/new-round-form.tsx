@@ -154,19 +154,30 @@ export function NewRoundForm({
     }
   }
 
+  const normalizedPlayersPreview = players
+    .map((player, index) => ({
+      ...player,
+      sortOrder: index + 1,
+      name: player.name.trim(),
+      email: player.email.trim().toLowerCase(),
+      handicapIndex: player.handicapIndex ? Number(player.handicapIndex) : null,
+    }))
+    .filter((player) => player.name)
+
+  const selectedCourseName =
+    courses.find((course) => course.id === courseId)?.name ?? 'Ingen bana vald'
+
+  const roundModeLabel =
+    scoringMode === 'stableford' ? 'Stableford' : 'Slagspel'
+
+  const holesModeLabel =
+    holesMode === 18 ? '18 hål' : nineHoleSide === 'front' ? '9 hål · Främre 9' : '9 hål · Bakre 9'
+
   const submit = async () => {
     setLoading(true)
     setError(null)
 
-    const normalizedPlayers = players
-      .map((player, index) => ({
-        ...player,
-        sortOrder: index + 1,
-        name: player.name.trim(),
-        email: player.email.trim().toLowerCase(),
-        handicapIndex: player.handicapIndex ? Number(player.handicapIndex) : null,
-      }))
-      .filter((player) => player.name)
+    const normalizedPlayers = normalizedPlayersPreview
 
     const response = await fetch('/api/rounds', {
       method: 'POST',
@@ -212,7 +223,7 @@ export function NewRoundForm({
           marginBottom: 0,
         }}
       >
-        <div style={{ display: 'grid', gap: 16 }}>
+        <div style={{ display: 'grid', gap: 14 }}>
           <div>
             <div
               style={{
@@ -233,8 +244,7 @@ export function NewRoundForm({
 
             <h2 style={{ margin: 0, marginBottom: 8 }}>Grundinställningar</h2>
             <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
-              Välj rundnamn, bana och scoring mode. När du sparar skickas ni direkt
-              till rätt starthål.
+              Välj rundnamn, bana och scoring mode. När du sparar skickas ni direkt till rätt starthål.
             </p>
           </div>
 
@@ -284,21 +294,15 @@ export function NewRoundForm({
       </div>
 
       <div className="card" style={sectionCardStyle}>
-        <div style={{ display: 'grid', gap: 14 }}>
+        <div style={{ display: 'grid', gap: 12 }}>
           <div>
             <h3 style={{ marginTop: 0, marginBottom: 8 }}>Rundinställningar</h3>
             <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
-              Välj om ni spelar 18 hål eller 9 hål. Vid 9 hål kan du välja främre
-              eller bakre 9.
+              Välj antal hål. Vid 9 hål bestämmer du om ni startar på främre eller bakre 9.
             </p>
           </div>
 
-          <div
-            style={{
-              display: 'grid',
-              gap: 12,
-            }}
-          >
+          <div style={{ display: 'grid', gap: 12 }}>
             <div>
               <label>Antal hål</label>
               <div
@@ -399,7 +403,7 @@ export function NewRoundForm({
       </div>
 
       <div className="card" style={sectionCardStyle}>
-        <div style={{ display: 'grid', gap: 16 }}>
+        <div style={{ display: 'grid', gap: 14 }}>
           <div
             style={{
               display: 'flex',
@@ -412,22 +416,21 @@ export function NewRoundForm({
             <div>
               <h3 style={{ marginTop: 0, marginBottom: 8 }}>Spelare i bollen</h3>
               <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
-                För registrerade vänner räcker e-post. HCP och tee kan justeras
-                innan rundan startar.
+                Ange e-post för registrerade spelare. Gäster kan läggas till utan e-post.
               </p>
             </div>
 
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
+                gridTemplateColumns: '1.2fr 1fr',
                 gap: 10,
                 width: '100%',
               }}
             >
               <button
                 type="button"
-                className="secondary"
+                className="button"
                 onClick={addRegisteredPlayer}
                 style={{ width: '100%' }}
               >
@@ -542,7 +545,7 @@ export function NewRoundForm({
                     <div className="muted" style={{ marginTop: 4 }}>
                       {player.kind === 'registered'
                         ? 'Använd e-post för registrerad vän'
-                        : 'Gäst kan lämnas utan e-post'}
+                        : 'Lämna e-post tomt för gäst'}
                     </div>
                   </div>
 
@@ -629,6 +632,134 @@ export function NewRoundForm({
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="card"
+        style={{
+          background: 'linear-gradient(180deg, #f8fbf7 0%, #ffffff 100%)',
+          border: '1px solid #dbeedc',
+          marginBottom: 0,
+        }}
+      >
+        <div style={{ display: 'grid', gap: 12 }}>
+          <div>
+            <h3 style={{ marginTop: 0, marginBottom: 8 }}>Sammanfattning</h3>
+            <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
+              Kontrollera upplägget innan du startar rundan.
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+              gap: 10,
+            }}
+          >
+            <div
+              style={{
+                background: '#fff',
+                border: '1px solid #e5e7eb',
+                borderRadius: 14,
+                padding: 12,
+              }}
+            >
+              <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                Bana
+              </div>
+              <div style={{ fontWeight: 900 }}>{selectedCourseName}</div>
+            </div>
+
+            <div
+              style={{
+                background: '#fff',
+                border: '1px solid #e5e7eb',
+                borderRadius: 14,
+                padding: 12,
+              }}
+            >
+              <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                Mode
+              </div>
+              <div style={{ fontWeight: 900 }}>{roundModeLabel}</div>
+            </div>
+
+            <div
+              style={{
+                background: '#fff',
+                border: '1px solid #e5e7eb',
+                borderRadius: 14,
+                padding: 12,
+              }}
+            >
+              <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                Hål
+              </div>
+              <div style={{ fontWeight: 900 }}>{holesModeLabel}</div>
+            </div>
+
+            <div
+              style={{
+                background: '#fff',
+                border: '1px solid #e5e7eb',
+                borderRadius: 14,
+                padding: 12,
+              }}
+            >
+              <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                Spelare
+              </div>
+              <div style={{ fontWeight: 900 }}>{normalizedPlayersPreview.length}</div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: '#ffffff',
+              border: '1px solid #e5e7eb',
+              borderRadius: 16,
+              padding: 14,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 800,
+                color: '#64748b',
+                textTransform: 'uppercase',
+                letterSpacing: 0.4,
+                marginBottom: 8,
+              }}
+            >
+              Spelarlista
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 8,
+              }}
+            >
+              {normalizedPlayersPreview.map((player, index) => (
+                <div
+                  key={`${player.name}-${index}`}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 999,
+                    background: index === 0 ? '#dcfce7' : '#f3f4f6',
+                    color: index === 0 ? '#166534' : '#334155',
+                    fontWeight: 800,
+                    fontSize: 14,
+                  }}
+                >
+                  {player.name}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

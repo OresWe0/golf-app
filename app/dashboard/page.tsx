@@ -66,13 +66,7 @@ export default async function DashboardPage() {
           boxSizing: 'border-box',
         }}
       >
-        <div
-          style={{
-            display: 'grid',
-            gap: 16,
-            marginBottom: 16,
-          }}
-        >
+        <div style={{ display: 'grid', gap: 14, marginBottom: 16 }}>
           <div
             className="card"
             style={{
@@ -80,12 +74,7 @@ export default async function DashboardPage() {
               border: '1px solid #dbeedc',
             }}
           >
-            <div
-              style={{
-                display: 'grid',
-                gap: 16,
-              }}
-            >
+            <div style={{ display: 'grid', gap: 14 }}>
               <div
                 style={{
                   display: 'flex',
@@ -107,7 +96,7 @@ export default async function DashboardPage() {
                 {isAdmin && pendingCount > 0 ? (
                   <div
                     style={{
-                      padding: '8px 12px',
+                      padding: '7px 12px',
                       borderRadius: 999,
                       background: '#fef3c7',
                       color: '#92400e',
@@ -121,13 +110,7 @@ export default async function DashboardPage() {
                 ) : null}
               </div>
 
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr',
-                  gap: 10,
-                }}
-              >
+              <div style={{ display: 'grid', gap: 10 }}>
                 <Link
                   href="/rounds/new"
                   className="button"
@@ -144,8 +127,9 @@ export default async function DashboardPage() {
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                    gridTemplateColumns: isAdmin ? '1fr 1fr auto' : '1fr auto',
                     gap: 10,
+                    alignItems: 'stretch',
                   }}
                 >
                   {isAdmin ? (
@@ -160,35 +144,19 @@ export default async function DashboardPage() {
                     >
                       Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
                     </Link>
-                  ) : (
-                    <Link
-                      href="/profile"
-                      className="button secondary"
-                      style={{
-                        width: '100%',
-                        textAlign: 'center',
-                        boxSizing: 'border-box',
-                      }}
-                    >
-                      Min profil
-                    </Link>
-                  )}
+                  ) : null}
 
-                  {isAdmin ? (
-                    <Link
-                      href="/profile"
-                      className="button secondary"
-                      style={{
-                        width: '100%',
-                        textAlign: 'center',
-                        boxSizing: 'border-box',
-                      }}
-                    >
-                      Min profil
-                    </Link>
-                  ) : (
-                    <div />
-                  )}
+                  <Link
+                    href="/profile"
+                    className="button secondary"
+                    style={{
+                      width: '100%',
+                      textAlign: 'center',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    Min profil
+                  </Link>
 
                   <form action={signOut}>
                     <button
@@ -196,6 +164,7 @@ export default async function DashboardPage() {
                       className="secondary"
                       style={{
                         width: '100%',
+                        minWidth: 120,
                       }}
                     >
                       Logga ut
@@ -208,31 +177,30 @@ export default async function DashboardPage() {
 
           {isAdmin && pendingCount > 0 ? (
             <div
-              className="card"
               style={{
-                background: '#fffbeb',
                 border: '1px solid #fde68a',
+                background: '#fffbeb',
+                borderRadius: 18,
+                padding: 14,
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: 12,
+                alignItems: 'center',
+                flexWrap: 'wrap',
               }}
             >
-              <div
-                style={{
-                  display: 'grid',
-                  gap: 12,
-                }}
-              >
-                <div>
-                  <h2 style={{ marginTop: 0, marginBottom: 6 }}>⏳ Väntande användare</h2>
-                  <p className="muted" style={{ margin: 0 }}>
-                    Du har {pendingCount} användare som väntar på godkännande.
-                  </p>
+              <div>
+                <div style={{ fontWeight: 900, marginBottom: 4 }}>
+                  ⏳ Väntande användare
                 </div>
-
-                <div>
-                  <Link href="/admin/users" className="button">
-                    Öppna admin
-                  </Link>
+                <div className="muted">
+                  {pendingCount} användare väntar på att bli godkända.
                 </div>
               </div>
+
+              <Link href="/admin/users" className="button secondary">
+                Öppna admin
+              </Link>
             </div>
           ) : null}
 
@@ -273,12 +241,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div
-          style={{
-            display: 'grid',
-            gap: 16,
-          }}
-        >
+        <div style={{ display: 'grid', gap: 16 }}>
           <div className="card">
             <div
               style={{
@@ -323,9 +286,7 @@ export default async function DashboardPage() {
                 <div style={{ fontWeight: 800, marginBottom: 4 }}>
                   Inga aktiva rundor ännu
                 </div>
-                <div className="muted">
-                  Starta en ny runda för att komma igång.
-                </div>
+                <div className="muted">Starta en ny runda för att komma igång.</div>
               </div>
             ) : (
               <div style={{ display: 'grid', gap: 12 }}>
@@ -347,7 +308,7 @@ export default async function DashboardPage() {
                         background: '#f8fbf7',
                         padding: 16,
                         display: 'grid',
-                        gap: 14,
+                        gap: 12,
                       }}
                     >
                       <div
@@ -442,17 +403,35 @@ export default async function DashboardPage() {
                         </div>
                       </div>
 
-                      <div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: 10,
+                          flexWrap: 'wrap',
+                        }}
+                      >
                         <Link
-                          className="button"
+                          className="button secondary"
                           href={href}
                           style={{
-                            width: '100%',
+                            flex: 1,
                             textAlign: 'center',
                             boxSizing: 'border-box',
                           }}
                         >
                           Fortsätt runda
+                        </Link>
+
+                        <Link
+                          className="button secondary"
+                          href={`/rounds/${round.id}/summary`}
+                          style={{
+                            flex: 1,
+                            textAlign: 'center',
+                            boxSizing: 'border-box',
+                          }}
+                        >
+                          Leaderboard
                         </Link>
                       </div>
                     </div>
@@ -572,19 +551,17 @@ export default async function DashboardPage() {
                         </div>
                       </div>
 
-                      <div>
-                        <Link
-                          className="button secondary"
-                          href={`/rounds/${round.id}/summary`}
-                          style={{
-                            width: '100%',
-                            textAlign: 'center',
-                            boxSizing: 'border-box',
-                          }}
-                        >
-                          Visa summary
-                        </Link>
-                      </div>
+                      <Link
+                        className="button secondary"
+                        href={`/rounds/${round.id}/summary`}
+                        style={{
+                          width: '100%',
+                          textAlign: 'center',
+                          boxSizing: 'border-box',
+                        }}
+                      >
+                        Visa summary
+                      </Link>
                     </div>
                   )
                 })}
