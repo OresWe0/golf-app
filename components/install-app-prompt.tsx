@@ -15,17 +15,6 @@ function isIosDevice() {
   return /iphone|ipad|ipod/.test(ua)
 }
 
-function isSafariBrowser() {
-  if (typeof window === 'undefined') return false
-  const ua = window.navigator.userAgent.toLowerCase()
-  return (
-    ua.includes('safari') &&
-    !ua.includes('crios') &&
-    !ua.includes('fxios') &&
-    !ua.includes('edgios')
-  )
-}
-
 function isStandaloneMode() {
   if (typeof window === 'undefined') return false
 
@@ -42,7 +31,7 @@ export default function InstallAppPrompt() {
   const [mounted, setMounted] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const [installed, setInstalled] = useState(false)
-  const [isIosSafari, setIsIosSafari] = useState(false)
+  const [isIos, setIsIos] = useState(false)
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null)
 
@@ -52,7 +41,7 @@ export default function InstallAppPrompt() {
     const wasDismissed = window.localStorage.getItem(STORAGE_KEY) === 'true'
     setDismissed(wasDismissed)
     setInstalled(isStandaloneMode())
-    setIsIosSafari(isIosDevice() && isSafariBrowser())
+    setIsIos(isIosDevice())
 
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault()
@@ -92,7 +81,7 @@ export default function InstallAppPrompt() {
   if (!mounted || installed || dismissed) return null
 
   const showAndroidPrompt = !!deferredPrompt
-  const showIosPrompt = isIosSafari
+  const showIosPrompt = isIos
 
   if (!showAndroidPrompt && !showIosPrompt) return null
 
