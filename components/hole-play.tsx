@@ -46,31 +46,135 @@ type Props = {
   playerStreaks?: Record<string, number>
 }
 
+type GpsPoint = {
+  lat: number
+  lng: number
+}
+
+type HoleGpsData = {
+  front: GpsPoint
+  center: GpsPoint
+  back: GpsPoint
+}
+
+type DistanceStatus = 'idle' | 'loading' | 'ready' | 'error'
+
 function formatToPar(value?: number | null) {
   if (value == null) return '-'
   if (value > 0) return `+${value}`
   return `${value}`
 }
 
-const GREEN_POSITIONS: Record<number, { lat: number; lng: number }> = {
-  1: { lat: 59.34922, lng: 15.19528 },
-  2: { lat: 59.34985, lng: 15.19830 },
-  3: { lat: 59.35170, lng: 15.20331 },
-  4: { lat: 59.34990, lng: 15.20645 },
-  5: { lat: 59.34730, lng: 15.20880 },
-  6: { lat: 59.34685, lng: 15.20710 },
-  7: { lat: 59.34820, lng: 15.21350 },
-  8: { lat: 59.34665, lng: 15.21550 },
-  9: { lat: 59.34845, lng: 15.20520 },
-  10: { lat: 59.34650, lng: 15.19840 },
-  11: { lat: 59.34560, lng: 15.19320 },
-  12: { lat: 59.34415, lng: 15.19450 },
-  13: { lat: 59.34270, lng: 15.18780 },
-  14: { lat: 59.34215, lng: 15.18610 },
-  15: { lat: 59.34140, lng: 15.19120 },
-  16: { lat: 59.34355, lng: 15.19210 },
-  17: { lat: 59.34580, lng: 15.19790 },
-  18: { lat: 59.34771, lng: 15.19655 },
+const HOLE_GPS_DATA: Record<number, HoleGpsData> = {
+  1: {
+    front: { lat: 59.34910, lng: 15.19528 },
+    center: { lat: 59.34922, lng: 15.19528 },
+    back: { lat: 59.34934, lng: 15.19528 },
+  },
+  2: {
+    front: { lat: 59.34980, lng: 15.19810 },
+    center: { lat: 59.34985, lng: 15.19830 },
+    back: { lat: 59.34990, lng: 15.19850 },
+  },
+  3: {
+    front: { lat: 59.35160, lng: 15.20310 },
+    center: { lat: 59.35170, lng: 15.20331 },
+    back: { lat: 59.35180, lng: 15.20350 },
+  },
+  4: {
+    front: { lat: 59.35002, lng: 15.20630 },
+    center: { lat: 59.34990, lng: 15.20645 },
+    back: { lat: 59.34978, lng: 15.20660 },
+  },
+  5: {
+    front: { lat: 59.34742, lng: 15.20870 },
+    center: { lat: 59.34730, lng: 15.20880 },
+    back: { lat: 59.34718, lng: 15.20890 },
+  },
+  6: {
+    front: { lat: 59.34685, lng: 15.20735 },
+    center: { lat: 59.34685, lng: 15.20710 },
+    back: { lat: 59.34685, lng: 15.20685 },
+  },
+  7: {
+    front: { lat: 59.34812, lng: 15.21320 },
+    center: { lat: 59.34820, lng: 15.21350 },
+    back: { lat: 59.34828, lng: 15.21380 },
+  },
+  8: {
+    front: { lat: 59.34675, lng: 15.21530 },
+    center: { lat: 59.34665, lng: 15.21550 },
+    back: { lat: 59.34655, lng: 15.21570 },
+  },
+  9: {
+    front: { lat: 59.34830, lng: 15.20540 },
+    center: { lat: 59.34845, lng: 15.20520 },
+    back: { lat: 59.34860, lng: 15.20500 },
+  },
+  10: {
+    front: { lat: 59.34665, lng: 15.19855 },
+    center: { lat: 59.34650, lng: 15.19840 },
+    back: { lat: 59.34635, lng: 15.19825 },
+  },
+  11: {
+    front: { lat: 59.34575, lng: 15.19340 },
+    center: { lat: 59.34560, lng: 15.19320 },
+    back: { lat: 59.34545, lng: 15.19300 },
+  },
+  12: {
+    front: { lat: 59.34405, lng: 15.19430 },
+    center: { lat: 59.34415, lng: 15.19450 },
+    back: { lat: 59.34425, lng: 15.19470 },
+  },
+  13: {
+    front: { lat: 59.34285, lng: 15.18790 },
+    center: { lat: 59.34270, lng: 15.18780 },
+    back: { lat: 59.34255, lng: 15.18770 },
+  },
+  14: {
+    front: { lat: 59.34230, lng: 15.18620 },
+    center: { lat: 59.34215, lng: 15.18610 },
+    back: { lat: 59.34200, lng: 15.18600 },
+  },
+  15: {
+    front: { lat: 59.34125, lng: 15.19110 },
+    center: { lat: 59.34140, lng: 15.19120 },
+    back: { lat: 59.34155, lng: 15.19130 },
+  },
+  16: {
+    front: { lat: 59.34340, lng: 15.19200 },
+    center: { lat: 59.34355, lng: 15.19210 },
+    back: { lat: 59.34370, lng: 15.19220 },
+  },
+  17: {
+    front: { lat: 59.34565, lng: 15.19775 },
+    center: { lat: 59.34580, lng: 15.19790 },
+    back: { lat: 59.34595, lng: 15.19805 },
+  },
+  18: {
+    front: { lat: 59.34760, lng: 15.19655 },
+    center: { lat: 59.34771, lng: 15.19655 },
+    back: { lat: 59.34782, lng: 15.19655 },
+  },
+}
+
+function getDistance(from: GpsPoint, to: GpsPoint) {
+  const R = 6371e3
+  const phi1 = (from.lat * Math.PI) / 180
+  const phi2 = (to.lat * Math.PI) / 180
+  const deltaPhi = ((to.lat - from.lat) * Math.PI) / 180
+  const deltaLambda = ((to.lng - from.lng) * Math.PI) / 180
+
+  const a =
+    Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+    Math.cos(phi1) *
+      Math.cos(phi2) *
+      Math.sin(deltaLambda / 2) *
+      Math.sin(deltaLambda / 2)
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+
+  return R * c
 }
 
 export function HolePlay({
@@ -91,6 +195,7 @@ export function HolePlay({
   const firstPlayerCardRef = useRef<HTMLDivElement | null>(null)
   const hasUserChangedScoreRef = useRef(false)
   const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const watchIdRef = useRef<number | null>(null)
 
   const createValuesFromScores = () =>
     Object.fromEntries(
@@ -110,11 +215,14 @@ export function HolePlay({
   const [savedFlash, setSavedFlash] = useState(false)
   const [previewHoleNumber, setPreviewHoleNumber] = useState<number>(hole.hole_number)
   const [showFinishModal, setShowFinishModal] = useState(false)
-  const [playerPosition, setPlayerPosition] = useState<{
-    lat: number
-    lng: number
-  } | null>(null)
-  const [distanceToGreen, setDistanceToGreen] = useState<number | null>(null)
+
+  const [playerPosition, setPlayerPosition] = useState<GpsPoint | null>(null)
+  const [distanceStatus, setDistanceStatus] = useState<DistanceStatus>('idle')
+  const [distanceErrorMessage, setDistanceErrorMessage] = useState<string | null>(null)
+
+  const [distanceToFront, setDistanceToFront] = useState<number | null>(null)
+  const [distanceToCenter, setDistanceToCenter] = useState<number | null>(null)
+  const [distanceToBack, setDistanceToBack] = useState<number | null>(null)
 
   const allPlayersHaveScores = (candidateValues: Record<string, string>) => {
     if (!players?.length) return false
@@ -123,6 +231,40 @@ export function HolePlay({
       const value = candidateValues[String(player.id)]
       return value !== '' && value !== undefined && value !== null
     })
+  }
+
+  const resetDistanceState = () => {
+    setDistanceToFront(null)
+    setDistanceToCenter(null)
+    setDistanceToBack(null)
+  }
+
+  const stopWatchingPosition = () => {
+    if (
+      watchIdRef.current != null &&
+      typeof navigator !== 'undefined' &&
+      'geolocation' in navigator
+    ) {
+      navigator.geolocation.clearWatch(watchIdRef.current)
+      watchIdRef.current = null
+    }
+  }
+
+  const updateDistancesForHole = (coords: GpsPoint, holeNumber: number) => {
+    const holeGps = HOLE_GPS_DATA[holeNumber]
+
+    if (!holeGps) {
+      resetDistanceState()
+      setDistanceStatus('error')
+      setDistanceErrorMessage('GPS-data saknas för det här hålet')
+      return
+    }
+
+    setDistanceToFront(Math.round(getDistance(coords, holeGps.front)))
+    setDistanceToCenter(Math.round(getDistance(coords, holeGps.center)))
+    setDistanceToBack(Math.round(getDistance(coords, holeGps.back)))
+    setDistanceStatus('ready')
+    setDistanceErrorMessage(null)
   }
 
   useEffect(() => {
@@ -153,6 +295,8 @@ export function HolePlay({
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current)
       }
+
+      stopWatchingPosition()
     }
   }, [])
 
@@ -175,6 +319,73 @@ export function HolePlay({
       }
     }
   }, [values, loading, players])
+
+  useEffect(() => {
+    if (!showHoleImage) {
+      stopWatchingPosition()
+      return
+    }
+
+    resetDistanceState()
+    setDistanceStatus('loading')
+    setDistanceErrorMessage(null)
+
+    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+      setDistanceStatus('error')
+      setDistanceErrorMessage('Din enhet stödjer inte GPS')
+      return
+    }
+
+    stopWatchingPosition()
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        const coords = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        }
+
+        setPlayerPosition(coords)
+      },
+      (error) => {
+        resetDistanceState()
+        setDistanceStatus('error')
+
+        if (error.code === error.PERMISSION_DENIED) {
+          setDistanceErrorMessage('Platsåtkomst nekades')
+          return
+        }
+
+        if (error.code === error.POSITION_UNAVAILABLE) {
+          setDistanceErrorMessage('Kunde inte hitta din position')
+          return
+        }
+
+        if (error.code === error.TIMEOUT) {
+          setDistanceErrorMessage('GPS tog för lång tid')
+          return
+        }
+
+        setDistanceErrorMessage('Kunde inte hämta GPS-avstånd')
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 10000,
+      }
+    )
+
+    return () => {
+      stopWatchingPosition()
+    }
+  }, [showHoleImage])
+
+  useEffect(() => {
+    if (!showHoleImage) return
+    if (!playerPosition) return
+
+    updateDistancesForHole(playerPosition, previewHoleNumber)
+  }, [playerPosition, previewHoleNumber, showHoleImage])
 
   const quickScores = useMemo(() => {
     const base = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -356,44 +567,26 @@ export function HolePlay({
     setPreviewHoleNumber(hole.hole_number)
     setHoleImageError(false)
     setShowHoleImage(true)
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const coords = {
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-          }
-
-          setPlayerPosition(coords)
-
-          const green = GREEN_POSITIONS[hole.hole_number]
-
-          if (green) {
-            const distance = getDistance(coords, green)
-            setDistanceToGreen(Math.round(distance))
-          } else {
-            setDistanceToGreen(null)
-          }
-        },
-        () => {
-          console.log('GPS denied')
-          setDistanceToGreen(null)
-        }
-      )
-    } else {
-      setDistanceToGreen(null)
-    }
+    setPlayerPosition(null)
+    resetDistanceState()
+    setDistanceStatus('loading')
+    setDistanceErrorMessage(null)
   }
 
   const closeHoleImage = () => {
     setShowHoleImage(false)
+    setDistanceStatus('idle')
+    setDistanceErrorMessage(null)
+    resetDistanceState()
   }
 
   const previewPreviousHole = () => {
     if (previewHoleNumber > startHole) {
       setPreviewHoleNumber((prev) => prev - 1)
       setHoleImageError(false)
+      if (playerPosition) {
+        setDistanceStatus('loading')
+      }
     }
   }
 
@@ -401,6 +594,9 @@ export function HolePlay({
     if (previewHoleNumber < endHole) {
       setPreviewHoleNumber((prev) => prev + 1)
       setHoleImageError(false)
+      if (playerPosition) {
+        setDistanceStatus('loading')
+      }
     }
   }
 
@@ -440,26 +636,6 @@ export function HolePlay({
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [showHoleImage, previewHoleNumber, startHole, endHole])
-
-  const getDistance = (
-    from: { lat: number; lng: number },
-    to: { lat: number; lng: number }
-  ) => {
-    const R = 6371e3
-    const φ1 = (from.lat * Math.PI) / 180
-    const φ2 = (to.lat * Math.PI) / 180
-    const Δφ = ((to.lat - from.lat) * Math.PI) / 180
-    const Δλ = ((to.lng - from.lng) * Math.PI) / 180
-
-    const a =
-      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-      Math.cos(φ1) * Math.cos(φ2) *
-        Math.sin(Δλ / 2) * Math.sin(Δλ / 2)
-
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-
-    return R * c
-  }
 
   return (
     <>
@@ -1203,16 +1379,83 @@ export function HolePlay({
                   Hål {previewHoleNumber}
                 </div>
 
-                {distanceToGreen != null && (
+                {distanceStatus === 'loading' && (
                   <div
                     style={{
-                      marginTop: 4,
+                      marginTop: 6,
                       fontSize: 14,
-                      fontWeight: 800,
-                      color: '#22c55e',
+                      fontWeight: 700,
+                      color: '#cbd5e1',
                     }}
                   >
-                    📏 {distanceToGreen} m till green
+                    Hämtar avstånd...
+                  </div>
+                )}
+
+                {distanceStatus === 'ready' &&
+                distanceToFront != null &&
+                distanceToCenter != null &&
+                distanceToBack != null ? (
+                  <div
+                    style={{
+                      marginTop: 6,
+                      display: 'flex',
+                      gap: 8,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <span
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: 999,
+                        background: 'rgba(255,255,255,0.10)',
+                        color: '#fff',
+                        fontSize: 13,
+                        fontWeight: 800,
+                      }}
+                    >
+                      Front {distanceToFront} m
+                    </span>
+
+                    <span
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: 999,
+                        background: 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)',
+                        color: '#fff',
+                        fontSize: 13,
+                        fontWeight: 900,
+                        boxShadow: '0 8px 20px rgba(34, 197, 94, 0.24)',
+                      }}
+                    >
+                      Centrum {distanceToCenter} m
+                    </span>
+
+                    <span
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: 999,
+                        background: 'rgba(255,255,255,0.10)',
+                        color: '#fff',
+                        fontSize: 13,
+                        fontWeight: 800,
+                      }}
+                    >
+                      Back {distanceToBack} m
+                    </span>
+                  </div>
+                ) : null}
+
+                {distanceStatus === 'error' && (
+                  <div
+                    style={{
+                      marginTop: 6,
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: '#fca5a5',
+                    }}
+                  >
+                    {distanceErrorMessage ?? 'Kunde inte hämta GPS-avstånd'}
                   </div>
                 )}
               </div>
