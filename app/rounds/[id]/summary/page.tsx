@@ -118,6 +118,7 @@ function ScoreTable({
   selectedPlayer,
   scoringMode,
   totalLabel,
+  handicapHoleCount,
 }: {
   title: string
   holes: HoleLike[]
@@ -125,6 +126,7 @@ function ScoreTable({
   selectedPlayer: Pick<SummaryPlayer, 'playingHandicap'>
   scoringMode: string
   totalLabel: string
+  handicapHoleCount: number
 }) {
   const parTotal = holes.reduce((sum, hole) => sum + hole.par, 0)
 
@@ -139,7 +141,11 @@ function ScoreTable({
     return stablefordPoints(
       score.strokes,
       score.par,
-      receivedStrokesOnHole(selectedPlayer.playingHandicap, score.hcpIndex, 18)
+      receivedStrokesOnHole(
+        selectedPlayer.playingHandicap ?? 0,
+        score.hcpIndex,
+        handicapHoleCount
+      )
     )
   })
 
@@ -507,6 +513,7 @@ export default async function SummaryPage({
     (hole: HoleLike) => hole.hole_number >= startHole && hole.hole_number <= endHole
   )
 
+  const handicapHoleCount = visibleHoles.length
   const isNineHoleRound = round.holes_mode === 9
 
   const firstHalf = isNineHoleRound ? visibleHoles : visibleHoles.slice(0, 9)
@@ -530,14 +537,18 @@ export default async function SummaryPage({
 
       const points = rows.reduce((sum: number, row: any) => {
         const hole = visibleHoles.find((item: HoleLike) => item.hole_number === row.hole_number)
-        if (!hole) return sum
+        if (!hole || row.strokes == null) return sum
 
         return (
           sum +
           stablefordPoints(
             row.strokes,
             hole.par,
-            receivedStrokesOnHole(player.playing_handicap, hole.hcp_index, 18)
+            receivedStrokesOnHole(
+              player.playing_handicap ?? 0,
+              hole.hcp_index,
+              handicapHoleCount
+            )
           )
         )
       }, 0)
@@ -1113,6 +1124,7 @@ export default async function SummaryPage({
                   selectedPlayer={selectedPlayer}
                   scoringMode={round.scoring_mode}
                   totalLabel={isNineHoleRound ? 'Summa' : 'Ut'}
+                  handicapHoleCount={handicapHoleCount}
                 />
 
                 {!isNineHoleRound && secondHalf.length > 0 ? (
@@ -1123,6 +1135,7 @@ export default async function SummaryPage({
                     selectedPlayer={selectedPlayer}
                     scoringMode={round.scoring_mode}
                     totalLabel="In"
+                    handicapHoleCount={handicapHoleCount}
                   />
                 ) : null}
 
