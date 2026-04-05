@@ -1,46 +1,201 @@
+'use client'
+
+import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { signIn, signUp } from './actions'
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ message?: string }> }) {
-  const params = await searchParams
-  const message = params.message
+export default function LoginPage() {
+  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const searchParams = useSearchParams()
+  const message = searchParams.get('message')
 
   return (
     <main>
       <div className="container auth-shell">
-        <div className="card stack">
-          <div>
-            <span className="badge">🔐 Login</span>
-            <h1>Logga in eller skapa konto</h1>
-            <p className="muted">Varje golfvän kan ha sitt eget konto, sitt HCP och sin standard-tee sparad i profilen.</p>
+        <div
+          className="card stack"
+          style={{ maxWidth: 520, margin: '0 auto' }}
+        >
+          {/* Header */}
+          <div className="stack" style={{ gap: 8 }}>
+            <span className="badge">🔐 Konto</span>
+
+            <h1 style={{ margin: 0 }}>
+              {mode === 'login'
+                ? 'Välkommen tillbaka'
+                : 'Skapa ditt konto'}
+            </h1>
+
+            <p className="muted" style={{ margin: 0 }}>
+              {mode === 'login'
+                ? 'Logga in för att fortsätta.'
+                : 'Skapa ett konto för att spara HCP och standard-tee i din profil.'}
+            </p>
           </div>
 
-          {message ? <div className="notice">{message}</div> : null}
-
-          <form className="stack" action={signIn}>
-            <div>
-              <label htmlFor="email">E-post</label>
-              <input id="email" name="email" type="email" required />
+          {/* Message */}
+          {message ? (
+            <div className="notice" role="status" aria-live="polite">
+              {message}
             </div>
-            <div>
-              <label htmlFor="password">Lösenord</label>
-              <input id="password" name="password" type="password" minLength={6} required />
+          ) : null}
+
+          {/* Tabs */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 8,
+              background: '#f5f7f4',
+              padding: 6,
+              borderRadius: 12,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setMode('login')}
+              className={mode === 'login' ? '' : 'secondary'}
+              aria-pressed={mode === 'login'}
+            >
+              Logga in
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMode('signup')}
+              className={mode === 'signup' ? '' : 'secondary'}
+              aria-pressed={mode === 'signup'}
+            >
+              Skapa konto
+            </button>
+          </div>
+
+          {/* LOGIN */}
+          {mode === 'login' && (
+            <form className="stack" action={signIn}>
+              <div className="stack" style={{ gap: 6 }}>
+                <label htmlFor="login-email">E-post</label>
+                <input
+                  id="login-email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                />
+              </div>
+
+              <div className="stack" style={{ gap: 6 }}>
+                <label htmlFor="login-password">Lösenord</label>
+                <input
+                  id="login-password"
+                  name="password"
+                  type="password"
+                  minLength={6}
+                  autoComplete="current-password"
+                  required
+                />
+              </div>
+
+              <button type="submit">Logga in</button>
+            </form>
+          )}
+
+          {/* SIGNUP */}
+          {mode === 'signup' && (
+            <div className="stack">
+              {/* Info */}
+              <div
+                style={{
+                  background: '#f0fdf4',
+                  border: '1px solid #dbeedc',
+                  borderRadius: 12,
+                  padding: 12,
+                  fontSize: 14,
+                  lineHeight: 1.5,
+                }}
+              >
+                <strong>Så går det till</strong>
+                <br />
+                1. Skapa konto
+                <br />
+                2. Bekräfta din e-post
+                <br />
+                3. Vänta på godkännande
+              </div>
+
+              <form className="stack" action={signUp}>
+                <div className="stack" style={{ gap: 6 }}>
+                  <label htmlFor="displayName">Namn</label>
+                  <input
+                    id="displayName"
+                    name="displayName"
+                    type="text"
+                    autoComplete="name"
+                    required
+                  />
+                </div>
+
+                <div className="stack" style={{ gap: 6 }}>
+                  <label htmlFor="signup-email">E-post</label>
+                  <input
+                    id="signup-email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                  />
+                </div>
+
+                <div className="stack" style={{ gap: 6 }}>
+                  <label htmlFor="signup-password">Lösenord</label>
+                  <input
+                    id="signup-password"
+                    name="password"
+                    type="password"
+                    minLength={6}
+                    autoComplete="new-password"
+                    required
+                  />
+                  <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+                    Minst 6 tecken.
+                  </p>
+                </div>
+
+                <div className="stack" style={{ gap: 6 }}>
+                  <label htmlFor="handicapIndex">
+                    Handicapindex (valfritt)
+                  </label>
+                  <input
+                    id="handicapIndex"
+                    name="handicapIndex"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    placeholder="Till exempel 18.4"
+                  />
+                </div>
+
+                <div className="stack" style={{ gap: 6 }}>
+                  <label htmlFor="defaultTee">Standardtee</label>
+                  <select
+                    id="defaultTee"
+                    name="defaultTee"
+                    defaultValue="yellow"
+                  >
+                    <option value="yellow">Gul</option>
+                    <option value="red">Röd</option>
+                  </select>
+                  <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+                    Används som förvalt val när du spelar.
+                  </p>
+                </div>
+
+                <button type="submit" className="secondary">
+                  Skapa konto
+                </button>
+              </form>
             </div>
-            <button type="submit">Logga in</button>
-          </form>
-
-          <hr style={{ width: '100%', border: 0, borderTop: '1px solid #e6ece4' }} />
-
-          <form className="stack" action={signUp}>
-            <input name="displayName" type="text" placeholder="Namn" required />
-            <input name="email" type="email" placeholder="E-post" required />
-            <input name="password" type="password" placeholder="Minst 6 tecken" minLength={6} required />
-            <input name="handicapIndex" type="number" step="0.1" min="0" placeholder="Handicapindex, t.ex. 18.4" />
-            <select name="defaultTee" defaultValue="yellow">
-              <option value="yellow">Standardtee: Gul</option>
-              <option value="red">Standardtee: Röd</option>
-            </select>
-            <button type="submit" className="secondary">Skapa konto</button>
-          </form>
+          )}
         </div>
       </div>
     </main>
