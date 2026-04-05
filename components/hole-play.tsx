@@ -89,6 +89,11 @@ export function HolePlay({
   const [savedFlash, setSavedFlash] = useState(false)
   const [previewHoleNumber, setPreviewHoleNumber] = useState<number>(hole.hole_number)
   const [showFinishModal, setShowFinishModal] = useState(false)
+  const [playerPosition, setPlayerPosition] = useState<{
+    lat: number
+    lng: number
+  } | null>(null)
+  const [distanceToGreen, setDistanceToGreen] = useState<number | null>(null)
 
   const allPlayersHaveScores = (candidateValues: Record<string, string>) => {
     if (!players?.length) return false
@@ -330,6 +335,31 @@ export function HolePlay({
     setPreviewHoleNumber(hole.hole_number)
     setHoleImageError(false)
     setShowHoleImage(true)
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const coords = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          }
+
+          setPlayerPosition(coords)
+
+          // TODO: temporär dummy (vi fixar riktig green-data sen)
+          const green = {
+            lat: 59.5,
+            lng: 17.5,
+          }
+
+          const distance = getDistance(coords, green)
+          setDistanceToGreen(Math.round(distance))
+        },
+        () => {
+          console.log('GPS denied')
+        }
+      )
+    }
   }
 
   const closeHoleImage = () => {
@@ -386,6 +416,26 @@ export function HolePlay({
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [showHoleImage, previewHoleNumber, startHole, endHole])
+
+  const getDistance = (
+    from: { lat: number; lng: number },
+    to: { lat: number; lng: number }
+  ) => {
+    const R = 6371e3
+    const φ1 = (from.lat * Math.PI) / 180
+    const φ2 = (to.lat * Math.PI) / 180
+    const Δφ = ((to.lat - from.lat) * Math.PI) / 180
+    const Δλ = ((to.lng - from.lng) * Math.PI) / 180
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) *
+        Math.sin(Δλ / 2) * Math.sin(Δλ / 2)
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+
+    return R * c
+  }
 
   return (
     <>
@@ -1124,8 +1174,23 @@ export function HolePlay({
                 color: '#fff',
               }}
             >
-              <div style={{ fontWeight: 900, fontSize: 18 }}>
-                Hål {previewHoleNumber}
+              <div>
+                <div style={{ fontWeight: 900, fontSize: 18 }}>
+                  Hål {previewHoleNumber}
+                </div>
+
+                {distanceToGreen != null && (
+                  <div
+                    style={{
+                      marginTop: 4,
+                      fontSize: 14,
+                      fontWeight: 800,
+                      color: '#22c55e',
+                    }}
+                  >
+                    📏 {distanceToGreen} m till green
+                  </div>
+                )}
               </div>
 
               <button
