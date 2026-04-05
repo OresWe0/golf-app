@@ -46,6 +46,12 @@ type Props = {
   playerStreaks?: Record<string, number>
 }
 
+function formatToPar(value?: number | null) {
+  if (value == null) return '-'
+  if (value > 0) return `+${value}`
+  return `${value}`
+}
+
 export function HolePlay({
   roundId,
   currentHole,
@@ -645,7 +651,7 @@ export function HolePlay({
                     </div>
                     <div style={{ marginTop: 4, opacity: 0.82, fontSize: 13, fontWeight: 700 }}>
                       {entry.totalPoints != null
-                        ? `${entry.totalPoints} p`
+                        ? `${entry.totalPoints} p · ${formatToPar(entry.totalToPar)}`
                         : entry.scoreText ?? '-'}
                     </div>
                   </div>
@@ -723,13 +729,21 @@ export function HolePlay({
                     <div
                       style={{
                         marginTop: 6,
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 8,
+                        alignItems: 'center',
                         color: '#64748b',
-                        lineHeight: 1.35,
                         fontWeight: 700,
                         fontSize: 15,
+                        lineHeight: 1.35,
                       }}
                     >
-                      Hål {hole.hole_number} · {leaderboardMeta?.totalPoints ?? '-'} p
+                      <span>Hål {hole.hole_number}</span>
+                      <span style={{ opacity: 0.45 }}>•</span>
+                      <span>{leaderboardMeta?.totalPoints ?? '-'} p</span>
+                      <span style={{ opacity: 0.45 }}>•</span>
+                      <span>Till par {formatToPar(leaderboardMeta?.totalToPar)}</span>
                     </div>
 
                     <div
