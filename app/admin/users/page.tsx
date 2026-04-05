@@ -28,38 +28,6 @@ export default async function AdminUsersPage() {
   const pending = pendingUsers ?? []
   const approved = approvedUsers ?? []
 
-  async function approveUser(formData: FormData) {
-    'use server'
-
-    const supabase = await createClient()
-    const userId = String(formData.get('userId') ?? '')
-
-    if (!userId) return
-
-    await supabase
-      .from('profiles')
-      .update({ is_approved: true })
-      .eq('id', userId)
-
-    redirect('/admin/users')
-  }
-
-  async function denyUser(formData: FormData) {
-    'use server'
-
-    const supabase = await createClient()
-    const userId = String(formData.get('userId') ?? '')
-
-    if (!userId) return
-
-    await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', userId)
-
-    redirect('/admin/users')
-  }
-
   return (
     <main>
       <div className="container">
@@ -233,7 +201,7 @@ export default async function AdminUsersPage() {
                       gap: 10,
                     }}
                   >
-                    <form action={approveUser}>
+                    <form action="/admin/approve-user" method="POST">
                       <input type="hidden" name="userId" value={profile.id} />
                       <button
                         type="submit"
@@ -248,7 +216,7 @@ export default async function AdminUsersPage() {
                       </button>
                     </form>
 
-                    <form action={denyUser}>
+                    <form action="/admin/deny-user" method="POST">
                       <input type="hidden" name="userId" value={profile.id} />
                       <button
                         type="submit"
