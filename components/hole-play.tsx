@@ -52,6 +52,27 @@ function formatToPar(value?: number | null) {
   return `${value}`
 }
 
+const GREEN_POSITIONS: Record<number, { lat: number; lng: number }> = {
+  1: { lat: 59.34922, lng: 15.19528 },
+  2: { lat: 59.34985, lng: 15.19830 },
+  3: { lat: 59.35170, lng: 15.20331 },
+  4: { lat: 59.34990, lng: 15.20645 },
+  5: { lat: 59.34730, lng: 15.20880 },
+  6: { lat: 59.34685, lng: 15.20710 },
+  7: { lat: 59.34820, lng: 15.21350 },
+  8: { lat: 59.34665, lng: 15.21550 },
+  9: { lat: 59.34845, lng: 15.20520 },
+  10: { lat: 59.34650, lng: 15.19840 },
+  11: { lat: 59.34560, lng: 15.19320 },
+  12: { lat: 59.34415, lng: 15.19450 },
+  13: { lat: 59.34270, lng: 15.18780 },
+  14: { lat: 59.34215, lng: 15.18610 },
+  15: { lat: 59.34140, lng: 15.19120 },
+  16: { lat: 59.34355, lng: 15.19210 },
+  17: { lat: 59.34580, lng: 15.19790 },
+  18: { lat: 59.34771, lng: 15.19655 },
+}
+
 export function HolePlay({
   roundId,
   currentHole,
@@ -346,19 +367,22 @@ export function HolePlay({
 
           setPlayerPosition(coords)
 
-          // TODO: temporär dummy (vi fixar riktig green-data sen)
-          const green = {
-            lat: 59.5,
-            lng: 17.5,
-          }
+          const green = GREEN_POSITIONS[hole.hole_number]
 
-          const distance = getDistance(coords, green)
-          setDistanceToGreen(Math.round(distance))
+          if (green) {
+            const distance = getDistance(coords, green)
+            setDistanceToGreen(Math.round(distance))
+          } else {
+            setDistanceToGreen(null)
+          }
         },
         () => {
           console.log('GPS denied')
+          setDistanceToGreen(null)
         }
       )
+    } else {
+      setDistanceToGreen(null)
     }
   }
 
