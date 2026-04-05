@@ -26,8 +26,10 @@ type Hole = {
 type LeaderboardEntry = {
   playerId: string
   position: number
-  label?: string
   scoreText?: string
+  totalPoints?: number
+  totalToPar?: number
+  totalStrokes?: number
   isLeader?: boolean
 }
 
@@ -53,7 +55,7 @@ export function HolePlay({
   hole,
   players,
   scores,
-  leaderboard,
+  leaderboard = [],
   playerStreaks,
 }: Props) {
   const router = useRouter()
@@ -149,6 +151,27 @@ export function HolePlay({
   }, [hole.par])
 
   const holeImageSrc = `/course-images/karsta/${previewHoleNumber}.jpg`
+
+  const leaderboardByPlayerId = useMemo(() => {
+    return new Map(leaderboard.map((entry) => [String(entry.playerId), entry]))
+  }, [leaderboard])
+
+  const topLeaderboard = useMemo(() => {
+    return [...leaderboard]
+      .sort((a, b) => {
+        if (a.position !== b.position) return a.position - b.position
+
+        const aPoints = a.totalPoints ?? -999
+        const bPoints = b.totalPoints ?? -999
+        return bPoints - aPoints
+      })
+      .slice(0, 3)
+  }, [leaderboard])
+
+  const leaderIds = useMemo(() => {
+    const leaders = leaderboard.filter((entry) => entry.position === 1)
+    return new Set(leaders.map((entry) => String(entry.playerId)))
+  }, [leaderboard])
 
   const goPrevious = () => {
     const target =
@@ -297,61 +320,6 @@ export function HolePlay({
     }
   }
 
-  const derivedLeaderboard = useMemo(() => {
-    if (leaderboard?.length) return leaderboard
-
-    const ranked = players
-      .map((player) => {
-        const raw = values[String(player.id)]
-        const score = raw ? Number(raw) : null
-        const relative = score == null ? 999 : score - hole.par
-
-        return {
-          playerId: String(player.id),
-          position: 0,
-          score,
-          relative,
-          label:
-            score == null
-              ? 'Ingen score'
-              : relative === 0
-                ? 'Par'
-                : relative > 0
-                  ? `+${relative}`
-                  : `${relative}`,
-        }
-      })
-      .sort((a, b) => {
-        if (a.relative !== b.relative) return a.relative - b.relative
-        return (a.score ?? 999) - (b.score ?? 999)
-      })
-      .map((entry, index, arr) => {
-        const previous = arr[index - 1]
-        const sameAsPrev =
-          previous &&
-          previous.relative === entry.relative &&
-          (previous.score ?? null) === (entry.score ?? null)
-
-        return {
-          ...entry,
-          position: sameAsPrev ? previous.position : index + 1,
-          isLeader: index === 0 && entry.score != null,
-          scoreText: entry.score == null ? 'Väntar' : `${entry.score} slag`,
-        }
-      })
-
-    return ranked
-  }, [leaderboard, players, values, hole.par])
-
-  const leaderIds = useMemo(() => {
-    const leaders = derivedLeaderboard.filter((entry) => entry.position === 1 && entry.isLeader)
-    return new Set(leaders.map((entry) => String(entry.playerId)))
-  }, [derivedLeaderboard])
-
-  const getLeaderboardMeta = (playerId: string) => {
-    return derivedLeaderboard.find((entry) => String(entry.playerId) === String(playerId))
-  }
-
   const openHoleImage = () => {
     setPreviewHoleNumber(hole.hole_number)
     setHoleImageError(false)
@@ -494,7 +462,8 @@ export function HolePlay({
           style={{
             border: '1px solid rgba(255,255,255,0.55)',
             borderRadius: 28,
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.82) 0%, rgba(244,248,244,0.78) 100%)',
+            background:
+              'linear-gradient(180deg, rgba(255,255,255,0.82) 0%, rgba(244,248,244,0.78) 100%)',
             backdropFilter: 'blur(14px)',
             WebkitBackdropFilter: 'blur(14px)',
             boxShadow: '0 18px 50px rgba(15, 23, 42, 0.08)',
@@ -514,7 +483,8 @@ export function HolePlay({
             <div
               style={{
                 borderRadius: 24,
-                background: 'linear-gradient(135deg, rgba(236,253,245,0.92) 0%, rgba(220,252,231,0.88) 100%)',
+                background:
+                  'linear-gradient(135deg, rgba(236,253,245,0.92) 0%, rgba(220,252,231,0.88) 100%)',
                 border: '1px solid rgba(134, 239, 172, 0.65)',
                 padding: 16,
                 boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)',
@@ -588,7 +558,8 @@ export function HolePlay({
             style={{
               borderRadius: 22,
               padding: 14,
-              background: 'linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(30,41,59,0.90) 100%)',
+              background:
+                'linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(30,41,59,0.90) 100%)',
               color: '#fff',
               display: 'grid',
               gap: 10,
@@ -639,9 +610,9 @@ export function HolePlay({
                 gap: 10,
               }}
             >
-              {derivedLeaderboard.slice(0, 3).map((entry) => {
+              {topLeaderboard.map((entry) => {
                 const player = players.find((p) => String(p.id) === String(entry.playerId))
-                const isLeader = entry.position === 1 && entry.isLeader
+                const isLeader = entry.position === 1
 
                 return (
                   <div
@@ -673,7 +644,9 @@ export function HolePlay({
                       {player?.display_name ?? 'Spelare'}
                     </div>
                     <div style={{ marginTop: 4, opacity: 0.82, fontSize: 13, fontWeight: 700 }}>
-                      {entry.label ?? entry.scoreText ?? 'Live'}
+                      {entry.totalPoints != null
+                        ? `${entry.totalPoints} p`
+                        : entry.scoreText ?? '-'}
                     </div>
                   </div>
                 )
@@ -687,7 +660,10 @@ export function HolePlay({
             const playerId = String(player.id)
             const selectedValue = values[playerId]
             const selectedScore = selectedValue ? Number(selectedValue) : null
-            const selectedTone = selectedScore == null ? null : getScoreTone(selectedScore)
+            const selectedTone =
+              selectedScore == null
+                ? null
+                : getScoreTone(selectedScore)
 
             const received = receivedStrokesOnHole(
               player.playing_handicap ?? 0,
@@ -695,7 +671,7 @@ export function HolePlay({
               totalHoles
             )
 
-            const leaderboardMeta = getLeaderboardMeta(playerId)
+            const leaderboardMeta = leaderboardByPlayerId.get(playerId)
             const isLeader = leaderIds.has(playerId)
             const streak = playerStreaks?.[playerId] ?? 0
             const showHotStreak = streak >= 2
@@ -753,7 +729,7 @@ export function HolePlay({
                         fontSize: 15,
                       }}
                     >
-                      Hål {hole.hole_number}
+                      Hål {hole.hole_number} · {leaderboardMeta?.totalPoints ?? '-'} p
                     </div>
 
                     <div
@@ -1254,7 +1230,8 @@ export function HolePlay({
             style={{
               width: '100%',
               maxWidth: 430,
-              background: 'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,250,252,0.92) 100%)',
+              background:
+                'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,250,252,0.92) 100%)',
               border: '1px solid rgba(255,255,255,0.7)',
               backdropFilter: 'blur(16px)',
               borderRadius: 28,

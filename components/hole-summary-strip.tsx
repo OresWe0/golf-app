@@ -64,8 +64,8 @@ export default function HoleSummaryStrip({
     scoringMode === 'stableford'
       ? 'Poängbogey'
       : scoringMode === 'strokeplay'
-      ? 'Slagspel'
-      : scoringMode
+        ? 'Slagspel'
+        : scoringMode
 
   const getResultClass = (marker: string | null) => {
     switch (marker) {
@@ -86,11 +86,11 @@ export default function HoleSummaryStrip({
     <div>
       <h3 className="mb-2 text-base font-bold text-green-700">{title}</h3>
 
-      <div className="overflow-x-auto border border-gray-300 rounded-2xl bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-gray-300 bg-white">
         <table className="min-w-full text-sm">
           <thead>
             <tr className="bg-gray-50">
-              <th className="sticky left-0 z-10 px-2 py-1 text-left font-semibold bg-gray-50">
+              <th className="sticky left-0 z-10 bg-gray-50 px-2 py-1 text-left font-semibold">
                 Hål
               </th>
               {scores.map((score) => (
@@ -107,7 +107,7 @@ export default function HoleSummaryStrip({
             </tr>
 
             <tr className="bg-gray-100">
-              <th className="sticky left-0 z-10 px-2 py-1 text-left font-semibold bg-gray-100">
+              <th className="sticky left-0 z-10 bg-gray-100 px-2 py-1 text-left font-semibold">
                 Par
               </th>
               {scores.map((score) => (
@@ -124,7 +124,7 @@ export default function HoleSummaryStrip({
 
           <tbody>
             <tr>
-              <td className="sticky left-0 z-10 px-2 py-1 font-medium bg-white">
+              <td className="sticky left-0 z-10 bg-white px-2 py-1 font-medium">
                 Res
               </td>
               {scores.map((score) => (
@@ -133,7 +133,7 @@ export default function HoleSummaryStrip({
                     <span className="text-gray-400">-</span>
                   ) : (
                     <span
-                      className={`inline-flex w-9 h-9 items-center justify-center font-bold ${getResultClass(
+                      className={`inline-flex h-9 w-9 items-center justify-center font-bold ${getResultClass(
                         score.marker
                       )}`}
                     >
@@ -145,9 +145,9 @@ export default function HoleSummaryStrip({
               <td className="px-2 py-1 text-center font-semibold">{strokesTotal}</td>
             </tr>
 
-            {showPoints && (
+            {showPoints ? (
               <tr>
-                <td className="sticky left-0 z-10 px-2 py-1 font-medium bg-white">P</td>
+                <td className="sticky left-0 z-10 bg-white px-2 py-1 font-medium">P</td>
                 {pointsPerHole.map((points, index) => (
                   <td
                     key={`points-${scores[index].holeNumber}`}
@@ -162,29 +162,29 @@ export default function HoleSummaryStrip({
                 ))}
                 <td className="px-2 py-1 text-center font-semibold">{pointsTotal}</td>
               </tr>
-            )}
+            ) : null}
           </tbody>
         </table>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-4 text-xs text-gray-600">
         <span className="flex items-center gap-2">
-          <span className="inline-block w-4 h-4 rounded-full border-2 border-green-700" />
+          <span className="inline-block h-4 w-4 rounded-full border-2 border-green-700" />
           bättre hål
         </span>
         <span className="flex items-center gap-2">
-          <span className="inline-block w-4 h-4 rounded-lg border-2 border-red-700 bg-red-50" />
+          <span className="inline-block h-4 w-4 rounded-lg border-2 border-red-700 bg-red-50" />
           svagare hål
         </span>
         <span className="flex items-center gap-2">
-          <span className="inline-block w-4 h-4 rounded-full border-2 border-green-700 shadow-[0_0_0_3px_#d1fae5]" />
+          <span className="inline-block h-4 w-4 rounded-full border-2 border-green-700 shadow-[0_0_0_3px_#d1fae5]" />
           dubblat bättre hål
         </span>
         <span className="flex items-center gap-2">
-          <span className="inline-block w-4 h-4 rounded-lg border-2 border-yellow-700 bg-yellow-50" />
+          <span className="inline-block h-4 w-4 rounded-lg border-2 border-yellow-700 bg-yellow-50" />
           dubblat svagare hål
         </span>
-        <span className="ml-auto inline-flex items-center font-bold text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-1">
+        <span className="ml-auto inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2 py-1 font-bold text-green-700">
           {scoringLabel}
         </span>
       </div>
