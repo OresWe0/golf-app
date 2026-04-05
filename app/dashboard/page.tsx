@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { signOut } from '@/app/login/actions'
+import InstallAppPrompt from '@/components/install-app-prompt'
 import type { Course, Profile, Round } from '@/lib/types'
 
 const ADMIN_EMAIL = 'sigge@dufvander.se'
@@ -813,6 +814,8 @@ export default async function DashboardPage({
             isAdmin={isAdmin}
             pendingCount={pendingCount}
           />
+
+          <InstallAppPrompt />
 
           {isAdmin ? <AdminPendingBanner pendingCount={pendingCount} /> : null}
 
