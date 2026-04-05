@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
 const STORAGE_KEY = 'install-app-prompt-dismissed'
@@ -13,6 +13,17 @@ function isIosDevice() {
   if (typeof window === 'undefined') return false
   const ua = window.navigator.userAgent.toLowerCase()
   return /iphone|ipad|ipod/.test(ua)
+}
+
+function isSafariBrowser() {
+  if (typeof window === 'undefined') return false
+  const ua = window.navigator.userAgent.toLowerCase()
+  return (
+    ua.includes('safari') &&
+    !ua.includes('crios') &&
+    !ua.includes('fxios') &&
+    !ua.includes('edgios')
+  )
 }
 
 function isStandaloneMode() {
@@ -31,7 +42,7 @@ export default function InstallAppPrompt() {
   const [mounted, setMounted] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const [installed, setInstalled] = useState(false)
-  const [isIos, setIsIos] = useState(false)
+  const [isIosSafari, setIsIosSafari] = useState(false)
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null)
 
@@ -40,8 +51,9 @@ export default function InstallAppPrompt() {
 
     const wasDismissed = window.localStorage.getItem(STORAGE_KEY) === 'true'
     setDismissed(wasDismissed)
+
     setInstalled(isStandaloneMode())
-    setIsIos(isIosDevice())
+    setIsIosSafari(isIosDevice() && isSafariBrowser())
 
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault()
@@ -81,7 +93,7 @@ export default function InstallAppPrompt() {
   if (!mounted || installed || dismissed) return null
 
   const showAndroidPrompt = !!deferredPrompt
-  const showIosPrompt = isIos
+  const showIosPrompt = isIosSafari
 
   if (!showAndroidPrompt && !showIosPrompt) return null
 
@@ -101,13 +113,13 @@ export default function InstallAppPrompt() {
           📲 Installera Golfrundan
         </div>
 
-        {showAndroidPrompt ? (
+        {showAndroidPrompt && (
           <div className="muted" style={{ lineHeight: 1.5 }}>
             Lägg appen på hemskärmen för snabbare åtkomst och en mer app-lik upplevelse.
           </div>
-        ) : null}
+        )}
 
-        {showIosPrompt ? (
+        {showIosPrompt && (
           <div className="muted" style={{ lineHeight: 1.6 }}>
             Lägg appen på hemskärmen:
             <br />
@@ -115,11 +127,11 @@ export default function InstallAppPrompt() {
             <br />
             <strong>2.</strong> Välj <strong>Lägg till på hemskärmen</strong>
           </div>
-        ) : null}
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        {showAndroidPrompt ? (
+        {showAndroidPrompt && (
           <button
             type="button"
             onClick={handleInstall}
@@ -128,7 +140,7 @@ export default function InstallAppPrompt() {
           >
             Installera app
           </button>
-        ) : null}
+        )}
 
         <button
           type="button"
