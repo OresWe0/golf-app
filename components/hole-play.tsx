@@ -155,17 +155,17 @@ export function HolePlay({
   }
 
   const confirmFinishRound = async () => {
-  const response = await fetch(`/api/rounds/${roundId}/complete`, {
-    method: 'POST',
-  })
+    const response = await fetch(`/api/rounds/${roundId}/complete`, {
+      method: 'POST',
+    })
 
-  if (!response.ok) {
-    alert('Kunde inte avsluta rundan.')
-    return
+    if (!response.ok) {
+      alert('Kunde inte avsluta rundan.')
+      return
+    }
+
+    router.push(`/rounds/${roundId}/summary`)
   }
-
-  router.push(`/rounds/${roundId}/summary`)
-}
 
   const saveScores = async (overrideValues?: Record<string, string>) => {
     const valuesToSave = overrideValues ?? values
@@ -241,34 +241,47 @@ export function HolePlay({
   const getScoreTone = (score: number) => {
     const diff = score - hole.par
 
-    if (diff <= -1) {
+    if (diff <= -2) {
       return {
-        background: '#f0fdf4',
-        border: '1px solid #86efac',
-        color: '#166534',
+        background: '#15803d',
+        border: '2px solid #166534',
+        color: '#ffffff',
+        glow: 'rgba(21, 128, 61, 0.30)',
+      }
+    }
+
+    if (diff === -1) {
+      return {
+        background: '#16a34a',
+        border: '2px solid #15803d',
+        color: '#ffffff',
+        glow: 'rgba(34, 197, 94, 0.28)',
       }
     }
 
     if (diff === 0) {
       return {
-        background: '#f8fafc',
-        border: '1px solid #cbd5e1',
-        color: '#0f172a',
+        background: '#22c55e',
+        border: '2px solid #15803d',
+        color: '#ffffff',
+        glow: 'rgba(34, 197, 94, 0.30)',
       }
     }
 
     if (diff === 1) {
       return {
-        background: '#fff7ed',
-        border: '1px solid #fdba74',
-        color: '#9a3412',
+        background: '#f97316',
+        border: '2px solid #ea580c',
+        color: '#ffffff',
+        glow: 'rgba(249, 115, 22, 0.24)',
       }
     }
 
     return {
-      background: '#fef2f2',
-      border: '1px solid #fca5a5',
-      color: '#991b1b',
+      background: '#dc2626',
+      border: '2px solid #b91c1c',
+      color: '#ffffff',
+      glow: 'rgba(220, 38, 38, 0.22)',
     }
   }
 
@@ -555,8 +568,6 @@ export function HolePlay({
                     const label = getLabel(score, hole.par)
                     const isSelected = selectedValue === String(score)
                     const tone = getScoreTone(score)
-                    const selectedBorderColor =
-                      tone.border.split(' ').pop() ?? '#d1d5db'
 
                     return (
                       <button
@@ -572,14 +583,13 @@ export function HolePlay({
                           placeItems: 'center',
                           gap: 4,
                           background: isSelected ? tone.background : '#fff',
-                          border: isSelected
-                            ? `2px solid ${selectedBorderColor}`
-                            : '1px solid #d1d5db',
+                          border: isSelected ? tone.border : '1px solid #d1d5db',
                           color: isSelected ? tone.color : '#0f172a',
                           boxShadow: isSelected
-                            ? '0 8px 20px rgba(15, 23, 42, 0.08)'
+                            ? `0 0 0 3px ${tone.glow}, 0 10px 24px rgba(15, 23, 42, 0.14)`
                             : 'none',
-                          transform: isSelected ? 'translateY(-1px)' : 'none',
+                          transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+                          transition: 'all 0.15s ease',
                         }}
                       >
                         <div
