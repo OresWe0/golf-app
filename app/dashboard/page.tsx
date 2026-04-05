@@ -590,6 +590,7 @@ function ActiveRoundsSection({
               {showAll ? (
                 <Link
                   href={showLessHref}
+                  scroll={false}
                   className="button secondary"
                   style={{ minWidth: 190, textAlign: 'center' }}
                 >
@@ -598,6 +599,7 @@ function ActiveRoundsSection({
               ) : (
                 <Link
                   href={showMoreHref}
+                  scroll={false}
                   className="button secondary"
                   style={{ minWidth: 220, textAlign: 'center' }}
                 >
@@ -702,6 +704,7 @@ function CompletedRoundsSection({
               {showAll ? (
                 <Link
                   href={showLessHref}
+                  scroll={false}
                   className="button secondary"
                   style={{ minWidth: 210, textAlign: 'center' }}
                 >
@@ -710,6 +713,7 @@ function CompletedRoundsSection({
               ) : (
                 <Link
                   href={showMoreHref}
+                  scroll={false}
                   className="button secondary"
                   style={{ minWidth: 220, textAlign: 'center' }}
                 >
