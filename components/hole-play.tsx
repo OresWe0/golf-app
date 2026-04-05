@@ -243,45 +243,45 @@ export function HolePlay({
 
     if (diff <= -2) {
       return {
-        background: '#15803d',
+        background: 'linear-gradient(135deg, #14532d 0%, #15803d 100%)',
         border: '2px solid #166534',
         color: '#ffffff',
-        glow: 'rgba(21, 128, 61, 0.30)',
+        glow: 'rgba(21, 128, 61, 0.28)',
       }
     }
 
     if (diff === -1) {
       return {
-        background: '#16a34a',
+        background: 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)',
         border: '2px solid #15803d',
         color: '#ffffff',
-        glow: 'rgba(34, 197, 94, 0.28)',
+        glow: 'rgba(34, 197, 94, 0.26)',
       }
     }
 
     if (diff === 0) {
       return {
-        background: '#22c55e',
+        background: 'linear-gradient(135deg, #22c55e 0%, #4ade80 100%)',
         border: '2px solid #15803d',
         color: '#ffffff',
-        glow: 'rgba(34, 197, 94, 0.30)',
+        glow: 'rgba(34, 197, 94, 0.24)',
       }
     }
 
     if (diff === 1) {
       return {
-        background: '#f97316',
+        background: 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)',
         border: '2px solid #ea580c',
         color: '#ffffff',
-        glow: 'rgba(249, 115, 22, 0.24)',
+        glow: 'rgba(249, 115, 22, 0.22)',
       }
     }
 
     return {
-      background: '#dc2626',
+      background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
       border: '2px solid #b91c1c',
       color: '#ffffff',
-      glow: 'rgba(220, 38, 38, 0.22)',
+      glow: 'rgba(220, 38, 38, 0.20)',
     }
   }
 
@@ -348,6 +348,29 @@ export function HolePlay({
 
   return (
     <>
+      <style>{`
+        @keyframes scorePop {
+          0% { transform: scale(0.92); }
+          55% { transform: scale(1.07); }
+          100% { transform: scale(1.03); }
+        }
+
+        @keyframes fadeSlideUp {
+          0% { opacity: 0; transform: translateY(8px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes softPulse {
+          0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.22); }
+          100% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+        }
+
+        @keyframes savedToastIn {
+          0% { opacity: 0; transform: translateY(-10px) scale(0.96); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
+
       <div
         style={{
           paddingBottom: 120,
@@ -369,12 +392,14 @@ export function HolePlay({
           >
             <div
               style={{
-                padding: '10px 14px',
+                padding: '10px 16px',
                 borderRadius: 999,
-                background: '#166534',
+                background: 'linear-gradient(135deg, #166534 0%, #22c55e 100%)',
                 color: '#fff',
                 fontWeight: 800,
-                boxShadow: '0 10px 30px rgba(22, 101, 52, 0.25)',
+                boxShadow: '0 14px 34px rgba(22, 101, 52, 0.28)',
+                backdropFilter: 'blur(8px)',
+                animation: 'savedToastIn 0.18s ease',
               }}
             >
               Score sparad ✅
@@ -487,6 +512,11 @@ export function HolePlay({
             const playerId = String(player.id)
             const selectedValue = values[playerId]
             const selectedScore = selectedValue ? Number(selectedValue) : null
+            const selectedTone =
+              selectedScore == null
+                ? null
+                : getScoreTone(selectedScore)
+
             const received = receivedStrokesOnHole(
               player.playing_handicap ?? 0,
               hole.hcp_index,
@@ -574,7 +604,18 @@ export function HolePlay({
                         key={`${player.id}-${score}`}
                         type="button"
                         onClick={() => setScore(playerId, score)}
+                        onMouseDown={(e) => {
+                          e.currentTarget.style.transform = 'scale(0.96)'
+                        }}
+                        onMouseUp={(e) => {
+                          e.currentTarget.style.transform = isSelected ? 'scale(1.03)' : 'scale(1)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = isSelected ? 'scale(1.03)' : 'scale(1)'
+                        }}
                         style={{
+                          position: 'relative',
+                          overflow: 'hidden',
                           borderRadius: 20,
                           padding: '16px 8px',
                           cursor: 'pointer',
@@ -586,10 +627,12 @@ export function HolePlay({
                           border: isSelected ? tone.border : '1px solid #d1d5db',
                           color: isSelected ? tone.color : '#0f172a',
                           boxShadow: isSelected
-                            ? `0 0 0 3px ${tone.glow}, 0 10px 24px rgba(15, 23, 42, 0.14)`
-                            : 'none',
-                          transform: isSelected ? 'scale(1.05)' : 'scale(1)',
-                          transition: 'all 0.15s ease',
+                            ? `0 0 0 3px ${tone.glow}, 0 14px 30px rgba(15, 23, 42, 0.16)`
+                            : '0 3px 10px rgba(15, 23, 42, 0.04)',
+                          transform: isSelected ? 'scale(1.03)' : 'scale(1)',
+                          transition:
+                            'transform 0.14s ease, box-shadow 0.18s ease, background 0.18s ease, border 0.18s ease, color 0.18s ease',
+                          animation: isSelected ? 'scorePop 0.22s ease, softPulse 0.5s ease' : 'none',
                         }}
                       >
                         <div
@@ -612,6 +655,18 @@ export function HolePlay({
                         >
                           {label}
                         </div>
+
+                        <span
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            borderRadius: 20,
+                            background: isSelected
+                              ? 'linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 55%)'
+                              : 'transparent',
+                            pointerEvents: 'none',
+                          }}
+                        />
                       </button>
                     )
                   })}
@@ -630,16 +685,31 @@ export function HolePlay({
                       border:
                         selectedScore == null
                           ? '1px solid #d1d5db'
-                          : '2px solid #86efac',
+                          : selectedTone?.border,
                       borderRadius: 18,
                       padding: '12px 14px',
-                      background: selectedScore == null ? '#f8fafc' : '#f0fdf4',
+                      background:
+                        selectedScore == null
+                          ? '#f8fafc'
+                          : selectedTone?.background,
                       display: 'grid',
                       gap: 6,
                       alignContent: 'center',
+                      boxShadow:
+                        selectedScore == null
+                          ? 'none'
+                          : `0 0 0 3px ${selectedTone?.glow}, 0 10px 24px rgba(15, 23, 42, 0.10)`,
+                      transition: 'all 0.18s ease',
+                      animation: selectedScore == null ? 'none' : 'fadeSlideUp 0.18s ease',
                     }}
                   >
-                    <div className="muted" style={{ fontSize: 13 }}>
+                    <div
+                      className="muted"
+                      style={{
+                        fontSize: 13,
+                        color: selectedScore == null ? '#64748b' : 'rgba(255,255,255,0.86)',
+                      }}
+                    >
                       Vald score
                     </div>
 
@@ -648,7 +718,7 @@ export function HolePlay({
                         fontSize: 34,
                         fontWeight: 900,
                         lineHeight: 1,
-                        color: selectedScore == null ? '#0f172a' : '#166534',
+                        color: selectedScore == null ? '#0f172a' : '#ffffff',
                       }}
                     >
                       {selectedScore ?? '-'}
@@ -658,12 +728,10 @@ export function HolePlay({
                       style={{
                         fontSize: 14,
                         fontWeight: 800,
-                        color: selectedScore == null ? '#64748b' : '#166534',
+                        color: selectedScore == null ? '#64748b' : '#ffffff',
                       }}
                     >
-                      {selectedScore == null
-                        ? 'Välj antal slag'
-                        : getLabel(selectedScore, hole.par)}
+                      {selectedScore == null ? 'Välj antal slag' : getLabel(selectedScore, hole.par)}
                     </div>
                   </div>
 
