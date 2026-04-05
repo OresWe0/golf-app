@@ -135,15 +135,40 @@ export default async function ProfilePage({
         <div className="card stack" style={{ maxWidth: 680 }}>
           <h2 style={{ margin: 0 }}>Mina vänner</h2>
 
-          <form action={addFriend} style={{ display: 'flex', gap: 10 }}>
+          <form
+            action={addFriend}
+            style={{
+              display: 'grid',
+              gap: 10,
+              width: '100%',
+            }}
+          >
             <input
               name="email"
               type="email"
-              placeholder="E-postadress"
+              placeholder="Skriv e-postadress"
               required
-              style={{ flex: 1 }}
+              style={{
+                width: '100%',
+                minHeight: 52,
+                padding: '0 14px',
+                borderRadius: 14,
+                border: '1px solid #d1d5db',
+                fontSize: 16,
+                boxSizing: 'border-box',
+                background: '#fff',
+              }}
             />
-            <button type="submit">Lägg till</button>
+            <button
+              type="submit"
+              style={{
+                width: '100%',
+                minHeight: 52,
+                fontWeight: 800,
+              }}
+            >
+              Lägg till
+            </button>
           </form>
 
           <div style={{ display: 'grid', gap: 10 }}>
