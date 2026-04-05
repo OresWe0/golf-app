@@ -731,7 +731,7 @@ function CompletedRoundsSection({
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams?: DashboardSearchParams
+  searchParams?: Promise<DashboardSearchParams>
 }) {
   const supabase = await createClient()
 
@@ -743,7 +743,7 @@ export default async function DashboardPage({
     redirect('/login')
   }
 
-  const resolvedSearchParams = searchParams ?? {}
+  const resolvedSearchParams = searchParams ? await searchParams : {}
   const showAllActive = getSingleParam(resolvedSearchParams.showActive) === 'all'
   const showAllCompleted =
     getSingleParam(resolvedSearchParams.showCompleted) === 'all'
