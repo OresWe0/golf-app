@@ -23,6 +23,14 @@ type Hole = {
   hcp_index: number
 }
 
+type LeaderboardEntry = {
+  playerId: string
+  position: number
+  label?: string
+  scoreText?: string
+  isLeader?: boolean
+}
+
 type Props = {
   roundId: string
   currentHole: number
@@ -32,6 +40,8 @@ type Props = {
   hole: Hole
   players: Player[]
   scores: ScoreRow[]
+  leaderboard?: LeaderboardEntry[]
+  playerStreaks?: Record<string, number>
 }
 
 export function HolePlay({
@@ -43,6 +53,8 @@ export function HolePlay({
   hole,
   players,
   scores,
+  leaderboard,
+  playerStreaks,
 }: Props) {
   const router = useRouter()
 
@@ -285,6 +297,61 @@ export function HolePlay({
     }
   }
 
+  const derivedLeaderboard = useMemo(() => {
+    if (leaderboard?.length) return leaderboard
+
+    const ranked = players
+      .map((player) => {
+        const raw = values[String(player.id)]
+        const score = raw ? Number(raw) : null
+        const relative = score == null ? 999 : score - hole.par
+
+        return {
+          playerId: String(player.id),
+          position: 0,
+          score,
+          relative,
+          label:
+            score == null
+              ? 'Ingen score'
+              : relative === 0
+                ? 'Par'
+                : relative > 0
+                  ? `+${relative}`
+                  : `${relative}`,
+        }
+      })
+      .sort((a, b) => {
+        if (a.relative !== b.relative) return a.relative - b.relative
+        return (a.score ?? 999) - (b.score ?? 999)
+      })
+      .map((entry, index, arr) => {
+        const previous = arr[index - 1]
+        const sameAsPrev =
+          previous &&
+          previous.relative === entry.relative &&
+          (previous.score ?? null) === (entry.score ?? null)
+
+        return {
+          ...entry,
+          position: sameAsPrev ? previous.position : index + 1,
+          isLeader: index === 0 && entry.score != null,
+          scoreText: entry.score == null ? 'Väntar' : `${entry.score} slag`,
+        }
+      })
+
+    return ranked
+  }, [leaderboard, players, values, hole.par])
+
+  const leaderIds = useMemo(() => {
+    const leaders = derivedLeaderboard.filter((entry) => entry.position === 1 && entry.isLeader)
+    return new Set(leaders.map((entry) => String(entry.playerId)))
+  }, [derivedLeaderboard])
+
+  const getLeaderboardMeta = (playerId: string) => {
+    return derivedLeaderboard.find((entry) => String(entry.playerId) === String(playerId))
+  }
+
   const openHoleImage = () => {
     setPreviewHoleNumber(hole.hole_number)
     setHoleImageError(false)
@@ -369,11 +436,27 @@ export function HolePlay({
           0% { opacity: 0; transform: translateY(-10px) scale(0.96); }
           100% { opacity: 1; transform: translateY(0) scale(1); }
         }
+
+        @keyframes glassCardIn {
+          0% { opacity: 0; transform: translateY(10px) scale(0.985); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes badgeFloat {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-2px); }
+          100% { transform: translateY(0px); }
+        }
+
+        @keyframes modalIn {
+          0% { opacity: 0; transform: translateY(18px) scale(0.96); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
       `}</style>
 
       <div
         style={{
-          paddingBottom: 120,
+          paddingBottom: 132,
           display: 'grid',
           gap: 14,
         }}
@@ -385,7 +468,7 @@ export function HolePlay({
             style={{
               position: 'sticky',
               top: 12,
-              zIndex: 20,
+              zIndex: 40,
               display: 'flex',
               justifyContent: 'center',
             }}
@@ -409,58 +492,70 @@ export function HolePlay({
 
         <div
           style={{
-            border: '1px solid #e5e7eb',
-            borderRadius: 24,
-            background: '#f8fbf7',
+            border: '1px solid rgba(255,255,255,0.55)',
+            borderRadius: 28,
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.82) 0%, rgba(244,248,244,0.78) 100%)',
+            backdropFilter: 'blur(14px)',
+            WebkitBackdropFilter: 'blur(14px)',
+            boxShadow: '0 18px 50px rgba(15, 23, 42, 0.08)',
             padding: 16,
             display: 'grid',
             gap: 14,
+            animation: 'glassCardIn 0.22s ease',
           }}
         >
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1.15fr) minmax(0, 0.95fr)',
+              gridTemplateColumns: 'minmax(0, 1.05fr) minmax(0, 0.95fr)',
               gap: 12,
             }}
           >
             <div
               style={{
-                borderRadius: 20,
-                background: '#eef7ef',
-                border: '1px solid #bbf7d0',
+                borderRadius: 24,
+                background: 'linear-gradient(135deg, rgba(236,253,245,0.92) 0%, rgba(220,252,231,0.88) 100%)',
+                border: '1px solid rgba(134, 239, 172, 0.65)',
                 padding: 16,
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)',
               }}
             >
               <div
                 style={{
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: 900,
                   color: '#166534',
-                  letterSpacing: 0.5,
+                  letterSpacing: 0.6,
                   textTransform: 'uppercase',
                   marginBottom: 6,
                 }}
               >
                 Hål
               </div>
-              <div style={{ fontSize: 56, lineHeight: 1, fontWeight: 900 }}>
+              <div style={{ fontSize: 58, lineHeight: 1, fontWeight: 900, color: '#0f172a' }}>
                 {hole.hole_number}
               </div>
-              <div className="muted" style={{ marginTop: 8 }}>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: '#475569',
+                  fontWeight: 700,
+                }}
+              >
                 {Math.max(currentHole - startHole + 1, 1)} / {totalHoles}
               </div>
             </div>
 
             <div
               style={{
-                borderRadius: 20,
-                background: '#ffffff',
-                border: '1px solid #d1d5db',
+                borderRadius: 24,
+                background: 'rgba(255,255,255,0.84)',
+                border: '1px solid rgba(209,213,219,0.75)',
                 padding: 16,
                 display: 'grid',
                 gap: 12,
                 alignContent: 'center',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.72)',
               }}
             >
               <div
@@ -489,22 +584,102 @@ export function HolePlay({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={openHoleImage}
+          <div
             style={{
-              border: 'none',
-              borderRadius: 20,
-              padding: '16px 18px',
-              background: '#4dbd4a',
+              borderRadius: 22,
+              padding: 14,
+              background: 'linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(30,41,59,0.90) 100%)',
               color: '#fff',
-              fontSize: 18,
-              fontWeight: 900,
-              cursor: 'pointer',
+              display: 'grid',
+              gap: 10,
+              boxShadow: '0 20px 44px rgba(15, 23, 42, 0.18)',
             }}
           >
-            ⛳ Se banan
-          </button>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: 12,
+                alignItems: 'center',
+                flexWrap: 'wrap',
+              }}
+            >
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 900, opacity: 0.75, letterSpacing: 0.4 }}>
+                  LIVE LEADERBOARD
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 900, marginTop: 2 }}>
+                  Vem leder just nu
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={openHoleImage}
+                style={{
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  borderRadius: 16,
+                  padding: '12px 14px',
+                  background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                  color: '#fff',
+                  fontSize: 15,
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  boxShadow: '0 10px 24px rgba(34, 197, 94, 0.24)',
+                }}
+              >
+                ⛳ Se banan
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                gap: 10,
+              }}
+            >
+              {derivedLeaderboard.slice(0, 3).map((entry) => {
+                const player = players.find((p) => String(p.id) === String(entry.playerId))
+                const isLeader = entry.position === 1 && entry.isLeader
+
+                return (
+                  <div
+                    key={`lb-${entry.playerId}`}
+                    style={{
+                      borderRadius: 18,
+                      padding: 12,
+                      background: isLeader
+                        ? 'linear-gradient(135deg, rgba(34,197,94,0.22) 0%, rgba(22,163,74,0.14) 100%)'
+                        : 'rgba(255,255,255,0.08)',
+                      border: isLeader
+                        ? '1px solid rgba(74, 222, 128, 0.40)'
+                        : '1px solid rgba(255,255,255,0.08)',
+                    }}
+                  >
+                    <div style={{ fontSize: 12, opacity: 0.72, fontWeight: 800 }}>
+                      #{entry.position}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 4,
+                        fontWeight: 900,
+                        fontSize: 16,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {player?.display_name ?? 'Spelare'}
+                    </div>
+                    <div style={{ marginTop: 4, opacity: 0.82, fontSize: 13, fontWeight: 700 }}>
+                      {entry.label ?? entry.scoreText ?? 'Live'}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         </div>
 
         <div style={{ display: 'grid', gap: 14 }}>
@@ -512,10 +687,7 @@ export function HolePlay({
             const playerId = String(player.id)
             const selectedValue = values[playerId]
             const selectedScore = selectedValue ? Number(selectedValue) : null
-            const selectedTone =
-              selectedScore == null
-                ? null
-                : getScoreTone(selectedScore)
+            const selectedTone = selectedScore == null ? null : getScoreTone(selectedScore)
 
             const received = receivedStrokesOnHole(
               player.playing_handicap ?? 0,
@@ -523,17 +695,31 @@ export function HolePlay({
               totalHoles
             )
 
+            const leaderboardMeta = getLeaderboardMeta(playerId)
+            const isLeader = leaderIds.has(playerId)
+            const streak = playerStreaks?.[playerId] ?? 0
+            const showHotStreak = streak >= 2
+
             return (
               <div
                 key={player.id}
                 ref={index === 0 ? firstPlayerCardRef : null}
                 style={{
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 24,
-                  background: '#ffffff',
+                  border: isLeader
+                    ? '1px solid rgba(74, 222, 128, 0.44)'
+                    : '1px solid rgba(255,255,255,0.60)',
+                  borderRadius: 28,
+                  background:
+                    'linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(248,250,252,0.78) 100%)',
+                  backdropFilter: 'blur(14px)',
+                  WebkitBackdropFilter: 'blur(14px)',
+                  boxShadow: isLeader
+                    ? '0 22px 54px rgba(34, 197, 94, 0.12)'
+                    : '0 18px 44px rgba(15, 23, 42, 0.07)',
                   padding: 16,
                   display: 'grid',
                   gap: 14,
+                  animation: 'glassCardIn 0.22s ease',
                 }}
               >
                 <div
@@ -552,21 +738,29 @@ export function HolePlay({
                         fontWeight: 900,
                         lineHeight: 1.1,
                         wordBreak: 'break-word',
+                        color: '#1f3327',
                       }}
                     >
                       {player.display_name ?? 'Spelare'}
                     </div>
 
-                    <div className="muted" style={{ marginTop: 4, lineHeight: 1.35 }}>
-                      HCP {player.exact_handicap ?? '-'} · Spel-HCP{' '}
-                      {player.playing_handicap ?? 0}
+                    <div
+                      style={{
+                        marginTop: 6,
+                        color: '#64748b',
+                        lineHeight: 1.35,
+                        fontWeight: 700,
+                        fontSize: 15,
+                      }}
+                    >
+                      Hål {hole.hole_number}
                     </div>
 
                     <div
                       style={{
                         marginTop: 4,
                         color: '#475569',
-                        fontWeight: 700,
+                        fontWeight: 800,
                         fontSize: 15,
                       }}
                     >
@@ -576,14 +770,74 @@ export function HolePlay({
 
                   <div
                     style={{
-                      padding: '8px 12px',
-                      borderRadius: 999,
-                      background: '#f3f4f6',
-                      fontWeight: 800,
-                      whiteSpace: 'nowrap',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      flexWrap: 'wrap',
+                      justifyContent: 'flex-end',
                     }}
                   >
-                    {player.tee_key === 'red' ? 'Röd tee' : 'Gul tee'}
+                    {isLeader ? (
+                      <div
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: 999,
+                          background: 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)',
+                          color: '#fff',
+                          fontWeight: 900,
+                          whiteSpace: 'nowrap',
+                          boxShadow: '0 10px 22px rgba(34, 197, 94, 0.22)',
+                          animation: 'badgeFloat 2s ease-in-out infinite',
+                        }}
+                      >
+                        👑 Leder nu
+                      </div>
+                    ) : null}
+
+                    {showHotStreak ? (
+                      <div
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: 999,
+                          background: 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)',
+                          color: '#fff',
+                          fontWeight: 900,
+                          whiteSpace: 'nowrap',
+                          boxShadow: '0 10px 22px rgba(249, 115, 22, 0.20)',
+                        }}
+                      >
+                        🔥 Hot streak
+                      </div>
+                    ) : null}
+
+                    {leaderboardMeta?.position ? (
+                      <div
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: 999,
+                          background: 'rgba(255,255,255,0.72)',
+                          fontWeight: 800,
+                          whiteSpace: 'nowrap',
+                          color: '#334155',
+                          border: '1px solid rgba(203,213,225,0.9)',
+                        }}
+                      >
+                        #{leaderboardMeta.position}
+                      </div>
+                    ) : null}
+
+                    <div
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: 999,
+                        background: 'rgba(241,245,249,0.85)',
+                        fontWeight: 800,
+                        whiteSpace: 'nowrap',
+                        color: '#1f3327',
+                      }}
+                    >
+                      {player.tee_key === 'red' ? 'Röd tee' : 'Gul tee'}
+                    </div>
                   </div>
                 </div>
 
@@ -616,14 +870,14 @@ export function HolePlay({
                         style={{
                           position: 'relative',
                           overflow: 'hidden',
-                          borderRadius: 20,
+                          borderRadius: 22,
                           padding: '16px 8px',
                           cursor: 'pointer',
                           minHeight: 92,
                           display: 'grid',
                           placeItems: 'center',
                           gap: 4,
-                          background: isSelected ? tone.background : '#fff',
+                          background: isSelected ? tone.background : 'rgba(255,255,255,0.78)',
                           border: isSelected ? tone.border : '1px solid #d1d5db',
                           color: isSelected ? tone.color : '#0f172a',
                           boxShadow: isSelected
@@ -644,6 +898,7 @@ export function HolePlay({
                         >
                           {score}
                         </div>
+
                         <div
                           style={{
                             fontSize: 10,
@@ -660,7 +915,7 @@ export function HolePlay({
                           style={{
                             position: 'absolute',
                             inset: 0,
-                            borderRadius: 20,
+                            borderRadius: 22,
                             background: isSelected
                               ? 'linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 55%)'
                               : 'transparent',
@@ -686,11 +941,11 @@ export function HolePlay({
                         selectedScore == null
                           ? '1px solid #d1d5db'
                           : selectedTone?.border,
-                      borderRadius: 18,
+                      borderRadius: 20,
                       padding: '12px 14px',
                       background:
                         selectedScore == null
-                          ? '#f8fafc'
+                          ? 'rgba(248,250,252,0.9)'
                           : selectedTone?.background,
                       display: 'grid',
                       gap: 6,
@@ -742,9 +997,9 @@ export function HolePlay({
                       setValues((prev) => ({ ...prev, [playerId]: '' }))
                     }}
                     style={{
-                      border: '1px solid #d1d5db',
-                      background: '#ffffff',
-                      borderRadius: 18,
+                      border: '1px solid rgba(209,213,219,0.95)',
+                      background: 'rgba(255,255,255,0.84)',
+                      borderRadius: 20,
                       padding: '12px 14px',
                       minWidth: 92,
                       fontWeight: 800,
@@ -753,6 +1008,7 @@ export function HolePlay({
                       placeItems: 'center',
                       gap: 4,
                       color: '#475569',
+                      boxShadow: '0 8px 20px rgba(15, 23, 42, 0.05)',
                     }}
                   >
                     <span style={{ fontSize: 18, lineHeight: 1 }}>↺</span>
@@ -771,15 +1027,16 @@ export function HolePlay({
             right: 0,
             bottom: 0,
             zIndex: 30,
-            padding: 16,
+            padding: '16px 16px 20px',
             background:
-              'linear-gradient(180deg, rgba(248,251,247,0) 0%, rgba(248,251,247,0.96) 25%, rgba(248,251,247,1) 100%)',
+              'linear-gradient(180deg, rgba(248,251,247,0) 0%, rgba(248,251,247,0.92) 24%, rgba(248,251,247,0.98) 100%)',
+            backdropFilter: 'blur(10px)',
           }}
         >
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '96px 1fr',
+              gridTemplateColumns: '108px 1fr',
               gap: 12,
               maxWidth: 960,
               margin: '0 auto',
@@ -790,13 +1047,14 @@ export function HolePlay({
               onClick={goPrevious}
               style={{
                 border: 'none',
-                borderRadius: 22,
-                minHeight: 68,
-                background: '#1f6f32',
+                borderRadius: 24,
+                minHeight: 72,
+                background: 'linear-gradient(135deg, #1f6f32 0%, #2f7f37 100%)',
                 color: '#fff',
                 fontSize: 28,
                 fontWeight: 900,
                 cursor: 'pointer',
+                boxShadow: '0 16px 32px rgba(31, 111, 50, 0.22)',
               }}
             >
               ←
@@ -808,10 +1066,12 @@ export function HolePlay({
               disabled={loading || !allPlayersHaveScores(values)}
               style={{
                 border: 'none',
-                borderRadius: 22,
-                minHeight: 68,
+                borderRadius: 24,
+                minHeight: 72,
                 background:
-                  loading || !allPlayersHaveScores(values) ? '#94a3b8' : '#166534',
+                  loading || !allPlayersHaveScores(values)
+                    ? 'linear-gradient(135deg, #94a3b8 0%, #a8b4c7 100%)'
+                    : 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 45%, #22c55e 100%)',
                 color: '#fff',
                 fontSize: 18,
                 fontWeight: 900,
@@ -819,6 +1079,11 @@ export function HolePlay({
                   loading || !allPlayersHaveScores(values)
                     ? 'not-allowed'
                     : 'pointer',
+                boxShadow:
+                  loading || !allPlayersHaveScores(values)
+                    ? 'none'
+                    : '0 18px 38px rgba(37, 99, 235, 0.20)',
+                letterSpacing: 0.2,
               }}
             >
               {loading
@@ -837,7 +1102,8 @@ export function HolePlay({
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(15, 23, 42, 0.82)',
+            background: 'rgba(15, 23, 42, 0.72)',
+            backdropFilter: 'blur(8px)',
             zIndex: 100,
             display: 'grid',
             placeItems: 'center',
@@ -849,11 +1115,13 @@ export function HolePlay({
             style={{
               width: 'min(100%, 980px)',
               maxHeight: '90vh',
-              borderRadius: 24,
+              borderRadius: 28,
               overflow: 'hidden',
               background: '#0f172a',
               display: 'grid',
               gridTemplateRows: 'auto 1fr auto',
+              boxShadow: '0 28px 80px rgba(15, 23, 42, 0.44)',
+              animation: 'modalIn 0.22s ease',
             }}
           >
             <div
@@ -877,7 +1145,7 @@ export function HolePlay({
                   border: '1px solid rgba(255,255,255,0.2)',
                   background: 'rgba(255,255,255,0.08)',
                   color: '#fff',
-                  borderRadius: 12,
+                  borderRadius: 14,
                   padding: '10px 12px',
                   fontWeight: 800,
                   cursor: 'pointer',
@@ -929,10 +1197,12 @@ export function HolePlay({
                 disabled={previewHoleNumber <= startHole}
                 style={{
                   border: 'none',
-                  borderRadius: 16,
+                  borderRadius: 18,
                   padding: '14px 16px',
                   background:
-                    previewHoleNumber <= startHole ? '#475569' : '#1f6f32',
+                    previewHoleNumber <= startHole
+                      ? '#475569'
+                      : 'linear-gradient(135deg, #1f6f32 0%, #2f7f37 100%)',
                   color: '#fff',
                   fontWeight: 900,
                   cursor:
@@ -948,10 +1218,12 @@ export function HolePlay({
                 disabled={previewHoleNumber >= endHole}
                 style={{
                   border: 'none',
-                  borderRadius: 16,
+                  borderRadius: 18,
                   padding: '14px 16px',
                   background:
-                    previewHoleNumber >= endHole ? '#475569' : '#166534',
+                    previewHoleNumber >= endHole
+                      ? '#475569'
+                      : 'linear-gradient(135deg, #166534 0%, #22c55e 100%)',
                   color: '#fff',
                   fontWeight: 900,
                   cursor:
@@ -970,7 +1242,8 @@ export function HolePlay({
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(15, 23, 42, 0.6)',
+            background: 'rgba(15, 23, 42, 0.52)',
+            backdropFilter: 'blur(10px)',
             zIndex: 200,
             display: 'grid',
             placeItems: 'center',
@@ -980,21 +1253,24 @@ export function HolePlay({
           <div
             style={{
               width: '100%',
-              maxWidth: 420,
-              background: '#ffffff',
-              borderRadius: 24,
-              padding: 20,
+              maxWidth: 430,
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,250,252,0.92) 100%)',
+              border: '1px solid rgba(255,255,255,0.7)',
+              backdropFilter: 'blur(16px)',
+              borderRadius: 28,
+              padding: 22,
               display: 'grid',
               gap: 16,
               textAlign: 'center',
-              boxShadow: '0 24px 60px rgba(15, 23, 42, 0.18)',
+              boxShadow: '0 28px 70px rgba(15, 23, 42, 0.20)',
+              animation: 'modalIn 0.2s ease',
             }}
           >
-            <div style={{ fontSize: 22, fontWeight: 900 }}>
+            <div style={{ fontSize: 24, fontWeight: 900 }}>
               🎉 Rundan är klar!
             </div>
 
-            <div style={{ color: '#475569', fontSize: 15, lineHeight: 1.5 }}>
+            <div style={{ color: '#475569', fontSize: 15, lineHeight: 1.55 }}>
               Vill du avsluta rundan och gå vidare till leaderboard och scorekort?
             </div>
 
@@ -1011,10 +1287,10 @@ export function HolePlay({
                 onClick={() => setShowFinishModal(false)}
                 style={{
                   border: '1px solid #d1d5db',
-                  borderRadius: 16,
+                  borderRadius: 18,
                   padding: '14px',
                   fontWeight: 800,
-                  background: '#fff',
+                  background: 'rgba(255,255,255,0.84)',
                   cursor: 'pointer',
                   color: '#0f172a',
                 }}
@@ -1027,12 +1303,13 @@ export function HolePlay({
                 onClick={confirmFinishRound}
                 style={{
                   border: 'none',
-                  borderRadius: 16,
+                  borderRadius: 18,
                   padding: '14px',
                   fontWeight: 900,
-                  background: '#166534',
+                  background: 'linear-gradient(135deg, #166534 0%, #22c55e 100%)',
                   color: '#fff',
                   cursor: 'pointer',
+                  boxShadow: '0 12px 26px rgba(22, 101, 52, 0.22)',
                 }}
               >
                 Bekräfta
