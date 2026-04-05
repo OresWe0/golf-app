@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { signIn, signUp } from './actions'
 
-export default function LoginPage() {
+function LoginPageContent() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const searchParams = useSearchParams()
   const message = searchParams.get('message')
@@ -16,7 +16,6 @@ export default function LoginPage() {
           className="card stack"
           style={{ maxWidth: 520, margin: '0 auto' }}
         >
-          {/* Header */}
           <div className="stack" style={{ gap: 8 }}>
             <span className="badge">🔐 Konto</span>
 
@@ -33,14 +32,12 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Message */}
           {message ? (
             <div className="notice" role="status" aria-live="polite">
               {message}
             </div>
           ) : null}
 
-          {/* Tabs */}
           <div
             style={{
               display: 'grid',
@@ -70,7 +67,6 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* LOGIN */}
           {mode === 'login' && (
             <form className="stack" action={signIn}>
               <div className="stack" style={{ gap: 6 }}>
@@ -100,10 +96,8 @@ export default function LoginPage() {
             </form>
           )}
 
-          {/* SIGNUP */}
           {mode === 'signup' && (
             <div className="stack">
-              {/* Info */}
               <div
                 style={{
                   background: '#f0fdf4',
@@ -199,5 +193,13 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageContent />
+    </Suspense>
   )
 }
