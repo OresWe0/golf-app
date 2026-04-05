@@ -116,7 +116,6 @@ function ScoreTable({
   holes,
   scores,
   selectedPlayer,
-  visibleHoleCount,
   scoringMode,
   totalLabel,
 }: {
@@ -124,7 +123,6 @@ function ScoreTable({
   holes: HoleLike[]
   scores: HoleScoreView[]
   selectedPlayer: Pick<SummaryPlayer, 'playingHandicap'>
-  visibleHoleCount: number
   scoringMode: string
   totalLabel: string
 }) {
@@ -141,11 +139,7 @@ function ScoreTable({
     return stablefordPoints(
       score.strokes,
       score.par,
-      receivedStrokesOnHole(
-        selectedPlayer.playingHandicap,
-        score.hcpIndex,
-        visibleHoleCount
-      )
+      receivedStrokesOnHole(selectedPlayer.playingHandicap, score.hcpIndex, 18)
     )
   })
 
@@ -543,11 +537,7 @@ export default async function SummaryPage({
           stablefordPoints(
             row.strokes,
             hole.par,
-            receivedStrokesOnHole(
-              player.playing_handicap,
-              hole.hcp_index,
-              visibleHoles.length
-            )
+            receivedStrokesOnHole(player.playing_handicap, hole.hcp_index, 18)
           )
         )
       }, 0)
@@ -1121,7 +1111,6 @@ export default async function SummaryPage({
                   holes={firstHalf}
                   scores={selectedFrontScores}
                   selectedPlayer={selectedPlayer}
-                  visibleHoleCount={visibleHoles.length}
                   scoringMode={round.scoring_mode}
                   totalLabel={isNineHoleRound ? 'Summa' : 'Ut'}
                 />
@@ -1132,7 +1121,6 @@ export default async function SummaryPage({
                     holes={secondHalf}
                     scores={selectedBackScores}
                     selectedPlayer={selectedPlayer}
-                    visibleHoleCount={visibleHoles.length}
                     scoringMode={round.scoring_mode}
                     totalLabel="In"
                   />
