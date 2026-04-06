@@ -100,6 +100,7 @@ export default async function RoundPage({
     visibleHoles[0]
 
   const scoreRows = (allScoreRows ?? []) as HoleScoreRow[]
+
   const currentHoleScores = scoreRows.filter(
     (row) => row.hole_number === currentHole.hole_number
   )
@@ -114,7 +115,9 @@ export default async function RoundPage({
         row.hole_number <= endHole
     )
 
-    const totalStrokes = rows.reduce((sum, row) => sum + (row.strokes ?? 0), 0)
+    const totalStrokes = rows.reduce((sum, row) => {
+      return sum + (row.strokes ?? 0)
+    }, 0)
 
     const totalToPar = rows.reduce((sum, row) => {
       const hole = visibleHoles.find((item) => item.hole_number === row.hole_number)
@@ -162,39 +165,39 @@ export default async function RoundPage({
     return a.playerId.localeCompare(b.playerId)
   })
 
-  const leaderboard: LeaderboardEntry[] = sortedLeaderboard
-    .map((entry, index, arr) => {
-      const previous = arr[index - 1]
+  const leaderboard: LeaderboardEntry[] = []
+  let lastPosition = 0
 
-      const sameAsPrevious =
-        previous &&
-        (round.scoring_mode === 'stableford'
-          ? previous.totalPoints === entry.totalPoints &&
-            previous.totalStrokes === entry.totalStrokes
-          : previous.totalStrokes === entry.totalStrokes &&
-            previous.totalToPar === entry.totalToPar)
+  for (let index = 0; index < sortedLeaderboard.length; index++) {
+    const entry = sortedLeaderboard[index]
+    const previous = sortedLeaderboard[index - 1]
 
-      const position = sameAsPrevious
-        ? (arr[index - 1] as LeaderboardEntry & { __position: number }).__position
-        : index + 1
+    const sameAsPrevious =
+      previous &&
+      (round.scoring_mode === 'stableford'
+        ? previous.totalPoints === entry.totalPoints &&
+          previous.totalStrokes === entry.totalStrokes
+        : previous.totalStrokes === entry.totalStrokes &&
+          previous.totalToPar === entry.totalToPar)
 
-      const scoreText =
-        round.scoring_mode === 'stableford'
-          ? `${entry.totalPoints} p`
-          : `${entry.totalStrokes} slag`
+    const position = sameAsPrevious ? lastPosition : index + 1
+    lastPosition = position
 
-      return {
-        playerId: entry.playerId,
-        position,
-        scoreText,
-        totalPoints: entry.totalPoints,
-        totalToPar: entry.totalToPar,
-        totalStrokes: entry.totalStrokes,
-        isLeader: position === 1,
-        __position: position,
-      } as LeaderboardEntry & { __position: number }
+    const scoreText =
+      round.scoring_mode === 'stableford'
+        ? `${entry.totalPoints} p`
+        : `${entry.totalStrokes} slag`
+
+    leaderboard.push({
+      playerId: entry.playerId,
+      position,
+      scoreText,
+      totalPoints: entry.totalPoints,
+      totalToPar: entry.totalToPar,
+      totalStrokes: entry.totalStrokes,
+      isLeader: position === 1,
     })
-    .map(({ __position, ...entry }) => entry)
+  }
 
   return (
     <main>
