@@ -985,10 +985,7 @@ export function HolePlay({
             const playerId = String(player.id)
             const selectedValue = values[playerId]
             const selectedScore = selectedValue ? Number(selectedValue) : null
-            const selectedTone =
-              selectedScore == null
-                ? null
-                : getScoreTone(selectedScore)
+            const selectedTone = selectedScore == null ? null : getScoreTone(selectedScore)
 
             const received = receivedStrokesOnHole(
               player.playing_handicap ?? 0,
@@ -1603,8 +1600,7 @@ export function HolePlay({
                       : 'linear-gradient(135deg, #1f6f32 0%, #2f7f37 100%)',
                   color: '#fff',
                   fontWeight: 900,
-                  cursor:
-                    previewHoleNumber <= startHole ? 'not-allowed' : 'pointer',
+                  cursor: previewHoleNumber <= startHole ? 'not-allowed' : 'pointer',
                 }}
               >
                 ← Föregående
@@ -1624,8 +1620,7 @@ export function HolePlay({
                       : 'linear-gradient(135deg, #166534 0%, #22c55e 100%)',
                   color: '#fff',
                   fontWeight: 900,
-                  cursor:
-                    previewHoleNumber >= endHole ? 'not-allowed' : 'pointer',
+                  cursor: previewHoleNumber >= endHole ? 'not-allowed' : 'pointer',
                 }}
               >
                 Nästa →
@@ -1665,9 +1660,7 @@ export function HolePlay({
               animation: 'modalIn 0.2s ease',
             }}
           >
-            <div style={{ fontSize: 24, fontWeight: 900 }}>
-              🎉 Rundan är klar!
-            </div>
+            <div style={{ fontSize: 24, fontWeight: 900 }}>🎉 Rundan är klar!</div>
 
             <div style={{ color: '#475569', fontSize: 15, lineHeight: 1.55 }}>
               Vill du avsluta rundan och gå vidare till leaderboard och scorekort?
