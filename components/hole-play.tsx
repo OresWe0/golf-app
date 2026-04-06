@@ -73,92 +73,92 @@ function formatToPar(value?: number | null) {
 
 const HOLE_GPS_DATA: Record<number, HoleGpsData> = {
   1: {
-    front: { lat: 59.34910, lng: 15.19528 },
+    front: { lat: 59.3491, lng: 15.19528 },
     center: { lat: 59.34922, lng: 15.19528 },
     back: { lat: 59.34934, lng: 15.19528 },
   },
   2: {
-    front: { lat: 59.34980, lng: 15.19810 },
-    center: { lat: 59.34985, lng: 15.19830 },
-    back: { lat: 59.34990, lng: 15.19850 },
+    front: { lat: 59.3498, lng: 15.1981 },
+    center: { lat: 59.34985, lng: 15.1983 },
+    back: { lat: 59.3499, lng: 15.1985 },
   },
   3: {
-    front: { lat: 59.35160, lng: 15.20310 },
-    center: { lat: 59.35170, lng: 15.20331 },
-    back: { lat: 59.35180, lng: 15.20350 },
+    front: { lat: 59.3516, lng: 15.2031 },
+    center: { lat: 59.3517, lng: 15.20331 },
+    back: { lat: 59.3518, lng: 15.2035 },
   },
   4: {
-    front: { lat: 59.35002, lng: 15.20630 },
-    center: { lat: 59.34990, lng: 15.20645 },
-    back: { lat: 59.34978, lng: 15.20660 },
+    front: { lat: 59.35002, lng: 15.2063 },
+    center: { lat: 59.3499, lng: 15.20645 },
+    back: { lat: 59.34978, lng: 15.2066 },
   },
   5: {
-    front: { lat: 59.34742, lng: 15.20870 },
-    center: { lat: 59.34730, lng: 15.20880 },
-    back: { lat: 59.34718, lng: 15.20890 },
+    front: { lat: 59.34742, lng: 15.2087 },
+    center: { lat: 59.3473, lng: 15.2088 },
+    back: { lat: 59.34718, lng: 15.2089 },
   },
   6: {
     front: { lat: 59.34685, lng: 15.20735 },
-    center: { lat: 59.34685, lng: 15.20710 },
+    center: { lat: 59.34685, lng: 15.2071 },
     back: { lat: 59.34685, lng: 15.20685 },
   },
   7: {
-    front: { lat: 59.34812, lng: 15.21320 },
-    center: { lat: 59.34820, lng: 15.21350 },
-    back: { lat: 59.34828, lng: 15.21380 },
+    front: { lat: 59.34812, lng: 15.2132 },
+    center: { lat: 59.3482, lng: 15.2135 },
+    back: { lat: 59.34828, lng: 15.2138 },
   },
   8: {
-    front: { lat: 59.34675, lng: 15.21530 },
-    center: { lat: 59.34665, lng: 15.21550 },
-    back: { lat: 59.34655, lng: 15.21570 },
+    front: { lat: 59.34675, lng: 15.2153 },
+    center: { lat: 59.34665, lng: 15.2155 },
+    back: { lat: 59.34655, lng: 15.2157 },
   },
   9: {
-    front: { lat: 59.34830, lng: 15.20540 },
-    center: { lat: 59.34845, lng: 15.20520 },
-    back: { lat: 59.34860, lng: 15.20500 },
+    front: { lat: 59.3483, lng: 15.2054 },
+    center: { lat: 59.34845, lng: 15.2052 },
+    back: { lat: 59.3486, lng: 15.205 },
   },
   10: {
     front: { lat: 59.34665, lng: 15.19855 },
-    center: { lat: 59.34650, lng: 15.19840 },
+    center: { lat: 59.3465, lng: 15.1984 },
     back: { lat: 59.34635, lng: 15.19825 },
   },
   11: {
-    front: { lat: 59.34575, lng: 15.19340 },
-    center: { lat: 59.34560, lng: 15.19320 },
-    back: { lat: 59.34545, lng: 15.19300 },
+    front: { lat: 59.34575, lng: 15.1934 },
+    center: { lat: 59.3456, lng: 15.1932 },
+    back: { lat: 59.34545, lng: 15.193 },
   },
   12: {
-    front: { lat: 59.34405, lng: 15.19430 },
-    center: { lat: 59.34415, lng: 15.19450 },
-    back: { lat: 59.34425, lng: 15.19470 },
+    front: { lat: 59.34405, lng: 15.1943 },
+    center: { lat: 59.34415, lng: 15.1945 },
+    back: { lat: 59.34425, lng: 15.1947 },
   },
   13: {
-    front: { lat: 59.34285, lng: 15.18790 },
-    center: { lat: 59.34270, lng: 15.18780 },
-    back: { lat: 59.34255, lng: 15.18770 },
+    front: { lat: 59.34285, lng: 15.1879 },
+    center: { lat: 59.3427, lng: 15.1878 },
+    back: { lat: 59.34255, lng: 15.1877 },
   },
   14: {
-    front: { lat: 59.34230, lng: 15.18620 },
-    center: { lat: 59.34215, lng: 15.18610 },
-    back: { lat: 59.34200, lng: 15.18600 },
+    front: { lat: 59.3423, lng: 15.1862 },
+    center: { lat: 59.34215, lng: 15.1861 },
+    back: { lat: 59.342, lng: 15.186 },
   },
   15: {
-    front: { lat: 59.34125, lng: 15.19110 },
-    center: { lat: 59.34140, lng: 15.19120 },
-    back: { lat: 59.34155, lng: 15.19130 },
+    front: { lat: 59.34125, lng: 15.1911 },
+    center: { lat: 59.3414, lng: 15.1912 },
+    back: { lat: 59.34155, lng: 15.1913 },
   },
   16: {
-    front: { lat: 59.34340, lng: 15.19200 },
-    center: { lat: 59.34355, lng: 15.19210 },
-    back: { lat: 59.34370, lng: 15.19220 },
+    front: { lat: 59.3434, lng: 15.192 },
+    center: { lat: 59.34355, lng: 15.1921 },
+    back: { lat: 59.3437, lng: 15.1922 },
   },
   17: {
     front: { lat: 59.34565, lng: 15.19775 },
-    center: { lat: 59.34580, lng: 15.19790 },
+    center: { lat: 59.3458, lng: 15.1979 },
     back: { lat: 59.34595, lng: 15.19805 },
   },
   18: {
-    front: { lat: 59.34760, lng: 15.19655 },
+    front: { lat: 59.3476, lng: 15.19655 },
     center: { lat: 59.34771, lng: 15.19655 },
     back: { lat: 59.34782, lng: 15.19655 },
   },
@@ -214,9 +214,6 @@ export function HolePlay({
       })
     )
 
-  const createEmptyValues = () =>
-    Object.fromEntries(players.map((player) => [String(player.id), '']))
-
   const [values, setValues] = useState<Record<string, string>>(createValuesFromScores())
   const [loading, setLoading] = useState(false)
   const [showHoleImage, setShowHoleImage] = useState(false)
@@ -234,7 +231,7 @@ export function HolePlay({
   const [distanceToBack, setDistanceToBack] = useState<number | null>(null)
 
   const allPlayersHaveScores = (candidateValues: Record<string, string>) => {
-    if (!players?.length) return false
+    if (!players.length) return false
 
     return players.every((player) => {
       const value = candidateValues[String(player.id)]
@@ -527,7 +524,6 @@ export function HolePlay({
       }
 
       setSavedFlash(true)
-      setValues(createEmptyValues())
       hasUserChangedScoreRef.current = false
 
       if (typeof window !== 'undefined' && 'vibrate' in navigator) {
@@ -536,6 +532,8 @@ export function HolePlay({
 
       // Håll save-låset aktivt tills toast + navigation/modal har hanterats
       postSaveTimeoutRef.current = setTimeout(() => {
+        if (isNavigatingRef.current) return
+
         clearPendingAutoSave()
 
         if (currentHole === endHole) {
@@ -653,6 +651,7 @@ export function HolePlay({
     if (previewHoleNumber > startHole) {
       setPreviewHoleNumber((prev) => prev - 1)
       setHoleImageError(false)
+
       if (playerPosition) {
         setDistanceStatus('loading')
       }
@@ -663,6 +662,7 @@ export function HolePlay({
     if (previewHoleNumber < endHole) {
       setPreviewHoleNumber((prev) => prev + 1)
       setHoleImageError(false)
+
       if (playerPosition) {
         setDistanceStatus('loading')
       }
@@ -1448,9 +1448,7 @@ export function HolePlay({
               }}
             >
               <div>
-                <div style={{ fontWeight: 900, fontSize: 18 }}>
-                  Hål {previewHoleNumber}
-                </div>
+                <div style={{ fontWeight: 900, fontSize: 18 }}>Hål {previewHoleNumber}</div>
 
                 {distanceStatus === 'loading' && (
                   <div

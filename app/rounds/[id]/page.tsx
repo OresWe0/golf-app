@@ -56,7 +56,6 @@ export default async function RoundPage({
 
   const { id } = await params
   const resolvedSearchParams = await searchParams
-  const requestedHoleNumber = parseHoleNumber(resolvedSearchParams.hole)
 
   const { data: round } = await supabase
     .from('rounds')
@@ -67,6 +66,10 @@ export default async function RoundPage({
   if (!round) {
     notFound()
   }
+
+  const requestedHoleNumber = resolvedSearchParams.hole
+    ? parseHoleNumber(resolvedSearchParams.hole)
+    : round.current_hole ?? round.start_hole ?? 1
 
   const [
     { data: players },
@@ -95,9 +98,13 @@ export default async function RoundPage({
     notFound()
   }
 
-  const currentHole =
-    visibleHoles.find((item: HoleLike) => item.hole_number === requestedHoleNumber) ??
-    visibleHoles[0]
+  const currentHole = visibleHoles.find(
+    (item: HoleLike) => item.hole_number === requestedHoleNumber
+  )
+
+  if (!currentHole) {
+    redirect(`/rounds/${id}?hole=${round.current_hole ?? startHole}`)
+  }
 
   const scoreRows = (allScoreRows ?? []) as HoleScoreRow[]
 
