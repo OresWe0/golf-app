@@ -1,6 +1,12 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type TouchEventHandler,
+} from 'react'
 import { useRouter } from 'next/navigation'
 import { receivedStrokesOnHole } from '@/lib/scoring'
 
@@ -195,7 +201,10 @@ export function HolePlay({
   const firstPlayerCardRef = useRef<HTMLDivElement | null>(null)
   const hasUserChangedScoreRef = useRef(false)
   const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const postSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const watchIdRef = useRef<number | null>(null)
+  const isSavingRef = useRef(false)
+  const isNavigatingRef = useRef(false)
 
   const createValuesFromScores = () =>
     Object.fromEntries(
@@ -233,6 +242,20 @@ export function HolePlay({
     })
   }
 
+  const clearPendingAutoSave = () => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current)
+      autoSaveTimeoutRef.current = null
+    }
+  }
+
+  const clearPostSaveTimeout = () => {
+    if (postSaveTimeoutRef.current) {
+      clearTimeout(postSaveTimeoutRef.current)
+      postSaveTimeoutRef.current = null
+    }
+  }
+
   const resetDistanceState = () => {
     setDistanceToFront(null)
     setDistanceToCenter(null)
@@ -267,18 +290,29 @@ export function HolePlay({
     setDistanceErrorMessage(null)
   }
 
+  const canInteract = !loading && !isSavingRef.current && !isNavigatingRef.current
+
+  const navigateTo = (target: string) => {
+    if (isNavigatingRef.current) return
+    clearPendingAutoSave()
+    clearPostSaveTimeout()
+    isNavigatingRef.current = true
+    router.push(target)
+  }
+
   useEffect(() => {
     setValues(createValuesFromScores())
     setPreviewHoleNumber(hole.hole_number)
     setHoleImageError(false)
     hasUserChangedScoreRef.current = false
+    isSavingRef.current = false
+    isNavigatingRef.current = false
+    setLoading(false)
     setSavedFlash(false)
     setShowFinishModal(false)
 
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current)
-      autoSaveTimeoutRef.current = null
-    }
+    clearPendingAutoSave()
+    clearPostSaveTimeout()
 
     const timer = setTimeout(() => {
       firstPlayerCardRef.current?.scrollIntoView({
@@ -292,10 +326,8 @@ export function HolePlay({
 
   useEffect(() => {
     return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current)
-      }
-
+      clearPendingAutoSave()
+      clearPostSaveTimeout()
       stopWatchingPosition()
     }
   }, [])
@@ -303,22 +335,20 @@ export function HolePlay({
   useEffect(() => {
     if (!hasUserChangedScoreRef.current) return
     if (loading) return
+    if (isSavingRef.current) return
+    if (isNavigatingRef.current) return
     if (!allPlayersHaveScores(values)) return
 
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current)
-    }
+    clearPendingAutoSave()
 
     autoSaveTimeoutRef.current = setTimeout(() => {
       void saveScores(values)
     }, 300)
 
     return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current)
-      }
+      clearPendingAutoSave()
     }
-  }, [values, loading, players])
+  }, [values, loading])
 
   useEffect(() => {
     if (!showHoleImage) {
@@ -417,81 +447,120 @@ export function HolePlay({
   }, [leaderboard])
 
   const goPrevious = () => {
+    if (!canInteract) return
+
     const target =
       currentHole > startHole
         ? `/rounds/${roundId}?hole=${currentHole - 1}`
         : '/dashboard'
-    router.push(target)
+
+    navigateTo(target)
   }
 
   const goNext = () => {
+    if (!canInteract) return
+
     const target =
       currentHole === endHole
         ? `/rounds/${roundId}/summary`
         : `/rounds/${roundId}?hole=${currentHole + 1}`
-    router.push(target)
+
+    navigateTo(target)
   }
 
   const confirmFinishRound = async () => {
-    const response = await fetch(`/api/rounds/${roundId}/complete`, {
-      method: 'POST',
-    })
+    if (!canInteract) return
 
-    if (!response.ok) {
-      alert('Kunde inte avsluta rundan.')
-      return
+    isSavingRef.current = true
+    setLoading(true)
+
+    try {
+      const response = await fetch(`/api/rounds/${roundId}/complete`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        alert('Kunde inte avsluta rundan.')
+        return
+      }
+
+      navigateTo(`/rounds/${roundId}/summary`)
+    } finally {
+      if (!isNavigatingRef.current) {
+        setLoading(false)
+        isSavingRef.current = false
+      }
     }
-
-    router.push(`/rounds/${roundId}/summary`)
   }
 
   const saveScores = async (overrideValues?: Record<string, string>) => {
     const valuesToSave = overrideValues ?? values
+
     if (loading) return
+    if (isSavingRef.current) return
+    if (isNavigatingRef.current) return
     if (!allPlayersHaveScores(valuesToSave)) return
 
+    isSavingRef.current = true
+    clearPendingAutoSave()
+    clearPostSaveTimeout()
     setLoading(true)
 
-    const response = await fetch(`/api/rounds/${roundId}/scores`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        holeNumber: currentHole,
-        scores: players.map((player) => ({
-          roundPlayerId: player.id,
-          strokes: valuesToSave[String(player.id)]
-            ? Number(valuesToSave[String(player.id)])
-            : null,
-        })),
-      }),
-    })
+    try {
+      const response = await fetch(`/api/rounds/${roundId}/scores`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          holeNumber: currentHole,
+          scores: players.map((player) => ({
+            roundPlayerId: player.id,
+            strokes: valuesToSave[String(player.id)]
+              ? Number(valuesToSave[String(player.id)])
+              : null,
+          })),
+        }),
+      })
 
-    if (!response.ok) {
-      setLoading(false)
-      alert('Det gick inte att spara score. Prova igen.')
-      return
-    }
-
-    setLoading(false)
-    setSavedFlash(true)
-    setValues(createEmptyValues())
-    hasUserChangedScoreRef.current = false
-
-    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
-      navigator.vibrate([25, 20, 25])
-    }
-
-    setTimeout(() => {
-      if (currentHole === endHole) {
-        setShowFinishModal(true)
+      if (!response.ok) {
+        alert('Det gick inte att spara score. Prova igen.')
         return
       }
 
-      router.push(`/rounds/${roundId}?hole=${currentHole + 1}`)
-    }, 260)
+      setSavedFlash(true)
+      setValues(createEmptyValues())
+      hasUserChangedScoreRef.current = false
+
+      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate([25, 20, 25])
+      }
+
+      // Håll save-låset aktivt tills toast + navigation/modal har hanterats
+      postSaveTimeoutRef.current = setTimeout(() => {
+        clearPendingAutoSave()
+
+        if (currentHole === endHole) {
+          isSavingRef.current = false
+          setShowFinishModal(true)
+          return
+        }
+
+        isSavingRef.current = false
+        navigateTo(`/rounds/${roundId}?hole=${currentHole + 1}`)
+      }, 260)
+    } finally {
+      setLoading(false)
+
+      if (currentHole === endHole) {
+        // Låset släpps i timeouten ovan när finish-modal visas
+      } else if (!postSaveTimeoutRef.current) {
+        isSavingRef.current = false
+      }
+    }
   }
 
   const setScore = (playerId: string, score: number) => {
+    if (!canInteract) return
+
     if (typeof window !== 'undefined' && 'vibrate' in navigator) {
       navigator.vibrate(10)
     }
@@ -600,11 +669,11 @@ export function HolePlay({
     }
   }
 
-  const onTouchStart: React.TouchEventHandler<HTMLDivElement> = (e) => {
+  const onTouchStart: TouchEventHandler<HTMLDivElement> = (e) => {
     touchStartX.current = e.changedTouches[0]?.clientX ?? null
   }
 
-  const onTouchEnd: React.TouchEventHandler<HTMLDivElement> = (e) => {
+  const onTouchEnd: TouchEventHandler<HTMLDivElement> = (e) => {
     const startX = touchStartX.current
     const endX = e.changedTouches[0]?.clientX ?? null
     if (startX == null || endX == null) return
@@ -1112,7 +1181,7 @@ export function HolePlay({
                           overflow: 'hidden',
                           borderRadius: 22,
                           padding: '16px 8px',
-                          cursor: 'pointer',
+                          cursor: canInteract ? 'pointer' : 'not-allowed',
                           minHeight: 92,
                           display: 'grid',
                           placeItems: 'center',
@@ -1127,7 +1196,9 @@ export function HolePlay({
                           transition:
                             'transform 0.14s ease, box-shadow 0.18s ease, background 0.18s ease, border 0.18s ease, color 0.18s ease',
                           animation: isSelected ? 'scorePop 0.22s ease, softPulse 0.5s ease' : 'none',
+                          opacity: canInteract ? 1 : 0.9,
                         }}
+                        disabled={!canInteract}
                       >
                         <div
                           style={{
@@ -1233,6 +1304,7 @@ export function HolePlay({
                   <button
                     type="button"
                     onClick={() => {
+                      if (!canInteract) return
                       hasUserChangedScoreRef.current = true
                       setValues((prev) => ({ ...prev, [playerId]: '' }))
                     }}
@@ -1243,13 +1315,14 @@ export function HolePlay({
                       padding: '12px 14px',
                       minWidth: 92,
                       fontWeight: 800,
-                      cursor: 'pointer',
+                      cursor: canInteract ? 'pointer' : 'not-allowed',
                       display: 'grid',
                       placeItems: 'center',
                       gap: 4,
                       color: '#475569',
                       boxShadow: '0 8px 20px rgba(15, 23, 42, 0.05)',
                     }}
+                    disabled={!canInteract}
                   >
                     <span style={{ fontSize: 18, lineHeight: 1 }}>↺</span>
                     <span style={{ fontSize: 13 }}>Rensa</span>
@@ -1285,16 +1358,19 @@ export function HolePlay({
             <button
               type="button"
               onClick={goPrevious}
+              disabled={!canInteract}
               style={{
                 border: 'none',
                 borderRadius: 24,
                 minHeight: 72,
-                background: 'linear-gradient(135deg, #1f6f32 0%, #2f7f37 100%)',
+                background: canInteract
+                  ? 'linear-gradient(135deg, #1f6f32 0%, #2f7f37 100%)'
+                  : 'linear-gradient(135deg, #94a3b8 0%, #a8b4c7 100%)',
                 color: '#fff',
                 fontSize: 28,
                 fontWeight: 900,
-                cursor: 'pointer',
-                boxShadow: '0 16px 32px rgba(31, 111, 50, 0.22)',
+                cursor: canInteract ? 'pointer' : 'not-allowed',
+                boxShadow: canInteract ? '0 16px 32px rgba(31, 111, 50, 0.22)' : 'none',
               }}
             >
               ←
@@ -1303,24 +1379,24 @@ export function HolePlay({
             <button
               type="button"
               onClick={() => void saveScores()}
-              disabled={loading || !allPlayersHaveScores(values)}
+              disabled={!canInteract || !allPlayersHaveScores(values)}
               style={{
                 border: 'none',
                 borderRadius: 24,
                 minHeight: 72,
                 background:
-                  loading || !allPlayersHaveScores(values)
+                  !canInteract || !allPlayersHaveScores(values)
                     ? 'linear-gradient(135deg, #94a3b8 0%, #a8b4c7 100%)'
                     : 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 45%, #22c55e 100%)',
                 color: '#fff',
                 fontSize: 18,
                 fontWeight: 900,
                 cursor:
-                  loading || !allPlayersHaveScores(values)
+                  !canInteract || !allPlayersHaveScores(values)
                     ? 'not-allowed'
                     : 'pointer',
                 boxShadow:
-                  loading || !allPlayersHaveScores(values)
+                  !canInteract || !allPlayersHaveScores(values)
                     ? 'none'
                     : '0 18px 38px rgba(37, 99, 235, 0.20)',
                 letterSpacing: 0.2,
@@ -1607,7 +1683,10 @@ export function HolePlay({
             >
               <button
                 type="button"
-                onClick={() => setShowFinishModal(false)}
+                onClick={() => {
+                  if (loading || isSavingRef.current || isNavigatingRef.current) return
+                  setShowFinishModal(false)
+                }}
                 style={{
                   border: '1px solid #d1d5db',
                   borderRadius: 18,
@@ -1623,7 +1702,7 @@ export function HolePlay({
 
               <button
                 type="button"
-                onClick={confirmFinishRound}
+                onClick={() => void confirmFinishRound()}
                 style={{
                   border: 'none',
                   borderRadius: 18,
