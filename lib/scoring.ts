@@ -60,7 +60,7 @@ export function getPlayingHandicapForSelectedHoles(
   courseHandicap: number | null | undefined,
   selectedHoleIndexes: Array<number | null | undefined>
 ) {
-  return selectedHoleIndexes.reduce((sum, holeIndex) => {
+  return selectedHoleIndexes.reduce<number>((sum, holeIndex) => {
     return sum + getHandicapStrokesForHole(courseHandicap, holeIndex)
   }, 0)
 }
