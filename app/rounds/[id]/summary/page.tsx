@@ -520,6 +520,8 @@ export default async function SummaryPage({
   const visibleHoleIndexes = visibleHoles.map((hole: HoleLike) => hole.hcp_index)
 
   const isNineHoleRound = round.holes_mode === 9
+  const isRoundFinished =
+    round.status === 'finished' || round.status === 'completed'
 
   const firstHalf = isNineHoleRound ? visibleHoles : visibleHoles.slice(0, 9)
   const secondHalf = isNineHoleRound ? [] : visibleHoles.slice(9)
@@ -650,7 +652,7 @@ export default async function SummaryPage({
             }}
           >
             <Link
-              className="button"
+              className="button secondary"
               href={`/rounds/${id}?hole=${returnHole}`}
               style={{
                 width: '100%',
@@ -675,6 +677,105 @@ export default async function SummaryPage({
               Till startsidan 🏠
             </Link>
           </div>
+
+          {isRoundFinished && (
+            <div
+              className="card"
+              style={{
+                marginTop: 12,
+                marginBottom: 14,
+                border: '2px solid #bbf7d0',
+                background: 'linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%)',
+                padding: 14,
+              }}
+            >
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '6px 12px',
+                  borderRadius: 999,
+                  background: '#dcfce7',
+                  color: '#166534',
+                  fontWeight: 900,
+                  fontSize: 13,
+                  marginBottom: 12,
+                }}
+              >
+                ✅ Rundan är avslutad
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                  marginBottom: 12,
+                }}
+              >
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: '#dcfce7',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 22,
+                    flexShrink: 0,
+                  }}
+                >
+                  ⛳
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 900,
+                      lineHeight: 1.2,
+                      marginBottom: 4,
+                      color: '#166534',
+                    }}
+                  >
+                    Registrera rundan i Min Golf
+                  </div>
+
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 14,
+                      lineHeight: 1.5,
+                      color: '#475569',
+                    }}
+                  >
+                    Din runda är klar i appen. Nästa steg är att registrera den i Min Golf.
+                  </p>
+                </div>
+              </div>
+
+              <a
+                href="https://mingolf.golf.se"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="button"
+                style={{
+                  width: '100%',
+                  minHeight: 52,
+                  fontSize: 17,
+                  fontWeight: 800,
+                  textAlign: 'center',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                Till Min Golf – registrera runda ↗
+              </a>
+            </div>
+          )}
         </div>
 
         {winner ? (
