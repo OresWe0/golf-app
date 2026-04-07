@@ -11,7 +11,10 @@ export async function signIn(formData: FormData) {
   const password = String(formData.get('password') || '')
   const supabase = await createClient()
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
 
   if (error) {
     redirect(`/login?message=${encodeURIComponent(error.message)}`)
@@ -25,7 +28,8 @@ export async function signUp(formData: FormData) {
   const password = String(formData.get('password') || '')
   const displayName = String(formData.get('displayName') || '').trim()
   const handicapIndex = String(formData.get('handicapIndex') || '').trim()
-  const defaultTee = String(formData.get('defaultTee') || 'yellow').trim() || 'yellow'
+  const defaultTee =
+    String(formData.get('defaultTee') || 'yellow').trim() || 'yellow'
 
   const supabase = await createClient()
 
@@ -46,7 +50,10 @@ export async function signUp(formData: FormData) {
     redirect(`/login?message=${encodeURIComponent(error.message)}`)
   }
 
-  redirect('/login?message=' + encodeURIComponent('Kolla din e-post för att verifiera kontot.')
+  redirect(
+    '/login?message=' +
+      encodeURIComponent('Kolla din e-post för att verifiera kontot.')
+  )
 }
 
 export async function signOut() {
@@ -57,6 +64,7 @@ export async function signOut() {
 
 export async function updateProfile(formData: FormData) {
   const supabase = await createClient()
+
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -67,7 +75,8 @@ export async function updateProfile(formData: FormData) {
 
   const displayName = String(formData.get('displayName') || '').trim()
   const handicapIndex = String(formData.get('handicapIndex') || '').trim()
-  const defaultTee = String(formData.get('defaultTee') || 'yellow').trim() || 'yellow'
+  const defaultTee =
+    String(formData.get('defaultTee') || 'yellow').trim() || 'yellow'
 
   const { error } = await supabase
     .from('profiles')
