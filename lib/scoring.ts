@@ -37,7 +37,7 @@ export function calculatePlayingHandicap({
 
 export function getRoundedCourseHandicap(courseHandicap: number | null | undefined) {
   if (courseHandicap == null || !Number.isFinite(courseHandicap)) return 0
-  return Math.floor(courseHandicap)
+  return Math.round(courseHandicap)
 }
 
 export function getHandicapStrokesForHole(
