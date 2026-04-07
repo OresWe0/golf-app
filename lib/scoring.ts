@@ -65,6 +65,32 @@ export function getPlayingHandicapForSelectedHoles(
   }, 0)
 }
 
+export function getReceivedStrokesForSelectedHole(
+  playingHandicap: number,
+  selectedHoleIndexes: Array<number | null | undefined>,
+  currentHoleIndex: number | null | undefined
+) {
+  if (!playingHandicap || playingHandicap <= 0) return 0
+  if (currentHoleIndex == null || currentHoleIndex <= 0) return 0
+
+  const validHoleIndexes = [...new Set(
+    selectedHoleIndexes.filter(
+      (value): value is number => typeof value === 'number' && value > 0
+    )
+  )].sort((a, b) => a - b)
+
+  if (!validHoleIndexes.length) return 0
+
+  const base = Math.floor(playingHandicap / validHoleIndexes.length)
+  const remainder = playingHandicap % validHoleIndexes.length
+
+  const rank = validHoleIndexes.indexOf(currentHoleIndex)
+
+  if (rank === -1) return 0
+
+  return base + (rank < remainder ? 1 : 0)
+}
+
 export function receivedStrokesOnHole(
   playingHandicap: number,
   holeIndex: number,
