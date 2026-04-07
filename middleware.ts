@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-const PUBLIC_PATHS = ['/login', '/auth/callback']
+const PUBLIC_PATHS = ['/', '/login', '/auth/callback']
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some(
@@ -10,34 +10,39 @@ function isPublicPath(pathname: string) {
 }
 
 export async function middleware(request: NextRequest) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      'NEXT_PUBLIC_SUPABASE_URL eller NEXT_PUBLIC_SUPABASE_ANON_KEY saknas'
+    )
+  }
+
   let response = NextResponse.next({
     request,
   })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => {
-            request.cookies.set(name, value)
-          })
-
-          response = NextResponse.next({
-            request,
-          })
-
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options)
-          })
-        },
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll()
       },
-    }
-  )
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => {
+          request.cookies.set(name, value)
+        })
+
+        response = NextResponse.next({
+          request,
+        })
+
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, options)
+        })
+      },
+    },
+  })
 
   const {
     data: { user },
@@ -52,7 +57,31 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (user && (pathname === '/' || pathname === '/login')) {
+  if (!user) {
+    return response
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('is_approved')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const isApproved = !profileError && profile?.is_approved === true
+  const isPendingPage = pathname === '/pending'
+  const isLoginPage = pathname === '/login'
+
+  if (!isApproved) {
+    if (!isPendingPage) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/pending'
+      return NextResponse.redirect(url)
+    }
+
+    return response
+  }
+
+  if (isLoginPage || isPendingPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
