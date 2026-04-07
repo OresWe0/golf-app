@@ -46,7 +46,7 @@ export async function signUp(formData: FormData) {
     redirect(`/login?message=${encodeURIComponent(error.message)}`)
   }
 
-  redirect('/login?message=Kolla din e-post för att verifiera kontot.')
+  redirect('/login?message=' + encodeURIComponent('Kolla din e-post för att verifiera kontot.')
 }
 
 export async function signOut() {
