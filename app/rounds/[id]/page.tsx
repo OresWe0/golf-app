@@ -144,14 +144,11 @@ export default async function RoundPage({
       )
     }, 0)
 
-    const completedHoles = rows.filter((row) => row.strokes != null).length
-
     return {
       playerId: String(player.id),
       totalStrokes,
       totalToPar,
       totalPoints,
-      completedHoles,
     }
   })
 
@@ -205,26 +202,26 @@ export default async function RoundPage({
     <main>
       <div className="container">
         <div className="nav">
-          <div>
+          <div className="nav-title">
             <span className="badge">🏌️ {round.title}</span>
-            <h1>{course.name}</h1>
-            <p className="muted">
+
+            <h1 className="title">
+              {course.name} · Hål {currentHole.hole_number} / {visibleHoles.length}
+            </h1>
+
+            <p className="muted meta">
               {round.holes_mode === 18
                 ? '18 hål'
                 : startHole === 1
                   ? '9 hål · Främre 9'
-                  : '9 hål · Bakre 9'}
+                  : '9 hål · Bakre 9'}{' '}
+              · Par {currentHole.par} · Index {currentHole.hcp_index}
             </p>
           </div>
 
           <Link
-            className="button"
+            className="button leaderboard-button"
             href={`/rounds/${id}/summary?hole=${currentHole.hole_number}`}
-            style={{
-              fontWeight: 800,
-              fontSize: 16,
-              padding: '12px 18px',
-            }}
           >
             🏆 Leaderboard
           </Link>
