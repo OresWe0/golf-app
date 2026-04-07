@@ -667,7 +667,7 @@ export default async function SummaryPage({
                 fontWeight: 800,
               }}
             >
-              Dashboard
+              Till startsidan 🏠
             </Link>
           </div>
         </div>

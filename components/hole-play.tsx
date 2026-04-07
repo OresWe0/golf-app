@@ -1438,7 +1438,7 @@ export function HolePlay({
                 animation:
                   !canInteract || !isReadyToAdvance
                     ? 'none'
-                    : 'ctaReadyPulse 0.9s ease',
+                    : 'ctaReadyPulse 1.2s ease 1',
                 transition: 'transform 0.16s ease, box-shadow 0.18s ease, background 0.18s ease',
               }}
             >
