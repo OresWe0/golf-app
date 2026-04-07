@@ -288,6 +288,7 @@ export function HolePlay({
   }
 
   const canInteract = !loading && !isSavingRef.current && !isNavigatingRef.current
+  const isReadyToAdvance = allPlayersHaveScores(values)
 
   const navigateTo = (target: string) => {
     if (isNavigatingRef.current) return
@@ -741,6 +742,11 @@ export function HolePlay({
           0% { opacity: 0; transform: translateY(18px) scale(0.96); }
           100% { opacity: 1; transform: translateY(0) scale(1); }
         }
+
+        @keyframes ctaReadyPulse {
+          0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.22); }
+          100% { box-shadow: 0 0 0 12px rgba(34, 197, 94, 0); }
+        }
       `}</style>
 
       <div
@@ -926,25 +932,37 @@ export function HolePlay({
                     key={`lb-${entry.playerId}`}
                     style={{
                       borderRadius: 14,
-                      padding: 9,
+                      padding: isLeader ? 11 : 9,
                       background: isLeader
-                        ? 'linear-gradient(135deg, rgba(34,197,94,0.22) 0%, rgba(22,163,74,0.14) 100%)'
-                        : 'rgba(255,255,255,0.08)',
+                        ? 'linear-gradient(135deg, rgba(34,197,94,0.26) 0%, rgba(22,163,74,0.18) 100%)'
+                        : 'rgba(255,255,255,0.06)',
                       border: isLeader
-                        ? '1px solid rgba(74, 222, 128, 0.40)'
-                        : '1px solid rgba(255,255,255,0.08)',
+                        ? '1px solid rgba(74, 222, 128, 0.50)'
+                        : '1px solid rgba(255,255,255,0.06)',
                       minWidth: 0,
+                      boxShadow: isLeader
+                        ? '0 10px 24px rgba(34, 197, 94, 0.18)'
+                        : 'none',
                     }}
                   >
-                    <div style={{ fontSize: 11, opacity: 0.72, fontWeight: 800 }}>
-                      #{entry.position}
+                    <div
+                      style={{
+                        fontSize: 11,
+                        opacity: 0.78,
+                        fontWeight: 800,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      {isLeader ? '👑' : null} #{entry.position}
                     </div>
 
                     <div
                       style={{
                         marginTop: 4,
                         fontWeight: 900,
-                        fontSize: 13,
+                        fontSize: isLeader ? 14 : 13,
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -956,7 +974,7 @@ export function HolePlay({
                     <div
                       style={{
                         marginTop: 4,
-                        opacity: 0.82,
+                        opacity: 0.86,
                         fontSize: 11,
                         fontWeight: 700,
                         whiteSpace: 'nowrap',
@@ -968,6 +986,19 @@ export function HolePlay({
                         ? `${entry.totalPoints} p · ${formatToPar(entry.totalToPar)}`
                         : entry.scoreText ?? '-'}
                     </div>
+
+                    {isLeader ? (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          fontSize: 10,
+                          fontWeight: 800,
+                          color: '#bbf7d0',
+                        }}
+                      >
+                        Leder just nu
+                      </div>
+                    ) : null}
                   </div>
                 )
               })}
@@ -1383,34 +1414,41 @@ export function HolePlay({
             <button
               type="button"
               onClick={() => void saveScores()}
-              disabled={!canInteract || !allPlayersHaveScores(values)}
+              disabled={!canInteract || !isReadyToAdvance}
               style={{
                 border: 'none',
                 borderRadius: 24,
                 minHeight: 72,
                 background:
-                  !canInteract || !allPlayersHaveScores(values)
+                  !canInteract || !isReadyToAdvance
                     ? 'linear-gradient(135deg, #94a3b8 0%, #a8b4c7 100%)'
-                    : 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 45%, #22c55e 100%)',
+                    : 'linear-gradient(135deg, #16a34a 0%, #22c55e 45%, #2563eb 100%)',
                 color: '#fff',
                 fontSize: 18,
                 fontWeight: 900,
                 cursor:
-                  !canInteract || !allPlayersHaveScores(values)
+                  !canInteract || !isReadyToAdvance
                     ? 'not-allowed'
                     : 'pointer',
                 boxShadow:
-                  !canInteract || !allPlayersHaveScores(values)
+                  !canInteract || !isReadyToAdvance
                     ? 'none'
-                    : '0 18px 38px rgba(37, 99, 235, 0.20)',
+                    : '0 20px 42px rgba(34, 197, 94, 0.24)',
                 letterSpacing: 0.2,
+                animation:
+                  !canInteract || !isReadyToAdvance
+                    ? 'none'
+                    : 'ctaReadyPulse 0.9s ease',
+                transition: 'transform 0.16s ease, box-shadow 0.18s ease, background 0.18s ease',
               }}
             >
               {loading
                 ? 'Sparar...'
-                : currentHole === endHole
-                  ? 'Avsluta runda →'
-                  : 'Nästa hål →'}
+                : !isReadyToAdvance
+                  ? 'Fyll i alla scorer'
+                  : currentHole === endHole
+                    ? 'Klar – avsluta runda →'
+                    : 'Klar – nästa hål →'}
             </button>
           </div>
         </div>
