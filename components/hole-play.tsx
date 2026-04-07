@@ -430,7 +430,6 @@ export function HolePlay({
     return [...leaderboard]
       .sort((a, b) => {
         if (a.position !== b.position) return a.position - b.position
-
         const aPoints = a.totalPoints ?? -999
         const bPoints = b.totalPoints ?? -999
         return bPoints - aPoints
@@ -530,7 +529,6 @@ export function HolePlay({
         navigator.vibrate([25, 20, 25])
       }
 
-      // Håll save-låset aktivt tills toast + navigation/modal har hanterats
       postSaveTimeoutRef.current = setTimeout(() => {
         if (isNavigatingRef.current) return
 
@@ -548,9 +546,7 @@ export function HolePlay({
     } finally {
       setLoading(false)
 
-      if (currentHole === endHole) {
-        // Låset släpps i timeouten ovan när finish-modal visas
-      } else if (!postSaveTimeoutRef.current) {
+      if (currentHole !== endHole && !postSaveTimeoutRef.current) {
         isSavingRef.current = false
       }
     }
@@ -751,7 +747,7 @@ export function HolePlay({
         style={{
           paddingBottom: 132,
           display: 'grid',
-          gap: 14,
+          gap: 12,
         }}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
@@ -786,109 +782,103 @@ export function HolePlay({
         <div
           style={{
             border: '1px solid rgba(255,255,255,0.55)',
-            borderRadius: 28,
+            borderRadius: 24,
             background:
               'linear-gradient(180deg, rgba(255,255,255,0.82) 0%, rgba(244,248,244,0.78) 100%)',
             backdropFilter: 'blur(14px)',
             WebkitBackdropFilter: 'blur(14px)',
             boxShadow: '0 18px 50px rgba(15, 23, 42, 0.08)',
-            padding: 16,
+            padding: 12,
             display: 'grid',
-            gap: 14,
+            gap: 10,
             animation: 'glassCardIn 0.22s ease',
           }}
         >
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1.05fr) minmax(0, 0.95fr)',
-              gap: 12,
+              gridTemplateColumns: 'minmax(0, 1fr) auto',
+              gap: 10,
+              alignItems: 'stretch',
             }}
           >
             <div
               style={{
-                borderRadius: 24,
+                borderRadius: 20,
                 background:
                   'linear-gradient(135deg, rgba(236,253,245,0.92) 0%, rgba(220,252,231,0.88) 100%)',
                 border: '1px solid rgba(134, 239, 172, 0.65)',
-                padding: 16,
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)',
+                padding: 12,
               }}
             >
               <div
                 style={{
-                  fontSize: 13,
+                  fontSize: 11,
                   fontWeight: 900,
                   color: '#166534',
                   letterSpacing: 0.6,
                   textTransform: 'uppercase',
-                  marginBottom: 6,
                 }}
               >
-                Hål
+                Hålstatus
               </div>
-              <div style={{ fontSize: 58, lineHeight: 1, fontWeight: 900, color: '#0f172a' }}>
-                {hole.hole_number}
-              </div>
+
               <div
                 style={{
-                  marginTop: 8,
-                  color: '#475569',
-                  fontWeight: 700,
+                  marginTop: 4,
+                  fontSize: 24,
+                  fontWeight: 900,
+                  lineHeight: 1.05,
+                  color: '#0f172a',
                 }}
               >
-                {Math.max(currentHole - startHole + 1, 1)} / {totalHoles}
+                Hål {hole.hole_number} / {totalHoles}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 4,
+                  fontSize: 14,
+                  fontWeight: 800,
+                  color: '#475569',
+                  lineHeight: 1.35,
+                }}
+              >
+                Par {hole.par} · Index {hole.hcp_index}
               </div>
             </div>
 
-            <div
+            <button
+              type="button"
+              onClick={openHoleImage}
               style={{
-                borderRadius: 24,
-                background: 'rgba(255,255,255,0.84)',
-                border: '1px solid rgba(209,213,219,0.75)',
-                padding: 16,
-                display: 'grid',
-                gap: 12,
-                alignContent: 'center',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.72)',
+                border: '1px solid rgba(22,101,52,0.10)',
+                borderRadius: 18,
+                padding: '12px 14px',
+                background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                color: '#fff',
+                fontSize: 14,
+                fontWeight: 900,
+                cursor: 'pointer',
+                boxShadow: '0 10px 24px rgba(34, 197, 94, 0.20)',
+                whiteSpace: 'nowrap',
+                minWidth: 110,
               }}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  gap: 10,
-                  alignItems: 'baseline',
-                }}
-              >
-                <div className="muted">Par</div>
-                <div style={{ fontSize: 28, fontWeight: 900 }}>{hole.par}</div>
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  gap: 10,
-                  alignItems: 'baseline',
-                }}
-              >
-                <div className="muted">Index</div>
-                <div style={{ fontSize: 28, fontWeight: 900 }}>{hole.hcp_index}</div>
-              </div>
-            </div>
+              ⛳ Se banan
+            </button>
           </div>
 
           <div
             style={{
-              borderRadius: 22,
-              padding: 14,
+              borderRadius: 18,
+              padding: 10,
               background:
                 'linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(30,41,59,0.90) 100%)',
               color: '#fff',
               display: 'grid',
-              gap: 10,
-              boxShadow: '0 20px 44px rgba(15, 23, 42, 0.18)',
+              gap: 8,
+              boxShadow: '0 18px 36px rgba(15, 23, 42, 0.16)',
             }}
           >
             <div
@@ -901,38 +891,30 @@ export function HolePlay({
               }}
             >
               <div>
-                <div style={{ fontSize: 13, fontWeight: 900, opacity: 0.75, letterSpacing: 0.4 }}>
+                <div style={{ fontSize: 12, fontWeight: 900, opacity: 0.72, letterSpacing: 0.4 }}>
                   LIVE LEADERBOARD
                 </div>
-                <div style={{ fontSize: 18, fontWeight: 900, marginTop: 2 }}>
-                  Vem leder just nu
+                <div style={{ fontSize: 15, fontWeight: 900, marginTop: 2 }}>
+                  Topp 3 just nu
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={openHoleImage}
+              <div
                 style={{
-                  border: '1px solid rgba(255,255,255,0.14)',
-                  borderRadius: 16,
-                  padding: '12px 14px',
-                  background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-                  color: '#fff',
-                  fontSize: 15,
-                  fontWeight: 900,
-                  cursor: 'pointer',
-                  boxShadow: '0 10px 24px rgba(34, 197, 94, 0.24)',
+                  fontSize: 12,
+                  fontWeight: 800,
+                  opacity: 0.72,
                 }}
               >
-                ⛳ Se banan
-              </button>
+                Live
+              </div>
             </div>
 
             <div
               style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                gap: 10,
+                gap: 8,
               }}
             >
               {topLeaderboard.map((entry) => {
@@ -943,24 +925,26 @@ export function HolePlay({
                   <div
                     key={`lb-${entry.playerId}`}
                     style={{
-                      borderRadius: 18,
-                      padding: 12,
+                      borderRadius: 14,
+                      padding: 9,
                       background: isLeader
                         ? 'linear-gradient(135deg, rgba(34,197,94,0.22) 0%, rgba(22,163,74,0.14) 100%)'
                         : 'rgba(255,255,255,0.08)',
                       border: isLeader
                         ? '1px solid rgba(74, 222, 128, 0.40)'
                         : '1px solid rgba(255,255,255,0.08)',
+                      minWidth: 0,
                     }}
                   >
-                    <div style={{ fontSize: 12, opacity: 0.72, fontWeight: 800 }}>
+                    <div style={{ fontSize: 11, opacity: 0.72, fontWeight: 800 }}>
                       #{entry.position}
                     </div>
+
                     <div
                       style={{
                         marginTop: 4,
                         fontWeight: 900,
-                        fontSize: 16,
+                        fontSize: 13,
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -968,7 +952,18 @@ export function HolePlay({
                     >
                       {player?.display_name ?? 'Spelare'}
                     </div>
-                    <div style={{ marginTop: 4, opacity: 0.82, fontSize: 13, fontWeight: 700 }}>
+
+                    <div
+                      style={{
+                        marginTop: 4,
+                        opacity: 0.82,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
                       {entry.totalPoints != null
                         ? `${entry.totalPoints} p · ${formatToPar(entry.totalToPar)}`
                         : entry.scoreText ?? '-'}
