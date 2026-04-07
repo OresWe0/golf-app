@@ -1,8 +1,16 @@
 import { createBrowserClient } from '@supabase/ssr'
 
-const SUPABASE_URL = 'https://lforhhemnyustsbpvfrm.supabase.co'
-const SUPABASE_ANON_KEY = 'sb_publishable_ENogKoCUCWQynY2zBxiB2w_zHN4yjXB'
-
 export function createClient() {
-  return createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL saknas i .env.local')
+  }
+
+  if (!supabaseAnonKey) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY saknas i .env.local')
+  }
+
+  return createBrowserClient(supabaseUrl, supabaseAnonKey)
 }
