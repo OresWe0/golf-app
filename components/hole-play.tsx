@@ -1291,6 +1291,18 @@ export function HolePlay({
                     >
                       {selectedScore == null ? 'Välj antal slag' : getLabel(selectedScore, hole.par)}
                     </div>
+
+                    {selectedScore != null ? (
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 800,
+                          color: 'rgba(255,255,255,0.9)',
+                        }}
+                      >
+                        Klar för nästa hål
+                      </div>
+                    ) : null}
                   </div>
 
                   <button
