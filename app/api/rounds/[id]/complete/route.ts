@@ -16,13 +16,40 @@ export async function POST(
     return NextResponse.json({ error: 'Inte inloggad.' }, { status: 401 })
   }
 
-  const { error } = await supabase
+  // 🔎 Hämta rundan
+  const { data: round, error: roundError } = await supabase
     .from('rounds')
-    .update({ status: 'completed' })
+    .select('id, owner_id, status')
+    .eq('id', id)
+    .single()
+
+  if (roundError || !round) {
+    return NextResponse.json({ error: 'Rundan hittades inte.' }, { status: 404 })
+  }
+
+  // 🔐 Säkerhet: bara ägare får avsluta (du kan ändra detta om fler ska få)
+  if (round.owner_id !== user.id) {
+    return NextResponse.json(
+      { error: 'Du har inte behörighet att avsluta denna runda.' },
+      { status: 403 }
+    )
+  }
+
+  // 🧠 Om redan avslutad → returnera OK istället för fel
+  if (round.status === 'completed') {
+    return NextResponse.json({ ok: true, alreadyCompleted: true })
+  }
+
+  // ✅ Uppdatera status
+  const { error: updateError } = await supabase
+    .from('rounds')
+    .update({
+      status: 'completed',
+    })
     .eq('id', id)
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 })
+  if (updateError) {
+    return NextResponse.json({ error: updateError.message }, { status: 400 })
   }
 
   return NextResponse.json({ ok: true })
