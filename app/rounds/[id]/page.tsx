@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { HolePlay } from '@/components/hole-play'
 import {
-  getHandicapStrokesForHole,
+  getReceivedStrokesForSelectedHole,
   scoreVsPar,
   stablefordPoints,
 } from '@/lib/scoring'
@@ -102,6 +102,8 @@ export default async function RoundPage({
     notFound()
   }
 
+  const selectedHoleIndexes = visibleHoles.map((item: HoleLike) => item.hcp_index)
+
   const currentHole =
     visibleHoles.find((item: HoleLike) => item.hole_number === requestedHoleNumber) ?? null
 
@@ -139,7 +141,11 @@ export default async function RoundPage({
         stablefordPoints(
           row.strokes,
           hole.par,
-          getHandicapStrokesForHole(player.playing_handicap ?? 0, hole.hcp_index)
+          getReceivedStrokesForSelectedHole(
+            player.playing_handicap ?? 0,
+            selectedHoleIndexes,
+            hole.hcp_index
+          )
         )
       )
     }, 0)
@@ -237,6 +243,7 @@ export default async function RoundPage({
           players={players}
           scores={currentHoleScores}
           leaderboard={leaderboard}
+          selectedHoleIndexes={selectedHoleIndexes}
         />
       </div>
     </main>

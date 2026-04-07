@@ -8,7 +8,7 @@ import {
   type TouchEventHandler,
 } from 'react'
 import { useRouter } from 'next/navigation'
-import { receivedStrokesOnHole } from '@/lib/scoring'
+import { getReceivedStrokesForSelectedHole } from '@/lib/scoring'
 
 type Player = {
   id: string
@@ -50,6 +50,7 @@ type Props = {
   scores: ScoreRow[]
   leaderboard?: LeaderboardEntry[]
   playerStreaks?: Record<string, number>
+  selectedHoleIndexes: number[]
 }
 
 type GpsPoint = {
@@ -194,6 +195,7 @@ export function HolePlay({
   scores,
   leaderboard = [],
   playerStreaks,
+  selectedHoleIndexes,
 }: Props) {
   const router = useRouter()
 
@@ -1013,10 +1015,10 @@ export function HolePlay({
             const selectedScore = selectedValue ? Number(selectedValue) : null
             const selectedTone = selectedScore == null ? null : getScoreTone(selectedScore)
 
-            const received = receivedStrokesOnHole(
+            const received = getReceivedStrokesForSelectedHole(
               player.playing_handicap ?? 0,
-              hole.hcp_index,
-              totalHoles
+              selectedHoleIndexes,
+              hole.hcp_index
             )
 
             const leaderboardMeta = leaderboardByPlayerId.get(playerId)

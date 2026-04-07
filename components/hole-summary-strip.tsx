@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { receivedStrokesOnHole, stablefordPoints } from '@/lib/scoring'
+import { getReceivedStrokesForSelectedHole, stablefordPoints } from '@/lib/scoring'
 
 type HoleScore = {
   holeNumber: number
@@ -41,16 +41,18 @@ export default function HoleSummaryStrip({
     return sum + score.strokes
   }, 0)
 
+  const selectedHoleIndexes = scores.map((s) => s.hcpIndex)
+
   const pointsPerHole: Array<number | null> = scores.map((score) => {
     if (score.strokes == null) return null
 
     return stablefordPoints(
       score.strokes,
       score.par,
-      receivedStrokesOnHole(
+      getReceivedStrokesForSelectedHole(
         selectedPlayer.playingHandicap,
-        score.hcpIndex,
-        visibleHoleCount
+        selectedHoleIndexes,
+        score.hcpIndex
       )
     )
   })
