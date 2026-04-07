@@ -270,10 +270,10 @@ function DashboardStats({
         gap: 12,
       }}
     >
-      <StatCard label="Banor" value={coursesCount} />
-      <StatCard label="Aktiva rundor" value={activeRoundsCount} />
-      <StatCard label="Delade rundor" value={playerRoundsCount} />
-      <StatCard label="Avslutade" value={completedRoundsCount} />
+      <StatCard label="⛳ Banor" value={coursesCount} />
+      <StatCard label="🔥 Aktiva rundor" value={activeRoundsCount} />
+      <StatCard label="👥 Delade rundor" value={playerRoundsCount} />
+      <StatCard label="🏁 Avslutade" value={completedRoundsCount} />
     </div>
   )
 }
