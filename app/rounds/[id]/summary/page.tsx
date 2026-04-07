@@ -2,7 +2,11 @@ import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { receivedStrokesOnHole, scoreVsPar, stablefordPoints } from '@/lib/scoring'
+import {
+  getReceivedStrokesForSelectedHole,
+  scoreVsPar,
+  stablefordPoints,
+} from '@/lib/scoring'
 
 type HoleLike = {
   hole_number: number
@@ -118,7 +122,6 @@ function ScoreTable({
   selectedPlayer,
   scoringMode,
   totalLabel,
-  handicapHoleCount,
 }: {
   title: string
   holes: HoleLike[]
@@ -126,7 +129,6 @@ function ScoreTable({
   selectedPlayer: Pick<SummaryPlayer, 'playingHandicap'>
   scoringMode: string
   totalLabel: string
-  handicapHoleCount: number
 }) {
   const parTotal = holes.reduce((sum, hole) => sum + hole.par, 0)
 
@@ -135,16 +137,18 @@ function ScoreTable({
     return sum + score.strokes
   }, 0)
 
+  const selectedHoleIndexes = holes.map((hole) => hole.hcp_index)
+
   const pointsPerHole: Array<number | null> = scores.map((score) => {
     if (score.strokes == null) return null
 
     return stablefordPoints(
       score.strokes,
       score.par,
-      receivedStrokesOnHole(
+      getReceivedStrokesForSelectedHole(
         selectedPlayer.playingHandicap ?? 0,
-        score.hcpIndex,
-        handicapHoleCount
+        selectedHoleIndexes,
+        score.hcpIndex
       )
     )
   })
@@ -513,7 +517,8 @@ export default async function SummaryPage({
     (hole: HoleLike) => hole.hole_number >= startHole && hole.hole_number <= endHole
   )
 
-  const handicapHoleCount = visibleHoles.length
+  const visibleHoleIndexes = visibleHoles.map((hole: HoleLike) => hole.hcp_index)
+
   const isNineHoleRound = round.holes_mode === 9
 
   const firstHalf = isNineHoleRound ? visibleHoles : visibleHoles.slice(0, 9)
@@ -544,10 +549,10 @@ export default async function SummaryPage({
           stablefordPoints(
             row.strokes,
             hole.par,
-            receivedStrokesOnHole(
+            getReceivedStrokesForSelectedHole(
               player.playing_handicap ?? 0,
-              hole.hcp_index,
-              handicapHoleCount
+              visibleHoleIndexes,
+              hole.hcp_index
             )
           )
         )
@@ -1124,7 +1129,6 @@ export default async function SummaryPage({
                   selectedPlayer={selectedPlayer}
                   scoringMode={round.scoring_mode}
                   totalLabel={isNineHoleRound ? 'Summa' : 'Ut'}
-                  handicapHoleCount={handicapHoleCount}
                 />
 
                 {!isNineHoleRound && secondHalf.length > 0 ? (
@@ -1135,7 +1139,6 @@ export default async function SummaryPage({
                     selectedPlayer={selectedPlayer}
                     scoringMode={round.scoring_mode}
                     totalLabel="In"
-                    handicapHoleCount={handicapHoleCount}
                   />
                 ) : null}
 
