@@ -83,7 +83,11 @@ export default async function RoundPage({
   ] = await Promise.all([
     supabase.from('round_players').select('*').eq('round_id', id).order('sort_order'),
     supabase.from('courses').select('*').eq('id', round.course_id).single(),
-    supabase.from('course_holes').select('*').eq('course_id', round.course_id).order('hole_number'),
+    supabase
+      .from('course_holes')
+      .select('*')
+      .eq('course_id', round.course_id)
+      .order('hole_number'),
     supabase.from('hole_scores').select('*').eq('round_id', id).order('hole_number'),
   ])
 
