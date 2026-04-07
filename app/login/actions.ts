@@ -91,5 +91,8 @@ export async function updateProfile(formData: FormData) {
     redirect(`/profile?message=${encodeURIComponent(error.message)}`)
   }
 
-  redirect('/profile?message=Profilen är uppdaterad.')
+  redirect(
+    '/profile?message=' +
+      encodeURIComponent('Profil sparad')
+  )
 }

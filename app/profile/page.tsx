@@ -209,7 +209,7 @@ export default async function ProfilePage({
                   }}
                 >
                   <div style={{ fontWeight: 600, wordBreak: 'break-word' }}>
-                    {friend.friend_email}
+                    👤 {friend.friend_email}
                   </div>
 
                   <form action={removeFriend}>
