@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Course } from '@/lib/types'
+import { getTeeDisplayLabel, normalizeTeeKey, type TeeKey } from '@/lib/scoring'
 
 type PlayerInput = {
   kind: 'registered' | 'guest'
   name: string
   email: string
   handicapIndex: string
-  teeKey: 'yellow' | 'red'
+  teeKey: TeeKey
 }
 
 type FriendInput = {
@@ -36,10 +37,11 @@ export function NewRoundForm({
 }) {
   const router = useRouter()
 
+  const normalizedDefaultTee = normalizeTeeKey(currentUser.defaultTee)
+
   const [title, setTitle] = useState('Lördagsrundan')
   const [courseId, setCourseId] = useState(courses[0]?.id ?? '')
   const [scoringMode, setScoringMode] = useState<'strokeplay' | 'stableford'>('stableford')
-
   const [holesMode, setHolesMode] = useState<9 | 18>(18)
   const [nineHoleSide, setNineHoleSide] = useState<'front' | 'back'>('front')
 
@@ -49,7 +51,7 @@ export function NewRoundForm({
       name: currentUser.displayName,
       email: currentUser.email,
       handicapIndex: currentUser.handicapIndex == null ? '' : String(currentUser.handicapIndex),
-      teeKey: currentUser.defaultTee === 'red' ? 'red' : 'yellow',
+      teeKey: normalizedDefaultTee,
     },
   ])
 
@@ -104,7 +106,14 @@ export function NewRoundForm({
 
   const updatePlayer = (index: number, key: keyof PlayerInput, value: string) => {
     setPlayers((prev) =>
-      prev.map((player, i) => (i === index ? { ...player, [key]: value } : player))
+      prev.map((player, i) =>
+        i === index
+          ? {
+              ...player,
+              [key]: key === 'teeKey' ? normalizeTeeKey(value) : value,
+            }
+          : player
+      )
     )
   }
 
@@ -211,8 +220,7 @@ export function NewRoundForm({
     if (alreadyExists) return
 
     const fallbackName = friend.friend_email.split('@')[0] || 'Vän'
-    const teeKey: 'yellow' | 'red' =
-      friend.friend_default_tee === 'red' ? 'red' : 'yellow'
+    const teeKey = normalizeTeeKey(friend.friend_default_tee)
 
     showFriendFeedback(friendEmail)
 
@@ -262,6 +270,7 @@ export function NewRoundForm({
       name: player.name.trim(),
       email: player.email.trim().toLowerCase(),
       handicapIndex: player.handicapIndex ? Number(player.handicapIndex) : null,
+      teeKey: normalizeTeeKey(player.teeKey),
     }))
     .filter((player) => player.name)
 
@@ -624,8 +633,8 @@ export function NewRoundForm({
                       boxShadow: wasJustAdded
                         ? '0 0 0 4px rgba(34, 197, 94, 0.12)'
                         : alreadyAdded
-                        ? 'none'
-                        : '0 4px 12px rgba(22, 101, 52, 0.06)',
+                          ? 'none'
+                          : '0 4px 12px rgba(22, 101, 52, 0.06)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 6,
@@ -773,8 +782,8 @@ export function NewRoundForm({
                     highlightedPlayerIndex === index
                       ? '2px solid #22c55e'
                       : index === 0
-                      ? '1px solid #bbf7d0'
-                      : '1px solid #e5e7eb',
+                        ? '1px solid #bbf7d0'
+                        : '1px solid #e5e7eb',
                   boxShadow:
                     highlightedPlayerIndex === index
                       ? '0 0 0 4px rgba(34, 197, 94, 0.12)'
@@ -804,8 +813,8 @@ export function NewRoundForm({
                       {index === 0
                         ? 'Du'
                         : player.kind === 'registered'
-                        ? 'Registrerad spelare'
-                        : 'Gästspelare'}
+                          ? 'Registrerad spelare'
+                          : 'Gästspelare'}
                     </div>
 
                     {highlightedPlayerIndex === index && index > 0 ? (
@@ -905,11 +914,11 @@ export function NewRoundForm({
                     <select
                       value={player.teeKey}
                       onChange={(e) =>
-                        updatePlayer(index, 'teeKey', e.target.value as 'yellow' | 'red')
+                        updatePlayer(index, 'teeKey', e.target.value as TeeKey)
                       }
                     >
-                      <option value="yellow">Gul tee</option>
-                      <option value="red">Röd tee</option>
+                      <option value="yellow">{getTeeDisplayLabel('yellow')}</option>
+                      <option value="red">{getTeeDisplayLabel('red')}</option>
                     </select>
                   </div>
                 </div>
@@ -1039,7 +1048,7 @@ export function NewRoundForm({
                     fontSize: 14,
                   }}
                 >
-                  {player.name}
+                  {player.name} · {getTeeDisplayLabel(player.teeKey)}
                 </div>
               ))}
             </div>

@@ -2,7 +2,11 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { HolePlay } from '@/components/hole-play'
-import { receivedStrokesOnHole, scoreVsPar, stablefordPoints } from '@/lib/scoring'
+import {
+  getHandicapStrokesForHole,
+  scoreVsPar,
+  stablefordPoints,
+} from '@/lib/scoring'
 
 type HoleLike = {
   hole_number: number
@@ -98,9 +102,8 @@ export default async function RoundPage({
     notFound()
   }
 
-  const currentHole = visibleHoles.find(
-    (item: HoleLike) => item.hole_number === requestedHoleNumber
-  )
+  const currentHole =
+    visibleHoles.find((item: HoleLike) => item.hole_number === requestedHoleNumber) ?? null
 
   if (!currentHole) {
     redirect(`/rounds/${id}?hole=${round.current_hole ?? startHole}`)
@@ -112,8 +115,6 @@ export default async function RoundPage({
     (row) => row.hole_number === currentHole.hole_number
   )
 
-  const handicapHoleCount = visibleHoles.length
-
   const leaderboardBase = (players as RoundPlayer[]).map((player) => {
     const rows = scoreRows.filter(
       (row) =>
@@ -122,9 +123,7 @@ export default async function RoundPage({
         row.hole_number <= endHole
     )
 
-    const totalStrokes = rows.reduce((sum, row) => {
-      return sum + (row.strokes ?? 0)
-    }, 0)
+    const totalStrokes = rows.reduce((sum, row) => sum + (row.strokes ?? 0), 0)
 
     const totalToPar = rows.reduce((sum, row) => {
       const hole = visibleHoles.find((item) => item.hole_number === row.hole_number)
@@ -140,11 +139,7 @@ export default async function RoundPage({
         stablefordPoints(
           row.strokes,
           hole.par,
-          receivedStrokesOnHole(
-            player.playing_handicap ?? 0,
-            hole.hcp_index,
-            handicapHoleCount
-          )
+          getHandicapStrokesForHole(player.playing_handicap ?? 0, hole.hcp_index)
         )
       )
     }, 0)

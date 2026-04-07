@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { calculatePlayingHandicap } from '@/lib/scoring'
+import {
+  calculatePlayingHandicap,
+  getPlayingHandicapForSelectedHoles,
+  normalizeTeeKey,
+} from '@/lib/scoring'
 
 type InputPlayer = {
   name: string
@@ -10,15 +14,18 @@ type InputPlayer = {
   sortOrder?: number
 }
 
+type CourseHole = {
+  hole_number: number
+  hcp_index: number
+  par: number
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient()
 
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  console.log('AUTH USER:', user)
-  console.log('AUTH USER ID:', user?.id)
 
   if (!user) {
     return NextResponse.json({ error: 'Inte inloggad.' }, { status: 401 })
@@ -48,15 +55,23 @@ export async function POST(request: Request) {
     ),
   ]
 
-  const [{ data: course, error: courseError }, { data: tees, error: teesError }] =
-    await Promise.all([
-      supabase
-        .from('courses')
-        .select('id, holes_count, total_par')
-        .eq('id', body.courseId)
-        .single(),
-      supabase.from('course_tees').select('*').eq('course_id', body.courseId),
-    ])
+  const [
+    { data: course, error: courseError },
+    { data: tees, error: teesError },
+    { data: holes, error: holesError },
+  ] = await Promise.all([
+    supabase
+      .from('courses')
+      .select('id, holes_count, total_par')
+      .eq('id', body.courseId)
+      .single(),
+    supabase.from('course_tees').select('*').eq('course_id', body.courseId),
+    supabase
+      .from('course_holes')
+      .select('hole_number, hcp_index, par')
+      .eq('course_id', body.courseId)
+      .order('hole_number'),
+  ])
 
   if (courseError || !course) {
     return NextResponse.json({ error: 'Banan kunde inte hittas.' }, { status: 400 })
@@ -65,6 +80,24 @@ export async function POST(request: Request) {
   if (teesError || !tees || tees.length === 0) {
     return NextResponse.json(
       { error: 'Ingen tee-data hittades för banan.' },
+      { status: 400 }
+    )
+  }
+
+  if (holesError || !holes || holes.length === 0) {
+    return NextResponse.json(
+      { error: 'Ingen håldata hittades för banan.' },
+      { status: 400 }
+    )
+  }
+
+  const visibleHoles = (holes as CourseHole[]).filter(
+    (hole) => hole.hole_number >= startHole && hole.hole_number <= endHole
+  )
+
+  if (visibleHoles.length !== endHole - startHole + 1) {
+    return NextResponse.json(
+      { error: 'Ofullständig håldata för vald slinga.' },
       { status: 400 }
     )
   }
@@ -132,8 +165,6 @@ export async function POST(request: Request) {
     current_hole: startHole,
   }
 
-  console.log('ROUND INSERT PAYLOAD:', roundInsertPayload)
-
   const { data: round, error: roundError } = await supabase
     .from('rounds')
     .insert(roundInsertPayload)
@@ -141,7 +172,6 @@ export async function POST(request: Request) {
     .single()
 
   if (roundError || !round) {
-    console.log('ROUND INSERT ERROR:', roundError)
     return NextResponse.json(
       { error: roundError?.message || 'Kunde inte skapa rundan.' },
       { status: 400 }
@@ -160,22 +190,24 @@ export async function POST(request: Request) {
     }
 
     const exactHandicap = player.handicapIndex ?? profile?.handicap_index ?? null
-    const teeKey = (player.teeKey || profile?.default_tee || 'yellow') as 'yellow' | 'red'
+    const teeKey = normalizeTeeKey(player.teeKey ?? profile?.default_tee ?? 'yellow')
     const tee = teeByKey.get(teeKey)
+
+    if (!tee) {
+      throw new Error(`Ogiltig tee: ${teeKey}`)
+    }
 
     const courseHandicap = calculatePlayingHandicap({
       handicapIndex: exactHandicap,
-      slopeRating: tee?.slope_rating ?? null,
-      courseRating: tee?.course_rating ?? null,
-      par: tee?.tee_par ?? course.total_par,
+      slopeRating: tee.slope_rating ?? null,
+      courseRating: tee.course_rating ?? null,
+      par: tee.tee_par ?? course.total_par,
     })
 
-    const holesPlayed = endHole - startHole + 1
-
-    const playingHandicap =
-      holesPlayed < 18
-        ? Math.floor((courseHandicap * holesPlayed) / 18)
-        : Math.floor(courseHandicap)
+    const playingHandicap = getPlayingHandicapForSelectedHoles(
+      courseHandicap,
+      visibleHoles.map((hole) => hole.hcp_index)
+    )
 
     return {
       round_id: round.id,
@@ -201,7 +233,6 @@ export async function POST(request: Request) {
     )
 
   if (membersError) {
-    console.log('ROUND MEMBERS ERROR:', membersError)
     return NextResponse.json({ error: membersError.message }, { status: 400 })
   }
 
@@ -211,7 +242,6 @@ export async function POST(request: Request) {
     .select('id')
 
   if (playersError || !roundPlayers) {
-    console.log('ROUND PLAYERS ERROR:', playersError)
     return NextResponse.json(
       { error: playersError?.message || 'Kunde inte spara spelare.' },
       { status: 400 }
@@ -233,7 +263,6 @@ export async function POST(request: Request) {
   const { error: scoreError } = await supabase.from('hole_scores').insert(scoreRows)
 
   if (scoreError) {
-    console.log('HOLE SCORES ERROR:', scoreError)
     return NextResponse.json({ error: scoreError.message }, { status: 400 })
   }
 

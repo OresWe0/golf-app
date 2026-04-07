@@ -1,3 +1,17 @@
+export type TeeKey = 'yellow' | 'red'
+
+export function isValidTeeKey(value: unknown): value is TeeKey {
+  return value === 'yellow' || value === 'red'
+}
+
+export function normalizeTeeKey(value: unknown): TeeKey {
+  return isValidTeeKey(value) ? value : 'yellow'
+}
+
+export function getTeeDisplayLabel(teeKey: TeeKey) {
+  return teeKey === 'red' ? 'Röd tee (47)' : 'Gul tee (56)'
+}
+
 export function calculatePlayingHandicap({
   handicapIndex,
   slopeRating,
@@ -11,19 +25,44 @@ export function calculatePlayingHandicap({
   par: number
   allowancePercent?: number
 }) {
-  if (
-    handicapIndex == null ||
-    slopeRating == null ||
-    courseRating == null
-  ) {
+  if (handicapIndex == null || slopeRating == null || courseRating == null) {
     return 0
   }
 
   const courseHandicap =
     (handicapIndex * slopeRating) / 113 + (courseRating - par)
 
-  // ❗ Ingen rounding här
   return (courseHandicap * allowancePercent) / 100
+}
+
+export function getRoundedCourseHandicap(courseHandicap: number | null | undefined) {
+  if (courseHandicap == null || !Number.isFinite(courseHandicap)) return 0
+  return Math.floor(courseHandicap)
+}
+
+export function getHandicapStrokesForHole(
+  courseHandicap: number | null | undefined,
+  holeIndex: number | null | undefined
+) {
+  const roundedCourseHandicap = getRoundedCourseHandicap(courseHandicap)
+
+  if (roundedCourseHandicap <= 0 || holeIndex == null || holeIndex <= 0) {
+    return 0
+  }
+
+  const baseStrokes = Math.floor(roundedCourseHandicap / 18)
+  const extraStrokes = roundedCourseHandicap % 18
+
+  return baseStrokes + (holeIndex <= extraStrokes ? 1 : 0)
+}
+
+export function getPlayingHandicapForSelectedHoles(
+  courseHandicap: number | null | undefined,
+  selectedHoleIndexes: Array<number | null | undefined>
+) {
+  return selectedHoleIndexes.reduce((sum, holeIndex) => {
+    return sum + getHandicapStrokesForHole(courseHandicap, holeIndex)
+  }, 0)
 }
 
 export function receivedStrokesOnHole(
@@ -32,18 +71,12 @@ export function receivedStrokesOnHole(
   holesCount: number
 ) {
   if (!playingHandicap || playingHandicap <= 0) return 0
-
-  let normalizedHoleIndex = holeIndex
-
-  // ✅ 9 hål → mappa 1–18 till 1–9
-  if (holesCount === 9) {
-    normalizedHoleIndex = Math.ceil(holeIndex / 2)
-  }
+  if (!holeIndex || holeIndex <= 0) return 0
 
   const base = Math.floor(playingHandicap / holesCount)
   const remainder = playingHandicap % holesCount
 
-  return base + (normalizedHoleIndex <= remainder ? 1 : 0)
+  return base + (holeIndex <= remainder ? 1 : 0)
 }
 
 export function stablefordPoints(
