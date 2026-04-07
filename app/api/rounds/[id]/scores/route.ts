@@ -56,7 +56,7 @@ export async function POST(
   for (const score of scoreUpdates) {
     const roundPlayerId = String(score.roundPlayerId || '')
     const strokes =
-      score.strokes == null || score.strokes === ''
+      score.strokes == null
         ? null
         : Number(score.strokes)
 

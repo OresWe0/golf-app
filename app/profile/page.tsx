@@ -11,6 +11,7 @@ export default async function ProfilePage({
 }) {
   const params = await searchParams
   const supabase = await createClient()
+
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -35,6 +36,7 @@ export default async function ProfilePage({
     'use server'
 
     const supabase = await createClient()
+
     const {
       data: { user },
     } = await supabase.auth.getUser()
@@ -82,16 +84,29 @@ export default async function ProfilePage({
             <span className="badge">👤 Profil</span>
             <h1>Min profil</h1>
             <p className="muted">
-              Här sparar du namn, HCP och standardtee som används när du startar nya rundor.
+              Här sparar du namn, HCP och standardtee som används när du startar
+              nya rundor.
             </p>
           </div>
-          <Link className="button secondary" href="/dashboard">
-            Till dashboard
+
+          <Link className="muted" href="/dashboard">
+            ← Till dashboard
           </Link>
         </div>
 
         <div className="card stack" style={{ maxWidth: 680, marginBottom: 20 }}>
-          {params.message ? <div className="notice">{params.message}</div> : null}
+          {params.message ? (
+            <div
+              className="notice"
+              style={{
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                color: '#166534',
+              }}
+            >
+              {params.message}
+            </div>
+          ) : null}
 
           <form className="stack" action={updateProfile}>
             <div>
@@ -105,7 +120,7 @@ export default async function ProfilePage({
             </div>
 
             <div>
-              <label htmlFor="handicapIndex">Handicapindex</label>
+              <label htmlFor="handicapIndex">HCP (t.ex. 18.4)</label>
               <input
                 id="handicapIndex"
                 name="handicapIndex"
@@ -135,6 +150,11 @@ export default async function ProfilePage({
         <div className="card stack" style={{ maxWidth: 680 }}>
           <h2 style={{ margin: 0 }}>Mina vänner</h2>
 
+          <p className="muted" style={{ margin: 0 }}>
+            Lägg till vänner för att snabbt kunna välja dem när du startar en
+            runda.
+          </p>
+
           <form
             action={addFriend}
             style={{
@@ -159,6 +179,7 @@ export default async function ProfilePage({
                 background: '#fff',
               }}
             />
+
             <button
               type="submit"
               style={{
