@@ -55,6 +55,34 @@ function getRoundHref(round: Round) {
   return `/rounds/${round.id}?hole=${round.current_hole}`
 }
 
+const dashboardStyles = {
+  heroCard: {
+    background:
+      'linear-gradient(180deg, rgba(248,251,247,0.98) 0%, rgba(255,255,255,0.98) 100%)',
+    border: '1px solid #dbeedc',
+    borderRadius: 28,
+    boxShadow: '0 20px 52px rgba(15, 23, 42, 0.08)',
+  },
+  sectionCard: {
+    borderRadius: 24,
+    boxShadow: '0 16px 42px rgba(15, 23, 42, 0.06)',
+    border: '1px solid #e5e7eb',
+    background: '#ffffff',
+  },
+  pill: {
+    padding: '7px 12px',
+    borderRadius: 999,
+    fontSize: 13,
+    fontWeight: 900,
+    whiteSpace: 'nowrap' as const,
+  },
+  softButton: {
+    width: '100%',
+    textAlign: 'center' as const,
+    boxSizing: 'border-box' as const,
+  },
+}
+
 function SectionEmptyState({
   title,
   description,
@@ -65,13 +93,13 @@ function SectionEmptyState({
   return (
     <div
       style={{
-        border: '1px dashed #d1d5db',
-        borderRadius: 16,
+        border: '1px dashed #cfd8d3',
+        borderRadius: 18,
         padding: 18,
-        background: '#f9fafb',
+        background: 'linear-gradient(180deg, #fbfdfb 0%, #f8faf9 100%)',
       }}
     >
-      <div style={{ fontWeight: 800, marginBottom: 4 }}>{title}</div>
+      <div style={{ fontWeight: 800, marginBottom: 4, color: '#1f3327' }}>{title}</div>
       <div className="muted">{description}</div>
     </div>
   )
@@ -80,16 +108,63 @@ function SectionEmptyState({
 function StatCard({
   label,
   value,
+  tone,
 }: {
   label: string
   value: number
+  tone: 'neutral' | 'green' | 'purple' | 'slate'
 }) {
+  const toneMap = {
+    neutral: {
+      background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+      border: '#e5e7eb',
+      glow: 'rgba(15, 23, 42, 0.06)',
+    },
+    green: {
+      background: 'linear-gradient(180deg, #f6fff8 0%, #ecfdf3 100%)',
+      border: '#ccefd7',
+      glow: 'rgba(34, 197, 94, 0.10)',
+    },
+    purple: {
+      background: 'linear-gradient(180deg, #fbf7ff 0%, #f5f3ff 100%)',
+      border: '#ddd6fe',
+      glow: 'rgba(124, 58, 237, 0.08)',
+    },
+    slate: {
+      background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+      border: '#dbe2ea',
+      glow: 'rgba(71, 85, 105, 0.08)',
+    },
+  } as const
+
+  const palette = toneMap[tone]
+
   return (
-    <div className="card" style={{ padding: 16 }}>
-      <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>
+    <div
+      className="card"
+      style={{
+        padding: 16,
+        borderRadius: 22,
+        background: palette.background,
+        border: `1px solid ${palette.border}`,
+        boxShadow: `0 14px 30px ${palette.glow}`,
+      }}
+    >
+      <div
+        className="muted"
+        style={{
+          fontSize: 13,
+          marginBottom: 8,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+        }}
+      >
         {label}
       </div>
-      <div style={{ fontSize: 30, fontWeight: 900 }}>{value}</div>
+      <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1, color: '#1f3327' }}>
+        {value}
+      </div>
     </div>
   )
 }
@@ -104,42 +179,68 @@ function DashboardHeader({
   pendingCount: number
 }) {
   return (
-    <div
-      className="card"
-      style={{
-        background: 'linear-gradient(180deg, #f8fbf7 0%, #ffffff 100%)',
-        border: '1px solid #dbeedc',
-      }}
-    >
-      <div style={{ display: 'grid', gap: 14 }}>
+    <div className="card" style={dashboardStyles.heroCard}>
+      <div style={{ display: 'grid', gap: 18 }}>
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            gap: 12,
+            gap: 14,
             alignItems: 'flex-start',
             flexWrap: 'wrap',
           }}
         >
-          <div>
-            <span className="badge">👋 Inloggad som {displayName}</span>
-            <h1 style={{ marginTop: 12, marginBottom: 10 }}>Dashboard</h1>
-            <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
-              Starta en ny runda eller fortsätt en aktiv runda med dina
-              golfvänner. Ditt sparade HCP används som standard.
+          <div style={{ maxWidth: 720 }}>
+            <span
+              className="badge"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '10px 14px',
+                borderRadius: 999,
+                background: 'linear-gradient(180deg, #eef8ef 0%, #e7f2e8 100%)',
+                border: '1px solid #d6e5d7',
+                fontWeight: 900,
+              }}
+            >
+              👋 Inloggad som {displayName}
+            </span>
+
+            <h1
+              style={{
+                marginTop: 16,
+                marginBottom: 12,
+                fontSize: 'clamp(2rem, 4vw, 3rem)',
+                lineHeight: 1,
+                color: '#20352a',
+              }}
+            >
+              Dashboard
+            </h1>
+
+            <p
+              className="muted"
+              style={{
+                margin: 0,
+                lineHeight: 1.6,
+                fontSize: 16,
+                maxWidth: 720,
+              }}
+            >
+              Starta en ny runda eller fortsätt en aktiv runda med dina golfvänner.
+              Ditt sparade HCP används som standard.
             </p>
           </div>
 
           {isAdmin && pendingCount > 0 ? (
             <div
               style={{
-                padding: '7px 12px',
-                borderRadius: 999,
-                background: '#fef3c7',
+                ...dashboardStyles.pill,
+                background: 'linear-gradient(180deg, #fff5d9 0%, #fef3c7 100%)',
                 color: '#92400e',
-                fontSize: 13,
-                fontWeight: 900,
-                whiteSpace: 'nowrap',
+                border: '1px solid #f4d57c',
+                boxShadow: '0 10px 24px rgba(245, 158, 11, 0.14)',
               }}
             >
               {pendingCount} väntar på godkännande
@@ -147,21 +248,25 @@ function DashboardHeader({
           ) : null}
         </div>
 
-        <div style={{ display: 'grid', gap: 10 }}>
+        <div style={{ display: 'grid', gap: 12 }}>
           <Link
             href="/rounds/new"
             className="button"
             style={{
               width: '100%',
-              minHeight: 56,
-              fontSize: 18,
+              minHeight: 60,
+              fontSize: 20,
               fontWeight: 900,
+              borderRadius: 20,
+              background: 'linear-gradient(135deg, #166534 0%, #22c55e 100%)',
+              boxShadow: '0 18px 40px rgba(34, 197, 94, 0.24)',
             }}
           >
             ⛳ Starta ny runda
           </Link>
 
           <div
+            className="dashboard-header-actions"
             style={{
               display: 'grid',
               gridTemplateColumns: isAdmin ? '1fr 1fr auto' : '1fr auto',
@@ -173,11 +278,7 @@ function DashboardHeader({
               <Link
                 href="/admin/users"
                 className="button secondary"
-                style={{
-                  width: '100%',
-                  textAlign: 'center',
-                  boxSizing: 'border-box',
-                }}
+                style={dashboardStyles.softButton}
               >
                 Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
               </Link>
@@ -186,11 +287,7 @@ function DashboardHeader({
             <Link
               href="/profile"
               className="button secondary"
-              style={{
-                width: '100%',
-                textAlign: 'center',
-                boxSizing: 'border-box',
-              }}
+              style={dashboardStyles.softButton}
             >
               Min profil
             </Link>
@@ -224,19 +321,20 @@ function AdminPendingBanner({
   return (
     <div
       style={{
-        border: '1px solid #fde68a',
-        background: '#fffbeb',
-        borderRadius: 18,
-        padding: 14,
+        border: '1px solid #f2d169',
+        background: 'linear-gradient(180deg, #fffdf2 0%, #fff9e8 100%)',
+        borderRadius: 22,
+        padding: 16,
         display: 'flex',
         justifyContent: 'space-between',
-        gap: 12,
+        gap: 14,
         alignItems: 'center',
         flexWrap: 'wrap',
+        boxShadow: '0 14px 30px rgba(245, 158, 11, 0.08)',
       }}
     >
       <div>
-        <div style={{ fontWeight: 900, marginBottom: 4 }}>
+        <div style={{ fontWeight: 900, marginBottom: 4, color: '#1f3327' }}>
           ⏳ Väntande användare
         </div>
         <div className="muted">
@@ -244,7 +342,17 @@ function AdminPendingBanner({
         </div>
       </div>
 
-      <Link href="/admin/users" className="button secondary">
+      <Link
+        href="/admin/users"
+        className="button secondary"
+        style={{
+          minWidth: 170,
+          textAlign: 'center',
+          boxSizing: 'border-box',
+          borderColor: '#eed38f',
+          background: '#fffef8',
+        }}
+      >
         Öppna admin
       </Link>
     </div>
@@ -264,16 +372,79 @@ function DashboardStats({
 }) {
   return (
     <div
+      className="dashboard-stats-grid"
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
         gap: 12,
       }}
     >
-      <StatCard label="⛳ Banor" value={coursesCount} />
-      <StatCard label="🔥 Aktiva rundor" value={activeRoundsCount} />
-      <StatCard label="👥 Delade rundor" value={playerRoundsCount} />
-      <StatCard label="🏁 Avslutade" value={completedRoundsCount} />
+      <StatCard label="⛳ Banor" value={coursesCount} tone="neutral" />
+      <StatCard label="🔥 Aktiva rundor" value={activeRoundsCount} tone="green" />
+      <StatCard label="👥 Delade rundor" value={playerRoundsCount} tone="purple" />
+      <StatCard label="🏁 Avslutade" value={completedRoundsCount} tone="slate" />
+    </div>
+  )
+}
+
+function SectionHeader({
+  title,
+  description,
+  count,
+  countTone = 'green',
+}: {
+  title: string
+  description: string
+  count: number
+  countTone?: 'green' | 'slate'
+}) {
+  const badgeStyle =
+    countTone === 'green'
+      ? {
+          background: '#f0fdf4',
+          color: '#166534',
+        }
+      : {
+          background: '#f3f4f6',
+          color: '#334155',
+        }
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        gap: 12,
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        marginBottom: 14,
+      }}
+    >
+      <div>
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 22,
+            lineHeight: 1.1,
+            color: '#20352a',
+          }}
+        >
+          {title}
+        </h2>
+        <p className="muted" style={{ margin: '7px 0 0 0', lineHeight: 1.5 }}>
+          {description}
+        </p>
+      </div>
+
+      <div
+        style={{
+          ...dashboardStyles.pill,
+          ...badgeStyle,
+          padding: '8px 14px',
+        }}
+      >
+        {count} st
+      </div>
     </div>
   )
 }
@@ -293,11 +464,12 @@ function ActiveRoundCard({
     <div
       style={{
         border: '1px solid #dbeedc',
-        borderRadius: 18,
-        background: '#f8fbf7',
+        borderRadius: 22,
+        background: 'linear-gradient(180deg, #f9fdf9 0%, #f4fbf5 100%)',
         padding: 16,
         display: 'grid',
-        gap: 12,
+        gap: 14,
+        boxShadow: '0 16px 36px rgba(34, 197, 94, 0.07)',
       }}
     >
       <div
@@ -317,25 +489,22 @@ function ActiveRoundCard({
               lineHeight: 1.1,
               marginBottom: 6,
               wordBreak: 'break-word',
+              color: '#1f3327',
             }}
           >
             {round.title}
           </div>
 
-          <div className="muted" style={{ lineHeight: 1.45 }}>
+          <div className="muted" style={{ lineHeight: 1.5 }}>
             {scoring} · Aktuellt hål {round.current_hole} · {role}
           </div>
         </div>
 
         <div
           style={{
-            padding: '6px 10px',
-            borderRadius: 999,
+            ...dashboardStyles.pill,
             background: '#dcfce7',
             color: '#166534',
-            fontSize: 12,
-            fontWeight: 900,
-            whiteSpace: 'nowrap',
           }}
         >
           Pågår
@@ -343,6 +512,7 @@ function ActiveRoundCard({
       </div>
 
       <div
+        className="round-meta-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
@@ -353,57 +523,58 @@ function ActiveRoundCard({
           style={{
             background: '#fff',
             border: '1px solid #e5e7eb',
-            borderRadius: 14,
+            borderRadius: 16,
             padding: 12,
           }}
         >
           <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
             Roll
           </div>
-          <div style={{ fontWeight: 900 }}>{role}</div>
+          <div style={{ fontWeight: 900, color: '#1f3327' }}>{role}</div>
         </div>
 
         <div
           style={{
             background: '#fff',
             border: '1px solid #e5e7eb',
-            borderRadius: 14,
+            borderRadius: 16,
             padding: 12,
           }}
         >
           <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
             Mode
           </div>
-          <div style={{ fontWeight: 900 }}>{scoring}</div>
+          <div style={{ fontWeight: 900, color: '#1f3327' }}>{scoring}</div>
         </div>
 
         <div
           style={{
             background: '#fff',
             border: '1px solid #e5e7eb',
-            borderRadius: 14,
+            borderRadius: 16,
             padding: 12,
           }}
         >
           <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
             Hål
           </div>
-          <div style={{ fontWeight: 900 }}>{round.current_hole}</div>
+          <div style={{ fontWeight: 900, color: '#1f3327' }}>{round.current_hole}</div>
         </div>
       </div>
 
       <div
+        className="round-actions-grid"
         style={{
-          display: 'flex',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
           gap: 10,
-          flexWrap: 'wrap',
         }}
       >
         <Link
           className="button secondary"
           href={href}
           style={{
-            flex: 1,
+            width: '100%',
             textAlign: 'center',
             boxSizing: 'border-box',
           }}
@@ -415,7 +586,7 @@ function ActiveRoundCard({
           className="button secondary"
           href={`/rounds/${round.id}/summary`}
           style={{
-            flex: 1,
+            width: '100%',
             textAlign: 'center',
             boxSizing: 'border-box',
           }}
@@ -441,11 +612,12 @@ function CompletedRoundCard({
     <div
       style={{
         border: '1px solid #e5e7eb',
-        borderRadius: 16,
-        background: '#fff',
+        borderRadius: 18,
+        background: 'linear-gradient(180deg, #ffffff 0%, #fafbfc 100%)',
         padding: 14,
         display: 'grid',
         gap: 12,
+        boxShadow: '0 12px 28px rgba(15, 23, 42, 0.04)',
       }}
     >
       <div
@@ -464,25 +636,22 @@ function CompletedRoundCard({
               fontWeight: 900,
               lineHeight: 1.1,
               wordBreak: 'break-word',
+              color: '#1f3327',
             }}
           >
             {round.title}
           </div>
 
-          <div className="muted" style={{ marginTop: 4, lineHeight: 1.45 }}>
+          <div className="muted" style={{ marginTop: 5, lineHeight: 1.45 }}>
             {scoring} · {role}
           </div>
         </div>
 
         <div
           style={{
-            padding: '6px 10px',
-            borderRadius: 999,
+            ...dashboardStyles.pill,
             background: '#f3f4f6',
             color: '#334155',
-            fontSize: 12,
-            fontWeight: 900,
-            whiteSpace: 'nowrap',
           }}
         >
           Klar
@@ -531,37 +700,13 @@ function ActiveRoundsSection({
   })
 
   return (
-    <div className="card">
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          gap: 12,
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          marginBottom: 14,
-        }}
-      >
-        <div>
-          <h2 style={{ margin: 0 }}>Aktiva rundor</h2>
-          <p className="muted" style={{ margin: '6px 0 0 0' }}>
-            Rundor som pågår just nu.
-          </p>
-        </div>
-
-        <div
-          style={{
-            padding: '6px 12px',
-            borderRadius: 999,
-            background: '#f0fdf4',
-            color: '#166534',
-            fontSize: 13,
-            fontWeight: 800,
-          }}
-        >
-          {rounds.length} st
-        </div>
-      </div>
+    <div className="card" style={dashboardStyles.sectionCard}>
+      <SectionHeader
+        title="Aktiva rundor"
+        description="Rundor som pågår just nu."
+        count={rounds.length}
+        countTone="green"
+      />
 
       {rounds.length === 0 ? (
         <SectionEmptyState
@@ -645,37 +790,13 @@ function CompletedRoundsSection({
   })
 
   return (
-    <div className="card">
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          gap: 12,
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          marginBottom: 14,
-        }}
-      >
-        <div>
-          <h2 style={{ margin: 0 }}>Avslutade rundor</h2>
-          <p className="muted" style={{ margin: '6px 0 0 0' }}>
-            Tidigare spelade rundor och sammanfattningar.
-          </p>
-        </div>
-
-        <div
-          style={{
-            padding: '6px 12px',
-            borderRadius: 999,
-            background: '#f3f4f6',
-            color: '#334155',
-            fontSize: 13,
-            fontWeight: 800,
-          }}
-        >
-          {rounds.length} st
-        </div>
-      </div>
+    <div className="card" style={dashboardStyles.sectionCard}>
+      <SectionHeader
+        title="Avslutade rundor"
+        description="Tidigare spelade rundor och sammanfattningar."
+        count={rounds.length}
+        countTone="slate"
+      />
 
       {rounds.length === 0 ? (
         <SectionEmptyState
@@ -799,6 +920,28 @@ export default async function DashboardPage({
 
   return (
     <main style={{ width: '100%', overflowX: 'hidden' }}>
+      <style>{`
+        .dashboard-header-actions,
+        .dashboard-stats-grid,
+        .round-meta-grid,
+        .round-actions-grid {
+          min-width: 0;
+        }
+
+        @media (max-width: 820px) {
+          .dashboard-header-actions {
+            grid-template-columns: 1fr !important;
+          }
+        }
+
+        @media (max-width: 720px) {
+          .round-meta-grid,
+          .round-actions-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
+
       <div
         className="container"
         style={{
@@ -808,7 +951,7 @@ export default async function DashboardPage({
           boxSizing: 'border-box',
         }}
       >
-        <div style={{ display: 'grid', gap: 14, marginBottom: 16 }}>
+        <div style={{ display: 'grid', gap: 16, marginBottom: 18 }}>
           <DashboardHeader
             displayName={displayName}
             isAdmin={isAdmin}
@@ -827,7 +970,7 @@ export default async function DashboardPage({
           />
         </div>
 
-        <div style={{ display: 'grid', gap: 16 }}>
+        <div style={{ display: 'grid', gap: 18 }}>
           <ActiveRoundsSection
             rounds={activeRounds}
             membershipByRoundId={membershipByRoundId}
