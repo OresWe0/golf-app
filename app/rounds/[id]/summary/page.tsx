@@ -115,6 +115,71 @@ function getMedal(index: number) {
   return `${index + 1}.`
 }
 
+const TYPE = {
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: 900,
+    lineHeight: 1.1,
+    letterSpacing: -0.3,
+    color: '#1f3327',
+  } satisfies CSSProperties,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 800,
+    lineHeight: 1.2,
+    letterSpacing: -0.2,
+    color: '#1f3327',
+  } satisfies CSSProperties,
+  cardTitleLg: {
+    fontSize: 20,
+    fontWeight: 900,
+    lineHeight: 1.1,
+    letterSpacing: -0.2,
+    color: '#1f3327',
+  } satisfies CSSProperties,
+  cardTitleMd: {
+    fontSize: 18,
+    fontWeight: 900,
+    lineHeight: 1.1,
+    letterSpacing: -0.15,
+    color: '#1f3327',
+  } satisfies CSSProperties,
+  meta: {
+    fontSize: 14,
+    fontWeight: 500,
+    lineHeight: 1.4,
+    color: '#617166',
+  } satisfies CSSProperties,
+  label: {
+    fontSize: 13,
+    fontWeight: 600,
+    lineHeight: 1.3,
+    color: '#6b786f',
+  } satisfies CSSProperties,
+  labelStrong: {
+    fontSize: 13,
+    fontWeight: 800,
+    lineHeight: 1.2,
+  } satisfies CSSProperties,
+  statValueLg: {
+    fontSize: 20,
+    fontWeight: 900,
+    lineHeight: 1.1,
+    color: '#1f3327',
+  } satisfies CSSProperties,
+  statValueMd: {
+    fontSize: 18,
+    fontWeight: 900,
+    lineHeight: 1.1,
+    color: '#1f3327',
+  } satisfies CSSProperties,
+  buttonText: {
+    fontSize: 16,
+    fontWeight: 800,
+    lineHeight: 1,
+  } satisfies CSSProperties,
+} as const
+
 function ScoreTable({
   title,
   holes,
@@ -191,7 +256,8 @@ function ScoreTable({
         <div
           style={{
             fontSize: 16,
-            fontWeight: 900,
+            fontWeight: 800,
+            lineHeight: 1.2,
           }}
         >
           {title}
@@ -200,7 +266,7 @@ function ScoreTable({
         <div
           style={{
             fontSize: 12,
-            fontWeight: 800,
+            fontWeight: 700,
             opacity: 0.95,
             whiteSpace: 'nowrap',
           }}
@@ -238,9 +304,10 @@ function ScoreTable({
                     textAlign: 'left',
                     padding: '12px 14px',
                     fontSize: 16,
-                    fontWeight: 900,
+                    fontWeight: 800,
                     whiteSpace: 'nowrap',
                     background: '#f8fbf7',
+                    color: '#1f3327',
                   }}
                 >
                   Hål
@@ -252,8 +319,9 @@ function ScoreTable({
                       textAlign: 'center',
                       padding: '12px 8px',
                       fontSize: 16,
-                      fontWeight: 900,
+                      fontWeight: 800,
                       minWidth: 38,
+                      color: '#1f3327',
                     }}
                   >
                     {score.holeNumber}
@@ -263,8 +331,8 @@ function ScoreTable({
                   style={{
                     textAlign: 'center',
                     padding: '12px 10px',
-                    fontSize: 16,
-                    fontWeight: 900,
+                    fontSize: 15,
+                    fontWeight: 800,
                     whiteSpace: 'nowrap',
                     color: '#166534',
                     background: '#ecfdf3',
@@ -279,11 +347,12 @@ function ScoreTable({
                   style={{
                     ...stickyBase,
                     padding: '11px 14px',
-                    fontWeight: 700,
+                    fontSize: 13,
+                    fontWeight: 600,
                     whiteSpace: 'nowrap',
                     borderTop: '1px solid #e5e7eb',
                     background: '#ffffff',
-                    color: '#64748b',
+                    color: '#6b786f',
                   }}
                 >
                   Hcp
@@ -320,11 +389,12 @@ function ScoreTable({
                   style={{
                     ...stickyBase,
                     padding: '11px 14px',
-                    fontWeight: 700,
+                    fontSize: 13,
+                    fontWeight: 600,
                     whiteSpace: 'nowrap',
                     borderTop: '1px solid #e5e7eb',
                     background: '#fcfcfc',
-                    color: '#475569',
+                    color: '#6b786f',
                   }}
                 >
                   Par
@@ -346,7 +416,7 @@ function ScoreTable({
                   style={{
                     padding: '11px 10px',
                     textAlign: 'center',
-                    fontWeight: 900,
+                    fontWeight: 800,
                     borderTop: '1px solid #e5e7eb',
                     background: '#f8fbf7',
                     color: '#166534',
@@ -361,12 +431,12 @@ function ScoreTable({
                   style={{
                     ...stickyBase,
                     padding: '12px 14px',
-                    fontWeight: 900,
+                    fontWeight: 800,
                     whiteSpace: 'nowrap',
                     borderTop: '2px solid #d1fae5',
                     background: '#ffffff',
                     color: '#0f172a',
-                    fontSize: 16,
+                    fontSize: 15,
                   }}
                 >
                   Resultat
@@ -393,7 +463,7 @@ function ScoreTable({
                     padding: '12px 10px',
                     textAlign: 'center',
                     fontWeight: 900,
-                    fontSize: 22,
+                    fontSize: 20,
                     borderTop: '2px solid #d1fae5',
                     background: '#f0fdf4',
                     color: '#166534',
@@ -414,7 +484,7 @@ function ScoreTable({
                       borderTop: '1px solid #dbeafe',
                       background: '#f7fbff',
                       color: '#0f172a',
-                      fontSize: 16,
+                      fontSize: 15,
                     }}
                   >
                     Poäng
@@ -442,7 +512,7 @@ function ScoreTable({
                       padding: '12px 10px',
                       textAlign: 'center',
                       fontWeight: 900,
-                      fontSize: 22,
+                      fontSize: 20,
                       borderTop: '1px solid #dbeafe',
                       background: '#eff6ff',
                       color: '#1d4ed8',
@@ -520,8 +590,7 @@ export default async function SummaryPage({
   const visibleHoleIndexes = visibleHoles.map((hole: HoleLike) => hole.hcp_index)
 
   const isNineHoleRound = round.holes_mode === 9
-  const isRoundFinished =
-    round.status === 'finished' || round.status === 'completed'
+  const isRoundFinished = round.status === 'finished' || round.status === 'completed'
 
   const firstHalf = isNineHoleRound ? visibleHoles : visibleHoles.slice(0, 9)
   const secondHalf = isNineHoleRound ? [] : visibleHoles.slice(9)
@@ -596,8 +665,7 @@ export default async function SummaryPage({
 
   const selectedIndex = summary.findIndex((player) => player.id === selectedPlayer?.id)
 
-  const roundTypeLabel =
-    round.scoring_mode === 'stableford' ? 'Poängbogey' : 'Slagspel'
+  const roundTypeLabel = round.scoring_mode === 'stableford' ? 'Poängbogey' : 'Slagspel'
 
   const holesLabel =
     round.holes_mode === 18
@@ -638,8 +706,20 @@ export default async function SummaryPage({
           }}
         >
           <div>
-            <h1 style={{ marginBottom: 6 }}>{round.title}</h1>
-            <p className="muted" style={{ margin: 0, fontSize: 18, lineHeight: 1.35 }}>
+            <h1
+              style={{
+                marginBottom: 6,
+                ...TYPE.pageTitle,
+              }}
+            >
+              {round.title}
+            </h1>
+            <p
+              style={{
+                margin: 0,
+                ...TYPE.meta,
+              }}
+            >
               {course.name} · {roundTypeLabel} · {holesLabel}
             </p>
           </div>
@@ -657,8 +737,7 @@ export default async function SummaryPage({
               style={{
                 width: '100%',
                 minHeight: 50,
-                fontSize: 17,
-                fontWeight: 800,
+                ...TYPE.buttonText,
               }}
             >
               Till rundan
@@ -670,8 +749,7 @@ export default async function SummaryPage({
               style={{
                 width: '100%',
                 minHeight: 50,
-                fontSize: 17,
-                fontWeight: 800,
+                ...TYPE.buttonText,
               }}
             >
               Till startsidan 🏠
@@ -698,9 +776,8 @@ export default async function SummaryPage({
                   borderRadius: 999,
                   background: '#dcfce7',
                   color: '#166534',
-                  fontWeight: 900,
-                  fontSize: 13,
                   marginBottom: 12,
+                  ...TYPE.labelStrong,
                 }}
               >
                 ✅ Rundan är avslutad
@@ -733,11 +810,9 @@ export default async function SummaryPage({
                 <div style={{ minWidth: 0 }}>
                   <div
                     style={{
-                      fontSize: 18,
-                      fontWeight: 900,
-                      lineHeight: 1.2,
                       marginBottom: 4,
                       color: '#166534',
+                      ...TYPE.cardTitleMd,
                     }}
                   >
                     Registrera rundan i Min Golf
@@ -746,8 +821,7 @@ export default async function SummaryPage({
                   <p
                     style={{
                       margin: 0,
-                      fontSize: 14,
-                      lineHeight: 1.5,
+                      ...TYPE.meta,
                       color: '#475569',
                     }}
                   >
@@ -764,12 +838,11 @@ export default async function SummaryPage({
                 style={{
                   width: '100%',
                   minHeight: 52,
-                  fontSize: 17,
-                  fontWeight: 800,
                   textAlign: 'center',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  ...TYPE.buttonText,
                 }}
               >
                 Till Min Golf – registrera runda ↗
@@ -806,8 +879,7 @@ export default async function SummaryPage({
                   borderRadius: 999,
                   background: '#dcfce7',
                   color: '#166534',
-                  fontWeight: 900,
-                  fontSize: 13,
+                  ...TYPE.labelStrong,
                 }}
               >
                 🏆 Vinnare
@@ -823,9 +895,8 @@ export default async function SummaryPage({
                   border: '1px solid #d1fae5',
                   background: '#fff',
                   color: '#166534',
-                  fontWeight: 800,
-                  fontSize: 13,
                   flexWrap: 'wrap',
+                  ...TYPE.labelStrong,
                 }}
               >
                 <span>{roundTypeLabel}</span>
@@ -836,17 +907,20 @@ export default async function SummaryPage({
 
             <div
               style={{
-                fontSize: 32,
-                fontWeight: 900,
-                lineHeight: 1.05,
                 marginBottom: 8,
                 wordBreak: 'break-word',
+                ...TYPE.cardTitleLg,
               }}
             >
               {winner.name}
             </div>
 
-            <div className="muted" style={{ marginBottom: 12 }}>
+            <div
+              style={{
+                marginBottom: 12,
+                ...TYPE.meta,
+              }}
+            >
               {winner.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Exakt HCP{' '}
               {winner.exactHandicap ?? '-'} · Spel-HCP {winner.playingHandicap ?? 0}
             </div>
@@ -866,10 +940,8 @@ export default async function SummaryPage({
                   padding: 12,
                 }}
               >
-                <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                  Resultat
-                </div>
-                <div style={{ fontSize: 24, fontWeight: 900 }}>
+                <div style={TYPE.label}>Resultat</div>
+                <div style={{ marginTop: 6, ...TYPE.statValueLg }}>
                   {round.scoring_mode === 'stableford'
                     ? `${winner.points} p`
                     : `${winner.strokes}`}
@@ -884,10 +956,8 @@ export default async function SummaryPage({
                   padding: 12,
                 }}
               >
-                <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                  Till par
-                </div>
-                <div style={{ fontSize: 24, fontWeight: 900 }}>
+                <div style={TYPE.label}>Till par</div>
+                <div style={{ marginTop: 6, ...TYPE.statValueLg }}>
                   {formatVsPar(winner.vsPar)}
                 </div>
               </div>
@@ -900,10 +970,8 @@ export default async function SummaryPage({
                   padding: 12,
                 }}
               >
-                <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                  Position
-                </div>
-                <div style={{ fontSize: 24, fontWeight: 900 }}>1</div>
+                <div style={TYPE.label}>Position</div>
+                <div style={{ marginTop: 6, ...TYPE.statValueLg }}>1</div>
               </div>
             </div>
           </div>
@@ -920,7 +988,14 @@ export default async function SummaryPage({
               marginBottom: 12,
             }}
           >
-            <h2 style={{ margin: 0 }}>Leaderboard</h2>
+            <h2
+              style={{
+                margin: 0,
+                ...TYPE.sectionTitle,
+              }}
+            >
+              Leaderboard
+            </h2>
 
             <div
               style={{
@@ -932,9 +1007,8 @@ export default async function SummaryPage({
                 border: '1px solid #bbf7d0',
                 background: '#f0fdf4',
                 color: '#166534',
-                fontWeight: 800,
-                fontSize: 13,
                 flexWrap: 'wrap',
+                ...TYPE.labelStrong,
               }}
             >
               <span>{roundTypeLabel}</span>
@@ -978,29 +1052,30 @@ export default async function SummaryPage({
                   <div style={{ minWidth: 0 }}>
                     <div
                       style={{
-                        fontSize: 22,
-                        fontWeight: 900,
-                        lineHeight: 1.1,
                         wordBreak: 'break-word',
+                        ...TYPE.cardTitleMd,
                       }}
                     >
                       {player.name}
                     </div>
-                    <div className="muted" style={{ marginTop: 4, fontSize: 14 }}>
+                    <div
+                      style={{
+                        marginTop: 4,
+                        ...TYPE.meta,
+                      }}
+                    >
                       HCP {player.exactHandicap ?? '-'} · Spel-HCP {player.playingHandicap}
                     </div>
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
-                    <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                      Resultat
-                    </div>
+                    <div style={TYPE.label}>Resultat</div>
                     <div
                       style={{
-                        fontSize: 24,
-                        fontWeight: 900,
-                        color: '#166534',
+                        marginTop: 4,
                         whiteSpace: 'nowrap',
+                        color: '#166534',
+                        ...TYPE.statValueLg,
                       }}
                     >
                       {round.scoring_mode === 'stableford'
@@ -1025,10 +1100,8 @@ export default async function SummaryPage({
                       padding: 10,
                     }}
                   >
-                    <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>
-                      Slag
-                    </div>
-                    <div style={{ fontSize: 18, fontWeight: 900 }}>{player.strokes}</div>
+                    <div style={TYPE.label}>Slag</div>
+                    <div style={{ marginTop: 4, ...TYPE.statValueMd }}>{player.strokes}</div>
                   </div>
 
                   <div
@@ -1039,27 +1112,22 @@ export default async function SummaryPage({
                       padding: 10,
                     }}
                   >
-                    <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>
-                      Till par
-                    </div>
-                    <div style={{ fontSize: 18, fontWeight: 900 }}>
+                    <div style={TYPE.label}>Till par</div>
+                    <div style={{ marginTop: 4, ...TYPE.statValueMd }}>
                       {formatVsPar(player.vsPar)}
                     </div>
                   </div>
 
                   <div
                     style={{
-                      background:
-                        round.scoring_mode === 'stableford' ? '#eff6ff' : '#f8fafc',
+                      background: round.scoring_mode === 'stableford' ? '#eff6ff' : '#f8fafc',
                       border: '1px solid #e5e7eb',
                       borderRadius: 12,
                       padding: 10,
                     }}
                   >
-                    <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>
-                      Poäng
-                    </div>
-                    <div style={{ fontSize: 18, fontWeight: 900 }}>{player.points}</div>
+                    <div style={TYPE.label}>Poäng</div>
+                    <div style={{ marginTop: 4, ...TYPE.statValueMd }}>{player.points}</div>
                   </div>
                 </div>
               </div>
@@ -1070,7 +1138,15 @@ export default async function SummaryPage({
         {selectedPlayer ? (
           <div className="card">
             <div style={{ marginBottom: 12 }}>
-              <h2 style={{ marginTop: 0, marginBottom: 8 }}>Scorekort</h2>
+              <h2
+                style={{
+                  marginTop: 0,
+                  marginBottom: 8,
+                  ...TYPE.sectionTitle,
+                }}
+              >
+                Scorekort
+              </h2>
 
               <div
                 style={{
@@ -1096,8 +1172,10 @@ export default async function SummaryPage({
                         border: isActive ? '1px solid #166534' : '1px solid #d1d5db',
                         background: isActive ? '#166534' : '#fff',
                         color: isActive ? '#fff' : '#0f172a',
-                        fontWeight: 800,
                         whiteSpace: 'nowrap',
+                        fontSize: 14,
+                        fontWeight: 800,
+                        lineHeight: 1,
                       }}
                     >
                       {player.name}
@@ -1124,17 +1202,20 @@ export default async function SummaryPage({
               >
                 <div
                   style={{
-                    fontSize: 28,
-                    fontWeight: 900,
-                    lineHeight: 1.05,
                     marginBottom: 6,
                     wordBreak: 'break-word',
+                    ...TYPE.cardTitleLg,
                   }}
                 >
                   {selectedPlayer.name}
                 </div>
 
-                <div className="muted" style={{ marginBottom: 12 }}>
+                <div
+                  style={{
+                    marginBottom: 12,
+                    ...TYPE.meta,
+                  }}
+                >
                   {selectedPlayer.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Spel-HCP{' '}
                   {selectedPlayer.playingHandicap ?? 0}
                 </div>
@@ -1155,10 +1236,8 @@ export default async function SummaryPage({
                       textAlign: 'center',
                     }}
                   >
-                    <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>
-                      Tot
-                    </div>
-                    <div style={{ fontSize: 18, fontWeight: 900 }}>
+                    <div style={TYPE.label}>Tot</div>
+                    <div style={{ marginTop: 4, ...TYPE.statValueMd }}>
                       {selectedPlayer.strokes}
                     </div>
                   </div>
@@ -1172,10 +1251,8 @@ export default async function SummaryPage({
                       textAlign: 'center',
                     }}
                   >
-                    <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>
-                      Till par
-                    </div>
-                    <div style={{ fontSize: 18, fontWeight: 900 }}>
+                    <div style={TYPE.label}>Till par</div>
+                    <div style={{ marginTop: 4, ...TYPE.statValueMd }}>
                       {formatVsPar(selectedPlayer.vsPar)}
                     </div>
                   </div>
@@ -1189,10 +1266,8 @@ export default async function SummaryPage({
                       textAlign: 'center',
                     }}
                   >
-                    <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>
-                      P
-                    </div>
-                    <div style={{ fontSize: 18, fontWeight: 900 }}>
+                    <div style={TYPE.label}>P</div>
+                    <div style={{ marginTop: 4, ...TYPE.statValueMd }}>
                       {selectedPlayer.points}
                     </div>
                   </div>
@@ -1206,10 +1281,8 @@ export default async function SummaryPage({
                       textAlign: 'center',
                     }}
                   >
-                    <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>
-                      Pos
-                    </div>
-                    <div style={{ fontSize: 18, fontWeight: 900 }}>
+                    <div style={TYPE.label}>Pos</div>
+                    <div style={{ marginTop: 4, ...TYPE.statValueMd }}>
                       {selectedIndex + 1}
                     </div>
                   </div>
@@ -1243,7 +1316,15 @@ export default async function SummaryPage({
                   />
                 ) : null}
 
-                <h3 style={{ margin: '4px 0 2px 0' }}>
+                <h3
+                  style={{
+                    margin: '4px 0 2px 0',
+                    fontSize: 16,
+                    fontWeight: 800,
+                    lineHeight: 1.2,
+                    color: '#1f3327',
+                  }}
+                >
                   {isNineHoleRound ? 'Summa 9 hål' : 'Total'}
                 </h3>
 
@@ -1262,10 +1343,8 @@ export default async function SummaryPage({
                       padding: 14,
                     }}
                   >
-                    <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
-                      {isNineHoleRound ? 'Par (9 hål)' : 'Total par'}
-                    </div>
-                    <div style={{ fontSize: 24, fontWeight: 900 }}>{totalPar}</div>
+                    <div style={TYPE.label}>{isNineHoleRound ? 'Par (9 hål)' : 'Total par'}</div>
+                    <div style={{ marginTop: 6, ...TYPE.statValueLg }}>{totalPar}</div>
                   </div>
 
                   <div
@@ -1276,10 +1355,10 @@ export default async function SummaryPage({
                       padding: 14,
                     }}
                   >
-                    <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
+                    <div style={TYPE.label}>
                       {isNineHoleRound ? 'Resultat (9 hål)' : 'Resultat'}
                     </div>
-                    <div style={{ fontSize: 24, fontWeight: 900 }}>
+                    <div style={{ marginTop: 6, ...TYPE.statValueLg }}>
                       {selectedPlayer.strokes}
                     </div>
                   </div>
@@ -1293,10 +1372,8 @@ export default async function SummaryPage({
                         padding: 14,
                       }}
                     >
-                      <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>
-                        Position
-                      </div>
-                      <div style={{ fontSize: 24, fontWeight: 900 }}>
+                      <div style={TYPE.label}>Position</div>
+                      <div style={{ marginTop: 6, ...TYPE.statValueLg }}>
                         {selectedIndex + 1}
                       </div>
                     </div>
