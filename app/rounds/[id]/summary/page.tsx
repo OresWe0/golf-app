@@ -811,8 +811,8 @@ export default async function SummaryPage({
                   <div
                     style={{
                       marginBottom: 4,
-                      color: '#166534',
                       ...TYPE.cardTitleMd,
+                      color: '#166534',
                     }}
                   >
                     Registrera rundan i Min Golf
@@ -1074,8 +1074,8 @@ export default async function SummaryPage({
                       style={{
                         marginTop: 4,
                         whiteSpace: 'nowrap',
-                        color: '#166534',
                         ...TYPE.statValueLg,
+                        color: '#166534',
                       }}
                     >
                       {round.scoring_mode === 'stableford'
