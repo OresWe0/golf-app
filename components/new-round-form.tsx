@@ -21,6 +21,91 @@ type FriendInput = {
   friend_default_tee?: string | null
 }
 
+type SavedRoundSetup = {
+  title: string
+  courseId: string
+  scoringMode: 'strokeplay' | 'stableford'
+  holesMode: 9 | 18
+  nineHoleSide: 'front' | 'back'
+  players: Array<{
+    sortOrder: number
+    name: string
+    email: string
+    handicapIndex: number | null
+    teeKey: TeeKey
+  }>
+}
+
+const MAX_SAVED_SETUPS = 3
+
+function sanitizeSavedSetups(value: unknown): SavedRoundSetup[] {
+  if (!Array.isArray(value)) return []
+
+  return value
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => {
+      const setup = item as Record<string, unknown>
+      const rawPlayers = Array.isArray(setup.players) ? setup.players : []
+
+      const players = rawPlayers
+        .filter((player) => player && typeof player === 'object')
+        .map((player, index) => {
+          const p = player as Record<string, unknown>
+          return {
+            sortOrder:
+              typeof p.sortOrder === 'number' && Number.isFinite(p.sortOrder)
+                ? p.sortOrder
+                : index + 1,
+            name: typeof p.name === 'string' ? p.name.trim() : '',
+            email: typeof p.email === 'string' ? p.email.trim().toLowerCase() : '',
+            handicapIndex:
+              typeof p.handicapIndex === 'number' && Number.isFinite(p.handicapIndex)
+                ? p.handicapIndex
+                : null,
+            teeKey: normalizeTeeKey(p.teeKey),
+          }
+        })
+        .filter((player) => player.name)
+
+      return {
+        title: typeof setup.title === 'string' ? setup.title.trim() : '',
+        courseId: typeof setup.courseId === 'string' ? setup.courseId : '',
+        scoringMode:
+          setup.scoringMode === 'strokeplay' ? 'strokeplay' : 'stableford',
+        holesMode: setup.holesMode === 9 ? 9 : 18,
+        nineHoleSide: setup.nineHoleSide === 'back' ? 'back' : 'front',
+        players,
+      } satisfies SavedRoundSetup
+    })
+    .filter((setup) => setup.courseId && setup.players.length > 0)
+    .slice(0, MAX_SAVED_SETUPS)
+}
+
+function arePlayersEqual(a: SavedRoundSetup['players'], b: SavedRoundSetup['players']) {
+  if (a.length !== b.length) return false
+
+  return a.every((player, index) => {
+    const other = b[index]
+    return (
+      player.name === other.name &&
+      player.email === other.email &&
+      player.handicapIndex === other.handicapIndex &&
+      player.teeKey === other.teeKey
+    )
+  })
+}
+
+function isSameSetup(a: SavedRoundSetup, b: SavedRoundSetup) {
+  return (
+    a.courseId === b.courseId &&
+    a.title === b.title &&
+    a.scoringMode === b.scoringMode &&
+    a.holesMode === b.holesMode &&
+    a.nineHoleSide === b.nineHoleSide &&
+    arePlayersEqual(a.players, b.players)
+  )
+}
+
 export function NewRoundForm({
   courses,
   friends,
@@ -56,6 +141,7 @@ export function NewRoundForm({
   ])
 
   const [recentPlayers, setRecentPlayers] = useState<string[]>([])
+  const [savedSetups, setSavedSetups] = useState<SavedRoundSetup[]>([])
   const [loadingRecent, setLoadingRecent] = useState(true)
 
   const [loading, setLoading] = useState(false)
@@ -65,11 +151,46 @@ export function NewRoundForm({
   const [recentlyAddedFriendEmail, setRecentlyAddedFriendEmail] = useState<string | null>(null)
 
   const playerRefs = useRef<(HTMLDivElement | null)[]>([])
+  const titleInputRef = useRef<HTMLInputElement | null>(null)
+  const playersSectionRef = useRef<HTMLDivElement | null>(null)
 
   const recentPlayersStorageKey = useMemo(
     () => `recent-players:${currentUser.email.toLowerCase()}`,
     [currentUser.email]
   )
+
+  const savedSetupsStorageKey = useMemo(
+    () => `round-setups:${currentUser.email.toLowerCase()}`,
+    [currentUser.email]
+  )
+
+  const normalizedPlayersPreview = players
+    .map((player, index) => ({
+      ...player,
+      sortOrder: index + 1,
+      name: player.name.trim(),
+      email: player.email.trim().toLowerCase(),
+      handicapIndex: player.handicapIndex ? Number(player.handicapIndex) : null,
+      teeKey: normalizeTeeKey(player.teeKey),
+    }))
+    .filter((player) => player.name)
+
+  const selectedFriendsCount = Math.max(0, players.length - 1)
+
+  const selectedCourseName =
+    courses.find((course) => course.id === courseId)?.name ?? 'Ingen bana vald'
+
+  const roundModeLabel = scoringMode === 'stableford' ? 'Poängbogey' : 'Slagspel'
+
+  const holesModeLabel =
+    holesMode === 18 ? '18 hål' : nineHoleSide === 'front' ? '9 hål · Främre 9' : '9 hål · Bakre 9'
+
+  const getFirstHole = (setup: Pick<SavedRoundSetup, 'holesMode' | 'nineHoleSide'>) =>
+    setup.holesMode === 18 ? 1 : setup.nineHoleSide === 'back' ? 10 : 1
+
+  useEffect(() => {
+    titleInputRef.current?.focus()
+  }, [])
 
   useEffect(() => {
     try {
@@ -103,6 +224,21 @@ export function NewRoundForm({
       setLoadingRecent(false)
     }
   }, [recentPlayersStorageKey, currentUser.displayName])
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(savedSetupsStorageKey)
+      if (!raw) {
+        setSavedSetups([])
+        return
+      }
+
+      const parsed = JSON.parse(raw)
+      setSavedSetups(sanitizeSavedSetups(parsed))
+    } catch {
+      setSavedSetups([])
+    }
+  }, [savedSetupsStorageKey])
 
   const updatePlayer = (index: number, key: keyof PlayerInput, value: string) => {
     setPlayers((prev) =>
@@ -148,6 +284,15 @@ export function NewRoundForm({
     }, 120)
   }
 
+  const scrollToPlayersSection = () => {
+    setTimeout(() => {
+      playersSectionRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    }, 80)
+  }
+
   const addRegisteredPlayer = () => {
     showButtonFeedback('registered')
 
@@ -169,10 +314,7 @@ export function NewRoundForm({
       const newIndex = prev.length
       highlightAndScrollToPlayer(newIndex)
 
-      return [
-        ...prev,
-        { kind: 'guest', name: '', email: '', handicapIndex: '', teeKey: 'yellow' },
-      ]
+      return [...prev, { kind: 'guest', name: '', email: '', handicapIndex: '', teeKey: 'yellow' }]
     })
   }
 
@@ -223,6 +365,7 @@ export function NewRoundForm({
     const teeKey = normalizeTeeKey(friend.friend_default_tee)
 
     showFriendFeedback(friendEmail)
+    scrollToPlayersSection()
 
     setPlayers((prev) => {
       const newIndex = prev.length
@@ -235,9 +378,7 @@ export function NewRoundForm({
           name: friend.friend_name?.trim() || fallbackName,
           email: friendEmail,
           handicapIndex:
-            friend.friend_handicap_index == null
-              ? ''
-              : String(friend.friend_handicap_index),
+            friend.friend_handicap_index == null ? '' : String(friend.friend_handicap_index),
           teeKey,
         },
       ]
@@ -263,60 +404,66 @@ export function NewRoundForm({
     }
   }
 
-  const normalizedPlayersPreview = players
-    .map((player, index) => ({
-      ...player,
-      sortOrder: index + 1,
-      name: player.name.trim(),
-      email: player.email.trim().toLowerCase(),
-      handicapIndex: player.handicapIndex ? Number(player.handicapIndex) : null,
-      teeKey: normalizeTeeKey(player.teeKey),
-    }))
-    .filter((player) => player.name)
+  const saveSetup = (setup: SavedRoundSetup) => {
+    try {
+      const existing = sanitizeSavedSetups(
+        JSON.parse(window.localStorage.getItem(savedSetupsStorageKey) || '[]')
+      )
 
-  const selectedFriendsCount = Math.max(0, players.length - 1)
+      const updated = [setup, ...existing.filter((item) => !isSameSetup(item, setup))].slice(
+        0,
+        MAX_SAVED_SETUPS
+      )
 
-  const selectedCourseName =
-    courses.find((course) => course.id === courseId)?.name ?? 'Ingen bana vald'
+      window.localStorage.setItem(savedSetupsStorageKey, JSON.stringify(updated))
+      setSavedSetups(updated)
+    } catch {
+      setSavedSetups((prev) => [setup, ...prev.filter((item) => !isSameSetup(item, setup))].slice(0, 3))
+    }
+  }
 
-  const roundModeLabel =
-    scoringMode === 'stableford' ? 'Poängbogey' : 'Slagspel'
-
-  const holesModeLabel =
-    holesMode === 18 ? '18 hål' : nineHoleSide === 'front' ? '9 hål · Främre 9' : '9 hål · Bakre 9'
-
-  const submit = async () => {
+  const createRound = async (setup: SavedRoundSetup, options?: { persistSetup?: boolean }) => {
     setLoading(true)
     setError(null)
 
-    const normalizedPlayers = normalizedPlayersPreview
+    try {
+      const response = await fetch('/api/rounds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(setup),
+      })
 
-    const response = await fetch('/api/rounds', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title,
-        courseId,
-        scoringMode,
-        holesMode,
-        nineHoleSide,
-        players: normalizedPlayers,
-      }),
-    })
+      const result = await response.json()
 
-    const result = await response.json()
-    setLoading(false)
+      if (!response.ok) {
+        setError(result.error || 'Kunde inte skapa rundan.')
+        return
+      }
 
-    if (!response.ok) {
-      setError(result.error || 'Kunde inte skapa rundan.')
-      return
+      const namesToRemember = setup.players.map((player) => player.name).filter(Boolean)
+      saveRecentPlayers(namesToRemember)
+
+      if (options?.persistSetup !== false) {
+        saveSetup(setup)
+      }
+
+      router.push(`/rounds/${result.roundId}?hole=${getFirstHole(setup)}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const submit = async () => {
+    const setup: SavedRoundSetup = {
+      title,
+      courseId,
+      scoringMode,
+      holesMode,
+      nineHoleSide,
+      players: normalizedPlayersPreview,
     }
 
-    const namesToRemember = normalizedPlayers.map((player) => player.name).filter(Boolean)
-    saveRecentPlayers(namesToRemember)
-
-    const firstHole = holesMode === 18 ? 1 : nineHoleSide === 'front' ? 1 : 10
-    router.push(`/rounds/${result.roundId}?hole=${firstHole}`)
+    await createRound(setup)
   }
 
   const sectionCardStyle: React.CSSProperties = {
@@ -325,8 +472,99 @@ export function NewRoundForm({
     marginBottom: 0,
   }
 
+  const stickyBarStyle: React.CSSProperties = {
+    position: 'sticky',
+    bottom: 0,
+    zIndex: 20,
+    paddingTop: 12,
+    paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
+    background: 'linear-gradient(180deg, rgba(255,255,255,0) 0%, #ffffff 28%)',
+  }
+
   return (
-    <div className="stack">
+    <div className="stack" style={{ paddingBottom: 8 }}>
+      {savedSetups.length > 0 ? (
+        <div
+          className="card"
+          style={{
+            background: 'linear-gradient(180deg, #ecfdf3 0%, #ffffff 100%)',
+            border: '1px solid #bbf7d0',
+            marginBottom: 0,
+          }}
+        >
+          <div style={{ display: 'grid', gap: 12 }}>
+            <div>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '6px 10px',
+                  borderRadius: 999,
+                  background: '#dcfce7',
+                  color: '#166534',
+                  fontSize: 12,
+                  fontWeight: 900,
+                  marginBottom: 10,
+                }}
+              >
+                ⚡ Snabbstart
+              </div>
+
+              <h2 style={{ margin: 0, marginBottom: 6 }}>Spela igen</h2>
+              <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
+                Starta en tidigare setup direkt utan att fylla i allt igen.
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gap: 8 }}>
+              {savedSetups.map((setup, index) => {
+                const playersCount = setup.players.length
+                const firstPlayer = setup.players[0]?.name || 'Spelare'
+                const extraPlayers = playersCount > 1 ? ` + ${playersCount - 1}` : ''
+                const courseName =
+                  courses.find((course) => course.id === setup.courseId)?.name ?? 'Vald bana'
+                const setupHolesLabel =
+                  setup.holesMode === 18
+                    ? '18 hål'
+                    : setup.nineHoleSide === 'back'
+                      ? '9 hål · Bakre 9'
+                      : '9 hål · Främre 9'
+
+                return (
+                  <button
+                    key={`${setup.courseId}-${setup.title}-${index}`}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => createRound(setup, { persistSetup: false })}
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: 16,
+                      border: '1px solid #86efac',
+                      background: '#ffffff',
+                      textAlign: 'left',
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                      boxShadow: '0 6px 18px rgba(22, 101, 52, 0.08)',
+                    }}
+                  >
+                    <div style={{ fontWeight: 900, fontSize: 16, color: '#0f172a' }}>
+                      ⚡ {setup.title || 'Runda'}
+                    </div>
+                    <div style={{ fontSize: 13, color: '#166534', marginTop: 4, fontWeight: 800 }}>
+                      {courseName}
+                    </div>
+                    <div style={{ fontSize: 13, opacity: 0.78, marginTop: 4 }}>
+                      {firstPlayer}
+                      {extraPlayers} · {setupHolesLabel}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div
         className="card"
         style={{
@@ -354,9 +592,9 @@ export function NewRoundForm({
               ⛳ Ny runda
             </div>
 
-            <h2 style={{ margin: 0, marginBottom: 8 }}>Grundinställningar</h2>
+            <h2 style={{ margin: 0, marginBottom: 8 }}>Snabbstart</h2>
             <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
-              Välj rundnamn, bana och scoring mode. När du sparar skickas ni direkt till rätt starthål.
+              Välj bana och mode – sen är du redo.
             </p>
           </div>
 
@@ -364,6 +602,7 @@ export function NewRoundForm({
             <div>
               <label htmlFor="title">Rundnamn</label>
               <input
+                ref={titleInputRef}
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -374,11 +613,7 @@ export function NewRoundForm({
             <div className="grid grid-2">
               <div>
                 <label htmlFor="course">Bana</label>
-                <select
-                  id="course"
-                  value={courseId}
-                  onChange={(e) => setCourseId(e.target.value)}
-                >
+                <select id="course" value={courseId} onChange={(e) => setCourseId(e.target.value)}>
                   {courses.map((course) => (
                     <option key={course.id} value={course.id}>
                       {course.name}
@@ -388,13 +623,11 @@ export function NewRoundForm({
               </div>
 
               <div>
-                <label htmlFor="mode">Scoring mode</label>
+                <label htmlFor="mode">Spelform</label>
                 <select
                   id="mode"
                   value={scoringMode}
-                  onChange={(e) =>
-                    setScoringMode(e.target.value as 'strokeplay' | 'stableford')
-                  }
+                  onChange={(e) => setScoringMode(e.target.value as 'strokeplay' | 'stableford')}
                 >
                   <option value="stableford">Poängbogey</option>
                   <option value="strokeplay">Slagspel</option>
@@ -476,10 +709,7 @@ export function NewRoundForm({
                     style={{
                       padding: '14px 16px',
                       borderRadius: 16,
-                      border:
-                        nineHoleSide === 'front'
-                          ? '2px solid #166534'
-                          : '1px solid #d1d5db',
+                      border: nineHoleSide === 'front' ? '2px solid #166534' : '1px solid #d1d5db',
                       background: nineHoleSide === 'front' ? '#ecfdf3' : '#fff',
                       color: '#0f172a',
                       fontWeight: 900,
@@ -495,10 +725,7 @@ export function NewRoundForm({
                     style={{
                       padding: '14px 16px',
                       borderRadius: 16,
-                      border:
-                        nineHoleSide === 'back'
-                          ? '2px solid #166534'
-                          : '1px solid #d1d5db',
+                      border: nineHoleSide === 'back' ? '2px solid #166534' : '1px solid #d1d5db',
                       background: nineHoleSide === 'back' ? '#ecfdf3' : '#fff',
                       color: '#0f172a',
                       fontWeight: 900,
@@ -550,15 +777,13 @@ export function NewRoundForm({
                 👥 Mina vänner
               </div>
 
-              <h3 style={{ marginTop: 0, marginBottom: 6 }}>
-                Välj spelare från dina vänner
-              </h3>
+              <h3 style={{ marginTop: 0, marginBottom: 6 }}>Välj spelare från dina vänner</h3>
 
               <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
                 Tryck för att lägga till spelare direkt i rundan.
               </p>
 
-              {selectedFriendsCount > 0 && (
+              {selectedFriendsCount > 0 ? (
                 <div
                   style={{
                     marginTop: 6,
@@ -569,22 +794,7 @@ export function NewRoundForm({
                 >
                   {selectedFriendsCount} spelare tillagda
                 </div>
-              )}
-            </div>
-
-            <div
-              style={{
-                padding: '6px 10px',
-                borderRadius: 999,
-                background: '#ffffff',
-                border: '1px solid #d1fae5',
-                color: '#166534',
-                fontSize: 12,
-                fontWeight: 800,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Snabbval
+              ) : null}
             </div>
           </div>
 
@@ -656,7 +866,7 @@ export function NewRoundForm({
         </div>
       </div>
 
-      <div className="card" style={sectionCardStyle}>
+      <div ref={playersSectionRef} className="card" style={sectionCardStyle}>
         <div style={{ display: 'grid', gap: 14 }}>
           <div
             style={{
@@ -670,7 +880,7 @@ export function NewRoundForm({
             <div>
               <h3 style={{ marginTop: 0, marginBottom: 8 }}>Spelare i bollen</h3>
               <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
-                Ange e-post för registrerade spelare. Gäster kan läggas till utan e-post.
+                Lägg till registrerade spelare eller gäster och justera HCP och tee.
               </p>
             </div>
 
@@ -833,12 +1043,6 @@ export function NewRoundForm({
                         {player.kind === 'guest' ? 'Ny gäst tillagd' : 'Ny spelare tillagd'}
                       </div>
                     ) : null}
-
-                    <div className="muted" style={{ marginTop: 4 }}>
-                      {player.kind === 'registered'
-                        ? 'Använd e-post för registrerad vän'
-                        : 'Lämna e-post tomt för gäst'}
-                    </div>
                   </div>
 
                   {index > 0 ? (
@@ -884,13 +1088,9 @@ export function NewRoundForm({
                   </div>
 
                   <div>
-                    <label>
-                      E-post {player.kind === 'registered' ? '(krävs)' : '(valfritt)'}
-                    </label>
+                    <label>E-post {player.kind === 'registered' ? '(krävs)' : '(valfritt)'}</label>
                     <input
-                      placeholder={
-                        player.kind === 'registered' ? 'vän@epost.se' : 'tomt = gäst'
-                      }
+                      placeholder={player.kind === 'registered' ? 'vän@epost.se' : 'tomt = gäst'}
                       type="email"
                       value={player.email}
                       onChange={(e) => updatePlayer(index, 'email', e.target.value)}
@@ -913,9 +1113,7 @@ export function NewRoundForm({
                     <label>Tee</label>
                     <select
                       value={player.teeKey}
-                      onChange={(e) =>
-                        updatePlayer(index, 'teeKey', e.target.value as TeeKey)
-                      }
+                      onChange={(e) => updatePlayer(index, 'teeKey', e.target.value as TeeKey)}
                     >
                       <option value="yellow">{getTeeDisplayLabel('yellow')}</option>
                       <option value="red">{getTeeDisplayLabel('red')}</option>
@@ -938,119 +1136,114 @@ export function NewRoundForm({
       >
         <div style={{ display: 'grid', gap: 12 }}>
           <div>
-            <h3 style={{ marginTop: 0, marginBottom: 8 }}>Sammanfattning</h3>
+            <h3 style={{ marginTop: 0, marginBottom: 8 }}>Detta startar du nu</h3>
             <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
-              Kontrollera upplägget innan du startar rundan.
+              En snabb förhandsvisning innan du drar igång.
             </p>
           </div>
 
           <div
             style={{
+              background: '#fff',
+              border: '1px solid #dbeedc',
+              borderRadius: 18,
+              padding: 16,
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-              gap: 10,
+              gap: 14,
             }}
           >
-            <div
-              style={{
-                background: '#fff',
-                border: '1px solid #e5e7eb',
-                borderRadius: 14,
-                padding: 12,
-              }}
-            >
-              <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                Bana
-              </div>
-              <div style={{ fontWeight: 900 }}>{selectedCourseName}</div>
+            <div>
+              <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>Bana</div>
+              <div style={{ fontWeight: 900, fontSize: 18 }}>{selectedCourseName}</div>
             </div>
 
             <div
               style={{
-                background: '#fff',
-                border: '1px solid #e5e7eb',
-                borderRadius: 14,
-                padding: 12,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: 10,
               }}
             >
-              <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                Mode
-              </div>
-              <div style={{ fontWeight: 900 }}>{roundModeLabel}</div>
-            </div>
-
-            <div
-              style={{
-                background: '#fff',
-                border: '1px solid #e5e7eb',
-                borderRadius: 14,
-                padding: 12,
-              }}
-            >
-              <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                Hål
-              </div>
-              <div style={{ fontWeight: 900 }}>{holesModeLabel}</div>
-            </div>
-
-            <div
-              style={{
-                background: '#fff',
-                border: '1px solid #e5e7eb',
-                borderRadius: 14,
-                padding: 12,
-              }}
-            >
-              <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                Spelare
-              </div>
-              <div style={{ fontWeight: 900 }}>{normalizedPlayersPreview.length}</div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              background: '#ffffff',
-              border: '1px solid #e5e7eb',
-              borderRadius: 16,
-              padding: 14,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 800,
-                color: '#64748b',
-                textTransform: 'uppercase',
-                letterSpacing: 0.4,
-                marginBottom: 8,
-              }}
-            >
-              Spelarlista
-            </div>
-
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 8,
-              }}
-            >
-              {normalizedPlayersPreview.map((player, index) => (
-                <div
-                  key={`${player.name}-${index}`}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: 999,
-                    background: index === 0 ? '#dcfce7' : '#f3f4f6',
-                    color: index === 0 ? '#166534' : '#334155',
-                    fontWeight: 800,
-                    fontSize: 14,
-                  }}
-                >
-                  {player.name} · {getTeeDisplayLabel(player.teeKey)}
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 14,
+                  padding: 12,
+                }}
+              >
+                <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                  Mode
                 </div>
-              ))}
+                <div style={{ fontWeight: 900 }}>{roundModeLabel}</div>
+              </div>
+
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 14,
+                  padding: 12,
+                }}
+              >
+                <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                  Hål
+                </div>
+                <div style={{ fontWeight: 900 }}>{holesModeLabel}</div>
+              </div>
+
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 14,
+                  padding: 12,
+                }}
+              >
+                <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+                  Spelare
+                </div>
+                <div style={{ fontWeight: 900 }}>{normalizedPlayersPreview.length}</div>
+              </div>
+            </div>
+
+            <div>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 800,
+                  color: '#64748b',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.4,
+                  marginBottom: 8,
+                }}
+              >
+                Spelarlista
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                }}
+              >
+                {normalizedPlayersPreview.map((player, index) => (
+                  <div
+                    key={`${player.name}-${index}`}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 999,
+                      background: index === 0 ? '#dcfce7' : '#f3f4f6',
+                      color: index === 0 ? '#166534' : '#334155',
+                      fontWeight: 800,
+                      fontSize: 14,
+                    }}
+                  >
+                    {player.name} · {getTeeDisplayLabel(player.teeKey)}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -1071,18 +1264,22 @@ export function NewRoundForm({
         </div>
       ) : null}
 
-      <button
-        type="button"
-        onClick={submit}
-        disabled={loading}
-        style={{
-          minHeight: 56,
-          fontSize: 18,
-          fontWeight: 900,
-        }}
-      >
-        {loading ? 'Skapar...' : 'Starta runda'}
-      </button>
+      <div style={stickyBarStyle}>
+        <button
+          type="button"
+          onClick={submit}
+          disabled={loading}
+          style={{
+            width: '100%',
+            minHeight: 58,
+            fontSize: 18,
+            fontWeight: 900,
+            boxShadow: '0 10px 24px rgba(15, 23, 42, 0.12)',
+          }}
+        >
+          {loading ? 'Skapar...' : 'Starta runda'}
+        </button>
+      </div>
     </div>
   )
 }
