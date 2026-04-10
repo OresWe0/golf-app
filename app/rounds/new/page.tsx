@@ -116,7 +116,7 @@ export default async function NewRoundPage() {
 
         .new-round-info-grid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 12px;
         }
 
@@ -205,33 +205,11 @@ export default async function NewRoundPage() {
                     boxSizing: 'border-box',
                   }}
                 >
-                  ← Till dashboard
+                  ← Till startsidan
                 </Link>
               </div>
 
               <div className="new-round-info-grid">
-                <div className="new-round-info-card">
-                  <div
-                    className="muted"
-                    style={{ fontSize: 13, marginBottom: 6, fontWeight: 700 }}
-                  >
-                    👤 Du spelar som
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 22,
-                      fontWeight: 900,
-                      lineHeight: 1.1,
-                      color: '#1f3327',
-                    }}
-                  >
-                    {currentUser.displayName}
-                  </div>
-                  <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-                    {currentUser.email}
-                  </div>
-                </div>
-
                 <div className="new-round-info-card">
                   <div
                     className="muted"
@@ -259,7 +237,7 @@ export default async function NewRoundPage() {
                     className="muted"
                     style={{ fontSize: 13, marginBottom: 6, fontWeight: 700 }}
                   >
-                    👥 Tillgängligt i formuläret
+                    👥 Spelare & banor
                   </div>
                   <div
                     style={{
@@ -295,7 +273,7 @@ export default async function NewRoundPage() {
                     color: '#20352a',
                   }}
                 >
-                  Rundinställningar
+                  Ny runda
                 </h2>
 
                 <p className="muted" style={{ margin: '8px 0 0 0', lineHeight: 1.55 }}>

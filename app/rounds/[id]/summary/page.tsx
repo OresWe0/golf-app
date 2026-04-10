@@ -720,7 +720,7 @@ export default async function SummaryPage({
                 ...TYPE.meta,
               }}
             >
-              {course.name} · {roundTypeLabel} · {holesLabel}
+              {course.name}
             </p>
           </div>
 
