@@ -1359,7 +1359,6 @@ export function HolePlay({
   const touchStartX = useRef<number | null>(null)
   const firstPlayerCardRef = useRef<HTMLDivElement | null>(null)
   const hasUserChangedScoreRef = useRef(false)
-  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const postSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const watchIdRef = useRef<number | null>(null)
@@ -1419,13 +1418,6 @@ export function HolePlay({
   const isReadyToAdvance = allPlayersHaveScores(values)
   const canInteract = !loading && !isSavingRef.current && !isNavigatingRef.current
 
-  const clearPendingAutoSave = () => {
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current)
-      autoSaveTimeoutRef.current = null
-    }
-  }
-
   const clearPostSaveTimeout = () => {
     if (postSaveTimeoutRef.current) {
       clearTimeout(postSaveTimeoutRef.current)
@@ -1477,7 +1469,6 @@ export function HolePlay({
   const navigateTo = (target: string) => {
     if (isNavigatingRef.current) return
 
-    clearPendingAutoSave()
     clearPostSaveTimeout()
     clearToastTimeout()
 
@@ -1559,7 +1550,6 @@ export function HolePlay({
     isSavingRef.current = true
     setLoading(true)
     setSaveState('saving')
-    clearPendingAutoSave()
     clearPostSaveTimeout()
     clearToastTimeout()
 
@@ -1593,8 +1583,6 @@ export function HolePlay({
 
       postSaveTimeoutRef.current = setTimeout(() => {
         if (isNavigatingRef.current) return
-
-        clearPendingAutoSave()
 
         if (currentHole === endHole) {
           isSavingRef.current = false
@@ -1717,7 +1705,6 @@ export function HolePlay({
 
     setLoading(false)
 
-    clearPendingAutoSave()
     clearPostSaveTimeout()
     clearToastTimeout()
 
@@ -1733,30 +1720,11 @@ export function HolePlay({
 
   useEffect(() => {
     return () => {
-      clearPendingAutoSave()
       clearPostSaveTimeout()
       clearToastTimeout()
       stopWatchingPosition()
     }
   }, [])
-
-  useEffect(() => {
-    if (!hasUserChangedScoreRef.current) return
-    if (loading) return
-    if (isSavingRef.current) return
-    if (isNavigatingRef.current) return
-    if (!allPlayersHaveScores(values)) return
-
-    clearPendingAutoSave()
-
-    autoSaveTimeoutRef.current = setTimeout(() => {
-      void saveScores(values)
-    }, 300)
-
-    return () => {
-      clearPendingAutoSave()
-    }
-  }, [values, loading])
 
   useEffect(() => {
     if (!showHoleImage) {
