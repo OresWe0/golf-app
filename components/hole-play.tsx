@@ -1,4 +1,6 @@
 'use client'
+import { HolePlayFocus } from './hole-play-focus'
+
 
 import {
   useEffect,
@@ -1924,64 +1926,17 @@ export function HolePlay({
             const playerId = String(player.id)
 
             return (
-              <PlayerScoreCard
-                key={player.id}
-                player={player}
-                index={index}
-                hole={hole}
-                selectedValue={values[playerId] ?? ''}
-                onSetScore={(score) => setScore(playerId, score)}
-                onClearScore={() => clearScore(playerId)}
-                canInteract={canInteract}
-                firstPlayerCardRef={firstPlayerCardRef}
-                selectedHoleIndexes={selectedHoleIndexes}
-                leaderboardMeta={leaderboardByPlayerId.get(playerId)}
-                isLeader={leaderIds.has(playerId)}
-                streak={playerStreaks?.[playerId] ?? 0}
-                quickScores={quickScores}
-              />
-            )
-          })}
-        </div>
+  <HolePlayFocus
+    holeNumber={hole.hole_number}
+    par={hole.par}
+    strokes={Number(values[players[0]?.id]) || 0}
+    onChange={(score) => {
+      const playerId = players[0]?.id
+      if (!playerId) return
 
-        <BottomBar
-          canInteract={canInteract}
-          isReadyToAdvance={isReadyToAdvance}
-          currentHole={currentHole}
-          endHole={endHole}
-          loading={loading}
-          onPrevious={goPrevious}
-          onSave={() => void saveScores()}
-        />
-      </div>
-
-      <HoleImageModal
-        show={showHoleImage}
-        onClose={closeHoleImage}
-        previewHoleNumber={previewHoleNumber}
-        startHole={startHole}
-        endHole={endHole}
-        onPrevious={previewPreviousHole}
-        onNext={previewNextHole}
-        holeImageSrc={holeImageSrc}
-        holeImageError={holeImageError}
-        setHoleImageError={setHoleImageError}
-        distanceStatus={distanceStatus}
-        distanceErrorMessage={distanceErrorMessage}
-        distanceToFront={distanceToFront}
-        distanceToCenter={distanceToCenter}
-        distanceToBack={distanceToBack}
-      />
-
-      <FinishRoundModal
-        open={showFinishModal}
-        loading={loading}
-        onCancel={() => {
-          if (loading || isSavingRef.current || isNavigatingRef.current) return
-          setShowFinishModal(false)
-        }}
-        onConfirm={() => void confirmFinishRound()}
-      />
-    </>
-  )
-}
+      setScore(String(playerId), score)
+    }}
+    onNext={() => void saveScores()}
+    onPrev={goPrevious}
+  />
+)
