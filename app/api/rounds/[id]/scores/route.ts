@@ -43,7 +43,6 @@ export async function POST(
     return NextResponse.json({ error: 'Rundan hittades inte.' }, { status: 404 })
   }
 
-  // Om du vill låsa till endast ägaren:
   if (round.owner_id !== user.id) {
     return NextResponse.json(
       { error: 'Du har inte behörighet att spara score i denna runda.' },
@@ -95,8 +94,6 @@ export async function POST(
   const requestedNextHole = holeNumber < endHole ? holeNumber + 1 : endHole
   const requestedStatus = holeNumber >= endHole ? 'completed' : 'active'
 
-  // Viktigt:
-  // Uppdatera ALDRIG current_hole bakåt om en gammal request kommer sent.
   const currentRoundHole =
     typeof round.current_hole === 'number' && Number.isFinite(round.current_hole)
       ? round.current_hole
@@ -104,10 +101,7 @@ export async function POST(
 
   const safeNextHole = Math.max(currentRoundHole, requestedNextHole)
 
-  const nextStatus =
-    round.status === 'completed'
-      ? 'completed'
-      : requestedStatus
+  const nextStatus = round.status === 'completed' ? 'completed' : requestedStatus
 
   const { error: updateRoundError } = await supabase
     .from('rounds')
