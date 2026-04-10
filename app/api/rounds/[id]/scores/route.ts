@@ -43,6 +43,14 @@ export async function POST(
     return NextResponse.json({ error: 'Rundan hittades inte.' }, { status: 404 })
   }
 
+  // Om du vill låsa till endast ägaren:
+  if (round.owner_id !== user.id) {
+    return NextResponse.json(
+      { error: 'Du har inte behörighet att spara score i denna runda.' },
+      { status: 403 }
+    )
+  }
+
   const startHole = round.start_hole ?? 1
   const endHole = round.end_hole ?? 18
 
@@ -53,12 +61,10 @@ export async function POST(
     )
   }
 
+  // Validera först allt innan vi skriver något
   for (const score of scoreUpdates) {
     const roundPlayerId = String(score.roundPlayerId || '')
-    const strokes =
-      score.strokes == null
-        ? null
-        : Number(score.strokes)
+    const strokes = score.strokes == null ? null : Number(score.strokes)
 
     if (!roundPlayerId) {
       return NextResponse.json({ error: 'Saknar roundPlayerId.' }, { status: 400 })
@@ -67,6 +73,12 @@ export async function POST(
     if (strokes != null && (!Number.isFinite(strokes) || strokes < 1)) {
       return NextResponse.json({ error: 'Ogiltig score.' }, { status: 400 })
     }
+  }
+
+  // Spara scorer
+  for (const score of scoreUpdates) {
+    const roundPlayerId = String(score.roundPlayerId || '')
+    const strokes = score.strokes == null ? null : Number(score.strokes)
 
     const { error } = await supabase
       .from('hole_scores')
@@ -80,13 +92,27 @@ export async function POST(
     }
   }
 
-  const nextHole = holeNumber < endHole ? holeNumber + 1 : endHole
-  const nextStatus = holeNumber >= endHole ? 'completed' : 'active'
+  const requestedNextHole = holeNumber < endHole ? holeNumber + 1 : endHole
+  const requestedStatus = holeNumber >= endHole ? 'completed' : 'active'
+
+  // Viktigt:
+  // Uppdatera ALDRIG current_hole bakåt om en gammal request kommer sent.
+  const currentRoundHole =
+    typeof round.current_hole === 'number' && Number.isFinite(round.current_hole)
+      ? round.current_hole
+      : startHole
+
+  const safeNextHole = Math.max(currentRoundHole, requestedNextHole)
+
+  const nextStatus =
+    round.status === 'completed'
+      ? 'completed'
+      : requestedStatus
 
   const { error: updateRoundError } = await supabase
     .from('rounds')
     .update({
-      current_hole: nextHole,
+      current_hole: safeNextHole,
       status: nextStatus,
     })
     .eq('id', id)
@@ -97,7 +123,7 @@ export async function POST(
 
   return NextResponse.json({
     ok: true,
-    currentHole: nextHole,
+    currentHole: safeNextHole,
     status: nextStatus,
   })
 }

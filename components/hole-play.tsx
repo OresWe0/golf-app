@@ -1359,7 +1359,6 @@ export function HolePlay({
   const touchStartX = useRef<number | null>(null)
   const firstPlayerCardRef = useRef<HTMLDivElement | null>(null)
   const hasUserChangedScoreRef = useRef(false)
-  const postSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const watchIdRef = useRef<number | null>(null)
   const isSavingRef = useRef(false)
@@ -1418,13 +1417,6 @@ export function HolePlay({
   const isReadyToAdvance = allPlayersHaveScores(values)
   const canInteract = !loading && !isSavingRef.current && !isNavigatingRef.current
 
-  const clearPostSaveTimeout = () => {
-    if (postSaveTimeoutRef.current) {
-      clearTimeout(postSaveTimeoutRef.current)
-      postSaveTimeoutRef.current = null
-    }
-  }
-
   const clearToastTimeout = () => {
     if (toastTimeoutRef.current) {
       clearTimeout(toastTimeoutRef.current)
@@ -1469,9 +1461,7 @@ export function HolePlay({
   const navigateTo = (target: string) => {
     if (isNavigatingRef.current) return
 
-    clearPostSaveTimeout()
     clearToastTimeout()
-
     isNavigatingRef.current = true
     router.push(target)
   }
@@ -1550,7 +1540,6 @@ export function HolePlay({
     isSavingRef.current = true
     setLoading(true)
     setSaveState('saving')
-    clearPostSaveTimeout()
     clearToastTimeout()
 
     try {
@@ -1581,22 +1570,15 @@ export function HolePlay({
         navigator.vibrate([20, 18, 20])
       }
 
-      postSaveTimeoutRef.current = setTimeout(() => {
-        if (isNavigatingRef.current) return
+      if (currentHole === endHole) {
+        setShowFinishModal(true)
+        return
+      }
 
-        if (currentHole === endHole) {
-          isSavingRef.current = false
-          setShowFinishModal(true)
-          return
-        }
-
-        isSavingRef.current = false
-        goNext()
-      }, 260)
+      goNext()
     } finally {
-      setLoading(false)
-
-      if (currentHole !== endHole && !postSaveTimeoutRef.current) {
+      if (!isNavigatingRef.current) {
+        setLoading(false)
         isSavingRef.current = false
       }
     }
@@ -1620,6 +1602,7 @@ export function HolePlay({
 
   const clearScore = (playerId: string) => {
     if (!canInteract) return
+
     hasUserChangedScoreRef.current = true
     setSaveState('idle')
 
@@ -1686,8 +1669,13 @@ export function HolePlay({
       return
     }
 
-    if (diff > 70 && currentHole > startHole) goPrevious()
-    if (diff < -70 && currentHole < endHole) goNext()
+    if (diff > 70 && currentHole > startHole) {
+      goPrevious()
+    }
+
+    if (diff < -70 && currentHole < endHole && isReadyToAdvance) {
+      void saveScores()
+    }
 
     touchStartX.current = null
   }
@@ -1705,7 +1693,6 @@ export function HolePlay({
 
     setLoading(false)
 
-    clearPostSaveTimeout()
     clearToastTimeout()
 
     const timer = setTimeout(() => {
@@ -1720,7 +1707,6 @@ export function HolePlay({
 
   useEffect(() => {
     return () => {
-      clearPostSaveTimeout()
       clearToastTimeout()
       stopWatchingPosition()
     }
