@@ -92,31 +92,42 @@ const loadSavedSetups = (storageKey: string): SavedRoundSetup[] => {
     const raw = window.localStorage.getItem(storageKey)
     if (!raw) return []
 
-    const parsed = JSON.parse(raw)
+    const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
 
     return parsed
-      .filter((item) => item && typeof item === 'object')
-      .map((item) => ({
-        id: typeof item.id === 'string' ? item.id : '',
-        title: typeof item.title === 'string' ? item.title : '',
-        courseId: typeof item.courseId === 'string' ? item.courseId : '',
-        scoringMode: item.scoringMode === 'strokeplay' ? 'strokeplay' : 'stableford',
-        holesMode: item.holesMode === 9 ? 9 : 18,
-        nineHoleSide: item.nineHoleSide === 'back' ? 'back' : 'front',
-        lastUsedAt: typeof item.lastUsedAt === 'string' ? item.lastUsedAt : '',
-        timesUsed: typeof item.timesUsed === 'number' ? item.timesUsed : 1,
-        players: Array.isArray(item.players)
-          ? item.players.map((player) => ({
-              kind: player?.kind === 'guest' ? 'guest' : 'registered',
-              name: typeof player?.name === 'string' ? player.name : '',
-              email: typeof player?.email === 'string' ? player.email : '',
-              handicapIndex:
-                typeof player?.handicapIndex === 'number' ? player.handicapIndex : null,
-              teeKey: normalizeTeeKey(player?.teeKey),
-            }))
-          : [],
-      }))
+      .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+      .map((item) => {
+        const players: SavedRoundPlayer[] = Array.isArray(item.players)
+          ? item.players
+              .filter(
+                (player): player is Record<string, unknown> =>
+                  !!player && typeof player === 'object'
+              )
+              .map((player) => ({
+                kind: player.kind === 'guest' ? 'guest' : 'registered',
+                name: typeof player.name === 'string' ? player.name : '',
+                email: typeof player.email === 'string' ? player.email : '',
+                handicapIndex:
+                  typeof player.handicapIndex === 'number' ? player.handicapIndex : null,
+                teeKey: normalizeTeeKey(player.teeKey),
+              }))
+          : []
+
+        const setup: SavedRoundSetup = {
+          id: typeof item.id === 'string' ? item.id : '',
+          title: typeof item.title === 'string' ? item.title : '',
+          courseId: typeof item.courseId === 'string' ? item.courseId : '',
+          scoringMode: item.scoringMode === 'strokeplay' ? 'strokeplay' : 'stableford',
+          holesMode: item.holesMode === 9 ? 9 : 18,
+          nineHoleSide: item.nineHoleSide === 'back' ? 'back' : 'front',
+          lastUsedAt: typeof item.lastUsedAt === 'string' ? item.lastUsedAt : '',
+          timesUsed: typeof item.timesUsed === 'number' ? item.timesUsed : 1,
+          players,
+        }
+
+        return setup
+      })
       .filter((setup) => setup.courseId && setup.players.length > 0)
       .slice(0, 6)
   } catch {
@@ -1254,7 +1265,10 @@ export function NewRoundForm({
 
                   <div>
                     <label>Tee</label>
-                    <select value={player.teeKey} onChange={(e) => updatePlayer(index, 'teeKey', e.target.value)}>
+                    <select
+                      value={player.teeKey}
+                      onChange={(e) => updatePlayer(index, 'teeKey', e.target.value)}
+                    >
                       <option value="yellow">{getTeeDisplayLabel('yellow')}</option>
                       <option value="red">{getTeeDisplayLabel('red')}</option>
                     </select>
