@@ -7,7 +7,8 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
-const STORAGE_KEY = 'install-app-prompt-dismissed'
+const STORAGE_KEY = 'install-app-prompt-dismissed-at'
+const DISMISS_DAYS = 7
 
 function isIosDevice() {
   if (typeof window === 'undefined') return false
@@ -38,6 +39,26 @@ function isStandaloneMode() {
   return iosStandalone || mediaStandalone
 }
 
+function wasDismissedRecently() {
+  if (typeof window === 'undefined') return false
+
+  const raw = window.localStorage.getItem(STORAGE_KEY)
+  if (!raw) return false
+
+  const dismissedAt = Number(raw)
+  if (!Number.isFinite(dismissedAt)) return false
+
+  const daysSinceDismiss =
+    (Date.now() - dismissedAt) / (1000 * 60 * 60 * 24)
+
+  return daysSinceDismiss < DISMISS_DAYS
+}
+
+function rememberDismiss() {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(STORAGE_KEY, String(Date.now()))
+}
+
 export default function InstallAppPrompt() {
   const [mounted, setMounted] = useState(false)
   const [dismissed, setDismissed] = useState(false)
@@ -49,9 +70,7 @@ export default function InstallAppPrompt() {
   useEffect(() => {
     setMounted(true)
 
-    const wasDismissed = window.localStorage.getItem(STORAGE_KEY) === 'true'
-    setDismissed(wasDismissed)
-
+    setDismissed(wasDismissedRecently())
     setInstalled(isStandaloneMode())
     setIsIosSafari(isIosDevice() && isSafariBrowser())
 
@@ -75,7 +94,7 @@ export default function InstallAppPrompt() {
   }, [])
 
   const handleDismiss = () => {
-    window.localStorage.setItem(STORAGE_KEY, 'true')
+    rememberDismiss()
     setDismissed(true)
   }
 
@@ -87,7 +106,10 @@ export default function InstallAppPrompt() {
 
     if (choice.outcome === 'accepted') {
       setDeferredPrompt(null)
+      return
     }
+
+    handleDismiss()
   }
 
   if (!mounted || installed || dismissed) return null
@@ -106,32 +128,50 @@ export default function InstallAppPrompt() {
         padding: 16,
         display: 'grid',
         gap: 12,
+        boxShadow: '0 10px 24px rgba(15, 23, 42, 0.05)',
       }}
     >
-      <div style={{ display: 'grid', gap: 6 }}>
-        <div style={{ fontWeight: 900, fontSize: 18 }}>
-          📲 Installera Golfrundan
+      <div style={{ display: 'grid', gap: 8 }}>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '6px 10px',
+            borderRadius: 999,
+            background: '#ecfdf3',
+            color: '#166534',
+            fontSize: 12,
+            fontWeight: 900,
+            width: 'fit-content',
+          }}
+        >
+          📲 Installera appen
         </div>
 
-        {showAndroidPrompt && (
-          <div className="muted" style={{ lineHeight: 1.5 }}>
-            Lägg appen på hemskärmen för snabbare åtkomst och en mer app-lik upplevelse.
-          </div>
-        )}
+        <div style={{ fontWeight: 900, fontSize: 18, color: '#0f172a' }}>
+          Få snabbare åtkomst till Golfrundan
+        </div>
 
-        {showIosPrompt && (
+        {showAndroidPrompt ? (
+          <div className="muted" style={{ lineHeight: 1.5 }}>
+            Installera appen för att öppna den snabbare och få en mer app-lik upplevelse på mobilen.
+          </div>
+        ) : null}
+
+        {showIosPrompt ? (
           <div className="muted" style={{ lineHeight: 1.6 }}>
-            Lägg appen på hemskärmen:
+            Lägg till appen på hemskärmen:
             <br />
             <strong>1.</strong> Tryck på <strong>Dela</strong>
             <br />
             <strong>2.</strong> Välj <strong>Lägg till på hemskärmen</strong>
           </div>
-        )}
+        ) : null}
       </div>
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        {showAndroidPrompt && (
+        {showAndroidPrompt ? (
           <button
             type="button"
             onClick={handleInstall}
@@ -140,7 +180,7 @@ export default function InstallAppPrompt() {
           >
             Installera app
           </button>
-        )}
+        ) : null}
 
         <button
           type="button"
