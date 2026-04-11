@@ -8,9 +8,9 @@ type FriendRequestRow = {
   status: 'pending' | 'accepted' | 'declined'
 }
 
-export async function POST(request: Request) {
-  const formData = await request.formData()
-  const token = String(formData.get('token') || '').trim()
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const token = String(searchParams.get('token') || '').trim()
 
   if (!token) {
     return NextResponse.redirect(new URL('/dashboard', request.url), 303)
