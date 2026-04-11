@@ -60,40 +60,21 @@ export default async function AcceptPage({
 
   const requesterEmail = request.requester_email.trim().toLowerCase()
 
-  const { data: existingForward } = await supabase
-    .from('friends')
-    .select('id')
-    .eq('user_id', request.requester_id)
-    .eq('friend_email', currentUserEmail)
-    .maybeSingle()
-
-  const { data: existingReverse } = await supabase
+  const { data: existingFriend } = await supabase
     .from('friends')
     .select('id')
     .eq('user_id', user.id)
     .eq('friend_email', requesterEmail)
     .maybeSingle()
 
-  const inserts: Array<{ user_id: string; friend_email: string }> = []
-
-  if (!existingForward) {
-    inserts.push({
-      user_id: request.requester_id,
-      friend_email: currentUserEmail,
-    })
-  }
-
-  if (!existingReverse) {
-    inserts.push({
+  if (!existingFriend) {
+    const { error: insertError } = await supabase.from('friends').insert({
       user_id: user.id,
       friend_email: requesterEmail,
     })
-  }
-
-  if (inserts.length > 0) {
-    const { error: insertError } = await supabase.from('friends').insert(inserts)
 
     if (insertError) {
+      console.error('AcceptPage friend insert failed:', insertError)
       redirect('/profile?message=Kunde inte skapa vänrelationen')
     }
   }
@@ -108,6 +89,7 @@ export default async function AcceptPage({
     .eq('status', 'pending')
 
   if (updateError) {
+    console.error('AcceptPage request update failed:', updateError)
     redirect('/profile?message=Vänskap skapades men förfrågan kunde inte uppdateras')
   }
 

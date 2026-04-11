@@ -151,6 +151,7 @@ export default async function ProfilePage({
       .single()
 
     if (error || !request) {
+      console.error('addFriend request insert failed:', error)
       redirect('/profile?message=Kunde inte skapa vänförfrågan')
     }
 
@@ -170,7 +171,8 @@ export default async function ProfilePage({
         requesterName,
         acceptUrl,
       })
-    } catch {
+    } catch (error) {
+      console.error('Friend request email failed:', error)
       redirect('/profile?message=Förfrågan skapades men mejlet kunde inte skickas')
     }
 
@@ -275,40 +277,21 @@ export default async function ProfilePage({
 
     const requesterEmail = request.requester_email.trim().toLowerCase()
 
-    const { data: existingForward } = await supabase
-      .from('friends')
-      .select('id')
-      .eq('user_id', request.requester_id)
-      .eq('friend_email', ownEmail)
-      .maybeSingle()
-
-    const { data: existingReverse } = await supabase
+    const { data: existingFriend } = await supabase
       .from('friends')
       .select('id')
       .eq('user_id', user.id)
       .eq('friend_email', requesterEmail)
       .maybeSingle()
 
-    const inserts: Array<{ user_id: string; friend_email: string }> = []
-
-    if (!existingForward) {
-      inserts.push({
-        user_id: request.requester_id,
-        friend_email: ownEmail,
-      })
-    }
-
-    if (!existingReverse) {
-      inserts.push({
+    if (!existingFriend) {
+      const { error: insertError } = await supabase.from('friends').insert({
         user_id: user.id,
         friend_email: requesterEmail,
       })
-    }
-
-    if (inserts.length > 0) {
-      const { error: insertError } = await supabase.from('friends').insert(inserts)
 
       if (insertError) {
+        console.error('Profile acceptRequest insert failed:', insertError)
         redirect('/profile?message=Kunde inte skapa vänrelationen')
       }
     }
@@ -339,9 +322,8 @@ export default async function ProfilePage({
     }
 
     const friendEmail = String(formData.get('friend_email') || '').trim().toLowerCase()
-    const ownEmail = (user.email ?? '').trim().toLowerCase()
 
-    if (!friendEmail || !ownEmail) {
+    if (!friendEmail) {
       redirect('/profile?message=Kunde inte ta bort vän')
     }
 
@@ -350,20 +332,6 @@ export default async function ProfilePage({
       .delete()
       .eq('user_id', user.id)
       .eq('friend_email', friendEmail)
-
-    const { data: friendProfile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', friendEmail)
-      .maybeSingle()
-
-    if (friendProfile?.id) {
-      await supabase
-        .from('friends')
-        .delete()
-        .eq('user_id', friendProfile.id)
-        .eq('friend_email', ownEmail)
-    }
 
     redirect('/profile?message=Vän borttagen')
   }
