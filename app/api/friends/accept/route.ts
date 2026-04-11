@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const token = String(formData.get('token') || '').trim()
 
   if (!token) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    return NextResponse.redirect(new URL('/dashboard', request.url), 303)
   }
 
   const supabase = await createClient()
@@ -23,14 +23,15 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    return NextResponse.redirect(new URL('/login', request.url), 303)
   }
 
   const currentUserEmail = (user.email ?? '').trim().toLowerCase()
 
   if (!currentUserEmail) {
     return NextResponse.redirect(
-      new URL('/profile?message=Kunde inte läsa din e-postadress', request.url)
+      new URL('/profile?message=Kunde inte läsa din e-postadress', request.url),
+      303
     )
   }
 
@@ -48,7 +49,8 @@ export async function POST(request: Request) {
           'Kunde inte läsa vänförfrågan'
         )}`,
         request.url
-      )
+      ),
+      303
     )
   }
 
@@ -61,7 +63,8 @@ export async function POST(request: Request) {
           'Vänförfrågan hittades inte'
         )}`,
         request.url
-      )
+      ),
+      303
     )
   }
 
@@ -72,7 +75,8 @@ export async function POST(request: Request) {
           'Den här förfrågan tillhör en annan användare'
         )}`,
         request.url
-      )
+      ),
+      303
     )
   }
 
@@ -83,7 +87,8 @@ export async function POST(request: Request) {
       new URL(
         `/friends/accepted?email=${encodeURIComponent(requesterEmail)}`,
         request.url
-      )
+      ),
+      303
     )
   }
 
@@ -94,7 +99,8 @@ export async function POST(request: Request) {
           'Vänförfrågan är redan hanterad'
         )}`,
         request.url
-      )
+      ),
+      303
     )
   }
 
@@ -110,7 +116,8 @@ export async function POST(request: Request) {
           'Kunde inte acceptera vänförfrågan'
         )}`,
         request.url
-      )
+      ),
+      303
     )
   }
 
@@ -118,6 +125,7 @@ export async function POST(request: Request) {
     new URL(
       `/friends/accepted?email=${encodeURIComponent(requesterEmail)}`,
       request.url
-    )
+    ),
+    303
   )
 }
