@@ -51,7 +51,7 @@ export default async function AcceptPage({ searchParams }: AcceptPageProps) {
     .from('friend_requests')
     .select('id, requester_id, requester_email, recipient_email, token, status')
     .eq('token', token)
-    .single()
+    .maybeSingle()
 
   if (requestError) {
     console.error('AcceptPage request fetch failed:', requestError)
@@ -107,7 +107,8 @@ export default async function AcceptPage({ searchParams }: AcceptPageProps) {
     )
   }
 
-  const requesterEmail = request.requester_email.trim().toLowerCase()
+  const safeRequest: FriendRequestRow = request
+  const requesterEmail = safeRequest.requester_email.trim().toLowerCase()
 
   async function acceptRequestAction() {
     'use server'
@@ -123,7 +124,7 @@ export default async function AcceptPage({ searchParams }: AcceptPageProps) {
     }
 
     const { error } = await supabase.rpc('accept_friend_request', {
-      request_id_input: request.id,
+      request_id_input: safeRequest.id,
     })
 
     if (error) {

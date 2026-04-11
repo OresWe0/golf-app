@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { updateProfile } from '@/app/login/actions'
 import { sendFriendRequestEmail } from '@/lib/email'
@@ -176,6 +177,9 @@ export default async function ProfilePage({
       redirect('/profile?message=Förfrågan skapades men mejlet kunde inte skickas')
     }
 
+    revalidatePath('/profile')
+    revalidatePath('/dashboard')
+
     redirect('/profile?message=Vänförfrågan skickad')
   }
 
@@ -204,6 +208,9 @@ export default async function ProfilePage({
       .eq('id', id)
       .eq('requester_id', user.id)
       .eq('status', 'pending')
+
+    revalidatePath('/profile')
+    revalidatePath('/dashboard')
 
     redirect('/profile?message=Vänförfrågan borttagen')
   }
@@ -238,6 +245,9 @@ export default async function ProfilePage({
       .eq('recipient_email', ownEmail)
       .eq('status', 'pending')
 
+    revalidatePath('/profile')
+    revalidatePath('/dashboard')
+
     redirect('/profile?message=Vänförfrågan avvisad')
   }
 
@@ -255,55 +265,23 @@ export default async function ProfilePage({
     }
 
     const id = String(formData.get('id') || '')
-    const ownEmail = (user.email ?? '').trim().toLowerCase()
 
-    if (!id || !ownEmail) {
+    if (!id) {
       redirect('/profile?message=Kunde inte acceptera förfrågan')
     }
 
-    const { data: requestRaw } = await supabase
-      .from('friend_requests')
-      .select('*')
-      .eq('id', id)
-      .eq('recipient_email', ownEmail)
-      .eq('status', 'pending')
-      .single()
+    const { error } = await supabase.rpc('accept_friend_request', {
+      request_id_input: id,
+    })
 
-    const request = requestRaw as FriendRequestRow | null
-
-    if (!request) {
-      redirect('/profile?message=Vänförfrågan hittades inte')
+    if (error) {
+      console.error('Profile acceptRequest rpc failed:', error)
+      redirect('/profile?message=Kunde inte acceptera vänförfrågan')
     }
 
-    const requesterEmail = request.requester_email.trim().toLowerCase()
-
-    const { data: existingFriend } = await supabase
-      .from('friends')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('friend_email', requesterEmail)
-      .maybeSingle()
-
-    if (!existingFriend) {
-      const { error: insertError } = await supabase.from('friends').insert({
-        user_id: user.id,
-        friend_email: requesterEmail,
-      })
-
-      if (insertError) {
-        console.error('Profile acceptRequest insert failed:', insertError)
-        redirect('/profile?message=Kunde inte skapa vänrelationen')
-      }
-    }
-
-    await supabase
-      .from('friend_requests')
-      .update({
-        status: 'accepted',
-        responded_at: new Date().toISOString(),
-      })
-      .eq('id', request.id)
-      .eq('status', 'pending')
+    revalidatePath('/profile')
+    revalidatePath('/dashboard')
+    revalidatePath('/friends/accept')
 
     redirect('/profile?message=Vän tillagd 🎉')
   }
@@ -332,6 +310,9 @@ export default async function ProfilePage({
       .delete()
       .eq('user_id', user.id)
       .eq('friend_email', friendEmail)
+
+    revalidatePath('/profile')
+    revalidatePath('/dashboard')
 
     redirect('/profile?message=Vän borttagen')
   }
