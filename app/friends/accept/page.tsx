@@ -31,6 +31,8 @@ export default async function AcceptPage({ searchParams }: AcceptPageProps) {
     redirect('/dashboard')
   }
 
+  const safeToken: string = token
+
   const supabase = await createClient()
 
   const {
@@ -50,7 +52,7 @@ export default async function AcceptPage({ searchParams }: AcceptPageProps) {
   const { data: requestRaw, error: requestError } = await supabase
     .from('friend_requests')
     .select('id, requester_id, requester_email, recipient_email, token, status')
-    .eq('token', token)
+    .eq('token', safeToken)
     .maybeSingle()
 
   if (requestError) {
@@ -131,7 +133,7 @@ export default async function AcceptPage({ searchParams }: AcceptPageProps) {
       console.error('accept_friend_request rpc failed:', error)
 
       redirect(
-        `/friends/accept?token=${encodeURIComponent(token)}&error=${encodeURIComponent(
+        `/friends/accept?token=${encodeURIComponent(safeToken)}&error=${encodeURIComponent(
           'Kunde inte acceptera vänförfrågan'
         )}`
       )
