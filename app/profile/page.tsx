@@ -47,7 +47,11 @@ export default async function ProfilePage({
     { data: incomingRequestsRaw },
   ] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
-    supabase.from('friends').select('*').eq('user_id', user.id).order('created_at', { ascending: true }),
+    supabase
+      .from('friends')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true }),
     supabase
       .from('friend_requests')
       .select('*')
@@ -347,17 +351,19 @@ export default async function ProfilePage({
       .eq('user_id', user.id)
       .eq('friend_email', friendEmail)
 
-    await supabase
-      .from('friends')
-      .delete()
-      .eq('friend_email', ownEmail)
-      .eq('user_id', (
-        await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', friendEmail)
-          .maybeSingle()
-      ).data?.id ?? '')
+    const { data: friendProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', friendEmail)
+      .maybeSingle()
+
+    if (friendProfile?.id) {
+      await supabase
+        .from('friends')
+        .delete()
+        .eq('user_id', friendProfile.id)
+        .eq('friend_email', ownEmail)
+    }
 
     redirect('/profile?message=Vän borttagen')
   }
