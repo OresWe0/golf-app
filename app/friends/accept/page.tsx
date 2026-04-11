@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
 type FriendRequestRow = {
@@ -11,13 +12,20 @@ type FriendRequestRow = {
   status: 'pending' | 'accepted' | 'declined'
 }
 
-export default async function AcceptPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ token?: string }>
-}) {
+type AcceptPageProps = {
+  searchParams: Promise<{
+    token?: string
+    error?: string
+  }>
+}
+
+export default async function AcceptPage({ searchParams }: AcceptPageProps) {
   const params = await searchParams
   const token = params.token?.trim()
+  const errorMessage =
+    typeof params.error === 'string' && params.error.trim()
+      ? params.error.trim()
+      : null
 
   if (!token) {
     redirect('/dashboard')
@@ -39,11 +47,15 @@ export default async function AcceptPage({
     redirect('/profile?message=Kunde inte läsa din e-postadress')
   }
 
-  const { data: requestRaw } = await supabase
+  const { data: requestRaw, error: requestError } = await supabase
     .from('friend_requests')
-    .select('*')
+    .select('id, requester_id, requester_email, recipient_email, token, status')
     .eq('token', token)
     .single()
+
+  if (requestError) {
+    console.error('AcceptPage request fetch failed:', requestError)
+  }
 
   const request = requestRaw as FriendRequestRow | null
 
@@ -69,7 +81,7 @@ export default async function AcceptPage({
         <div className="container" style={{ maxWidth: 680 }}>
           <div className="card">
             <h1>Vänförfrågan är redan hanterad</h1>
-            <p className="muted">Den här länken har redan använts tidigare.</p>
+            <p className="muted">Den här förfrågan har redan accepterats eller avböjts.</p>
             <Link href="/profile" className="button secondary">
               Till profil
             </Link>
@@ -97,67 +109,38 @@ export default async function AcceptPage({
 
   const requesterEmail = request.requester_email.trim().toLowerCase()
 
-  const { data: existingFriend } = await supabase
-    .from('friends')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('friend_email', requesterEmail)
-    .maybeSingle()
+  async function acceptRequestAction() {
+    'use server'
 
-  if (!existingFriend) {
-    const { error: insertError } = await supabase.from('friends').insert({
-      user_id: user.id,
-      friend_email: requesterEmail,
+    const supabase = await createClient()
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      redirect('/login')
+    }
+
+    const { error } = await supabase.rpc('accept_friend_request', {
+      request_id_input: request.id,
     })
 
-    if (insertError) {
-      console.error('AcceptPage friend insert failed:', insertError)
+    if (error) {
+      console.error('accept_friend_request rpc failed:', error)
 
-      return (
-        <main style={{ padding: 24 }}>
-          <div className="container" style={{ maxWidth: 680 }}>
-            <div className="card">
-              <h1>Kunde inte skapa vänrelationen</h1>
-              <p className="muted">
-                Något gick fel när vänförfrågan skulle accepteras.
-              </p>
-              <Link href="/profile" className="button secondary">
-                Till profil
-              </Link>
-            </div>
-          </div>
-        </main>
+      redirect(
+        `/friends/accept?token=${encodeURIComponent(token)}&error=${encodeURIComponent(
+          'Kunde inte acceptera vänförfrågan'
+        )}`
       )
     }
-  }
 
-  const { error: updateError } = await supabase
-    .from('friend_requests')
-    .update({
-      status: 'accepted',
-      responded_at: new Date().toISOString(),
-    })
-    .eq('id', request.id)
-    .eq('status', 'pending')
+    revalidatePath('/profile')
+    revalidatePath('/dashboard')
+    revalidatePath('/friends/accept')
 
-  if (updateError) {
-    console.error('AcceptPage request update failed:', updateError)
-
-    return (
-      <main style={{ padding: 24 }}>
-        <div className="container" style={{ maxWidth: 680 }}>
-          <div className="card">
-            <h1>Vän tillagd, men förfrågan kunde inte uppdateras</h1>
-            <p className="muted">
-              Själva vänskapen verkar ha skapats, men statusen på förfrågan kunde inte uppdateras.
-            </p>
-            <Link href="/profile" className="button secondary">
-              Till profil
-            </Link>
-          </div>
-        </div>
-      </main>
-    )
+    redirect('/profile?message=Vänförfrågan accepterad')
   }
 
   return (
@@ -169,22 +152,42 @@ export default async function AcceptPage({
             display: 'grid',
             gap: 14,
             borderRadius: 24,
-            border: '1px solid #bbf7d0',
-            background: 'linear-gradient(180deg, #f0fdf4 0%, #ecfdf3 100%)',
+            border: '1px solid #e5e7eb',
           }}
         >
-          <span className="badge">🎉 Klar</span>
-          <h1 style={{ margin: 0 }}>Vän tillagd</h1>
+          <span className="badge">🤝 Vänförfrågan</span>
+
+          <h1 style={{ margin: 0 }}>Acceptera vänförfrågan</h1>
+
           <p className="muted" style={{ margin: 0 }}>
-            Du är nu vän med <strong>{requesterEmail}</strong>.
+            <strong>{requesterEmail}</strong> vill bli vän med dig.
           </p>
 
+          {errorMessage ? (
+            <div
+              style={{
+                padding: 12,
+                borderRadius: 12,
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+              }}
+            >
+              <strong>Något gick fel</strong>
+              <div className="muted" style={{ marginTop: 6 }}>
+                {errorMessage}
+              </div>
+            </div>
+          ) : null}
+
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <Link href="/profile" className="button">
-              Till profil
-            </Link>
-            <Link href="/dashboard" className="button secondary">
-              Till dashboard
+            <form action={acceptRequestAction}>
+              <button type="submit" className="button">
+                Acceptera
+              </button>
+            </form>
+
+            <Link href="/profile" className="button secondary">
+              Avbryt
             </Link>
           </div>
         </div>
