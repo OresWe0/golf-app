@@ -16,6 +16,7 @@ type AcceptPageProps = {
   searchParams: Promise<{
     token?: string
     error?: string
+    success?: string
   }>
 }
 
@@ -26,13 +27,13 @@ export default async function AcceptPage({ searchParams }: AcceptPageProps) {
     typeof params.error === 'string' && params.error.trim()
       ? params.error.trim()
       : null
+  const success = params.success === '1'
 
   if (!token) {
     redirect('/dashboard')
   }
 
   const safeToken: string = token
-
   const supabase = await createClient()
 
   const {
@@ -68,22 +69,6 @@ export default async function AcceptPage({ searchParams }: AcceptPageProps) {
           <div className="card">
             <h1>Vänförfrågan hittades inte</h1>
             <p className="muted">Länken verkar vara ogiltig eller redan använd.</p>
-            <Link href="/profile" className="button secondary">
-              Till profil
-            </Link>
-          </div>
-        </div>
-      </main>
-    )
-  }
-
-  if (request.status !== 'pending') {
-    return (
-      <main style={{ padding: 24 }}>
-        <div className="container" style={{ maxWidth: 680 }}>
-          <div className="card">
-            <h1>Vänförfrågan är redan hanterad</h1>
-            <p className="muted">Den här förfrågan har redan accepterats eller avböjts.</p>
             <Link href="/profile" className="button secondary">
               Till profil
             </Link>
@@ -143,7 +128,60 @@ export default async function AcceptPage({ searchParams }: AcceptPageProps) {
     revalidatePath('/dashboard')
     revalidatePath('/friends/accept')
 
-    redirect('/profile?message=Vänförfrågan accepterad')
+    redirect(`/friends/accept?token=${encodeURIComponent(safeToken)}&success=1`)
+  }
+
+  if (safeRequest.status === 'accepted' || success) {
+    return (
+      <main style={{ padding: 24 }}>
+        <div className="container" style={{ maxWidth: 680 }}>
+          <div
+            className="card"
+            style={{
+              display: 'grid',
+              gap: 14,
+              borderRadius: 24,
+              border: '1px solid #bbf7d0',
+              background: 'linear-gradient(180deg, #f0fdf4 0%, #ecfdf3 100%)',
+            }}
+          >
+            <span className="badge">🎉 Klar</span>
+
+            <h1 style={{ margin: 0 }}>Vänförfrågan accepterad</h1>
+
+            <p className="muted" style={{ margin: 0 }}>
+              Du är nu vän med <strong>{requesterEmail}</strong>.
+            </p>
+
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <Link href="/profile" className="button">
+                Till profil
+              </Link>
+
+              <Link href="/dashboard" className="button secondary">
+                Till dashboard
+              </Link>
+            </div>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
+  if (safeRequest.status !== 'pending') {
+    return (
+      <main style={{ padding: 24 }}>
+        <div className="container" style={{ maxWidth: 680 }}>
+          <div className="card">
+            <h1>Vänförfrågan är redan hanterad</h1>
+            <p className="muted">Den här förfrågan har redan accepterats eller avböjts.</p>
+            <Link href="/profile" className="button secondary">
+              Till profil
+            </Link>
+          </div>
+        </div>
+      </main>
+    )
   }
 
   return (
