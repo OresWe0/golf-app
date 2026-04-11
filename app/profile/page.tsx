@@ -2,12 +2,32 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { updateProfile } from '@/app/login/actions'
+import { sendFriendRequestEmail } from '@/lib/email'
 import type { Profile } from '@/lib/types'
+
+type SearchParams = Promise<{ message?: string }>
+
+type FriendRow = {
+  id: string
+  user_id: string
+  friend_email: string
+}
+
+type FriendRequestRow = {
+  id: string
+  requester_id: string
+  requester_email: string
+  recipient_email: string
+  token: string
+  status: 'pending' | 'accepted' | 'declined'
+  created_at?: string | null
+  responded_at?: string | null
+}
 
 export default async function ProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ message?: string }>
+  searchParams: SearchParams
 }) {
   const params = await searchParams
   const supabase = await createClient()
@@ -18,19 +38,34 @@ export default async function ProfilePage({
 
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  const currentUserEmail = (user.email ?? '').trim().toLowerCase()
 
-  const { data: friends } = await supabase
-    .from('friends')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: true })
+  const [
+    { data: profile },
+    { data: friendsRaw },
+    { data: outgoingRequestsRaw },
+    { data: incomingRequestsRaw },
+  ] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).single(),
+    supabase.from('friends').select('*').eq('user_id', user.id).order('created_at', { ascending: true }),
+    supabase
+      .from('friend_requests')
+      .select('*')
+      .eq('requester_id', user.id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('friend_requests')
+      .select('*')
+      .eq('recipient_email', currentUserEmail)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false }),
+  ])
 
   const currentProfile = profile as Profile | null
+  const friends = (friendsRaw as FriendRow[] | null) ?? []
+  const outgoingRequests = (outgoingRequestsRaw as FriendRequestRow[] | null) ?? []
+  const incomingRequests = (incomingRequestsRaw as FriendRequestRow[] | null) ?? []
 
   async function addFriend(formData: FormData) {
     'use server'
@@ -41,12 +76,24 @@ export default async function ProfilePage({
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user) return
+    if (!user) {
+      redirect('/login')
+    }
 
     const email = String(formData.get('email') || '').trim().toLowerCase()
+    const ownEmail = (user.email ?? '').trim().toLowerCase()
 
-    if (!email) return
-    if (email === (user.email ?? '').toLowerCase()) return
+    if (!email) {
+      redirect('/profile?message=Du måste ange en e-postadress')
+    }
+
+    if (!ownEmail) {
+      redirect('/profile?message=Kunde inte läsa din e-postadress')
+    }
+
+    if (email === ownEmail) {
+      redirect('/profile?message=Du kan inte lägga till dig själv')
+    }
 
     const { data: existingFriend } = await supabase
       .from('friends')
@@ -55,25 +102,264 @@ export default async function ProfilePage({
       .eq('friend_email', email)
       .maybeSingle()
 
-    if (existingFriend) return
+    if (existingFriend) {
+      redirect('/profile?message=Ni är redan vänner')
+    }
 
-    await supabase.from('friends').insert({
-      user_id: user.id,
-      friend_email: email,
-    })
+    const { data: existingPendingOutgoing } = await supabase
+      .from('friend_requests')
+      .select('id')
+      .eq('requester_id', user.id)
+      .eq('recipient_email', email)
+      .eq('status', 'pending')
+      .maybeSingle()
 
-    redirect('/profile')
+    if (existingPendingOutgoing) {
+      redirect('/profile?message=Vänförfrågan är redan skickad')
+    }
+
+    const { data: existingPendingIncoming } = await supabase
+      .from('friend_requests')
+      .select('id')
+      .eq('requester_email', email)
+      .eq('recipient_email', ownEmail)
+      .eq('status', 'pending')
+      .maybeSingle()
+
+    if (existingPendingIncoming) {
+      redirect('/profile?message=Du har redan en inkommande vänförfrågan från den här användaren')
+    }
+
+    const { data: senderProfile } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    const { data: request, error } = await supabase
+      .from('friend_requests')
+      .insert({
+        requester_id: user.id,
+        requester_email: ownEmail,
+        recipient_email: email,
+      })
+      .select()
+      .single()
+
+    if (error || !request) {
+      redirect('/profile?message=Kunde inte skapa vänförfrågan')
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_SITE_URL
+
+    if (!appUrl) {
+      redirect('/profile?message=NEXT_PUBLIC_SITE_URL saknas i .env.local')
+    }
+
+    const acceptUrl = `${appUrl}/friends/accept?token=${request.token}`
+    const requesterName =
+      senderProfile?.display_name?.trim() || ownEmail || 'En användare'
+
+    try {
+      await sendFriendRequestEmail({
+        to: email,
+        requesterName,
+        acceptUrl,
+      })
+    } catch {
+      redirect('/profile?message=Förfrågan skapades men mejlet kunde inte skickas')
+    }
+
+    redirect('/profile?message=Vänförfrågan skickad')
+  }
+
+  async function cancelRequest(formData: FormData) {
+    'use server'
+
+    const supabase = await createClient()
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      redirect('/login')
+    }
+
+    const id = String(formData.get('id') || '')
+
+    if (!id) {
+      redirect('/profile?message=Kunde inte ta bort förfrågan')
+    }
+
+    await supabase
+      .from('friend_requests')
+      .delete()
+      .eq('id', id)
+      .eq('requester_id', user.id)
+      .eq('status', 'pending')
+
+    redirect('/profile?message=Vänförfrågan borttagen')
+  }
+
+  async function declineRequest(formData: FormData) {
+    'use server'
+
+    const supabase = await createClient()
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      redirect('/login')
+    }
+
+    const id = String(formData.get('id') || '')
+    const ownEmail = (user.email ?? '').trim().toLowerCase()
+
+    if (!id || !ownEmail) {
+      redirect('/profile?message=Kunde inte avvisa förfrågan')
+    }
+
+    await supabase
+      .from('friend_requests')
+      .update({
+        status: 'declined',
+        responded_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .eq('recipient_email', ownEmail)
+      .eq('status', 'pending')
+
+    redirect('/profile?message=Vänförfrågan avvisad')
+  }
+
+  async function acceptRequest(formData: FormData) {
+    'use server'
+
+    const supabase = await createClient()
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      redirect('/login')
+    }
+
+    const id = String(formData.get('id') || '')
+    const ownEmail = (user.email ?? '').trim().toLowerCase()
+
+    if (!id || !ownEmail) {
+      redirect('/profile?message=Kunde inte acceptera förfrågan')
+    }
+
+    const { data: requestRaw } = await supabase
+      .from('friend_requests')
+      .select('*')
+      .eq('id', id)
+      .eq('recipient_email', ownEmail)
+      .eq('status', 'pending')
+      .single()
+
+    const request = requestRaw as FriendRequestRow | null
+
+    if (!request) {
+      redirect('/profile?message=Vänförfrågan hittades inte')
+    }
+
+    const requesterEmail = request.requester_email.trim().toLowerCase()
+
+    const { data: existingForward } = await supabase
+      .from('friends')
+      .select('id')
+      .eq('user_id', request.requester_id)
+      .eq('friend_email', ownEmail)
+      .maybeSingle()
+
+    const { data: existingReverse } = await supabase
+      .from('friends')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('friend_email', requesterEmail)
+      .maybeSingle()
+
+    const inserts: Array<{ user_id: string; friend_email: string }> = []
+
+    if (!existingForward) {
+      inserts.push({
+        user_id: request.requester_id,
+        friend_email: ownEmail,
+      })
+    }
+
+    if (!existingReverse) {
+      inserts.push({
+        user_id: user.id,
+        friend_email: requesterEmail,
+      })
+    }
+
+    if (inserts.length > 0) {
+      const { error: insertError } = await supabase.from('friends').insert(inserts)
+
+      if (insertError) {
+        redirect('/profile?message=Kunde inte skapa vänrelationen')
+      }
+    }
+
+    await supabase
+      .from('friend_requests')
+      .update({
+        status: 'accepted',
+        responded_at: new Date().toISOString(),
+      })
+      .eq('id', request.id)
+      .eq('status', 'pending')
+
+    redirect('/profile?message=Vän tillagd 🎉')
   }
 
   async function removeFriend(formData: FormData) {
     'use server'
 
     const supabase = await createClient()
-    const id = String(formData.get('id'))
 
-    await supabase.from('friends').delete().eq('id', id)
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-    redirect('/profile')
+    if (!user) {
+      redirect('/login')
+    }
+
+    const friendEmail = String(formData.get('friend_email') || '').trim().toLowerCase()
+    const ownEmail = (user.email ?? '').trim().toLowerCase()
+
+    if (!friendEmail || !ownEmail) {
+      redirect('/profile?message=Kunde inte ta bort vän')
+    }
+
+    await supabase
+      .from('friends')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('friend_email', friendEmail)
+
+    await supabase
+      .from('friends')
+      .delete()
+      .eq('friend_email', ownEmail)
+      .eq('user_id', (
+        await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', friendEmail)
+          .maybeSingle()
+      ).data?.id ?? '')
+
+    redirect('/profile?message=Vän borttagen')
   }
 
   return (
@@ -122,11 +408,78 @@ export default async function ProfilePage({
           box-shadow: 0 8px 22px rgba(15, 23, 42, 0.03);
         }
 
+        .friend-row-actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+
         .friend-add-form {
           display: grid;
           grid-template-columns: 1fr auto;
           gap: 10px;
           width: 100%;
+        }
+
+        .section-stack {
+          display: grid;
+          gap: 18px;
+        }
+
+        .section-title {
+          margin: 0;
+          font-size: 24px;
+          line-height: 1.1;
+          color: #20352a;
+        }
+
+        .sub-card {
+          display: grid;
+          gap: 12px;
+          padding: 14px;
+          border: 1px solid #e5e7eb;
+          border-radius: 18px;
+          background: linear-gradient(180deg, #ffffff 0%, #fafcfb 100%);
+        }
+
+        .sub-card-title {
+          margin: 0;
+          font-size: 18px;
+          line-height: 1.2;
+          color: #1f3327;
+        }
+
+        .empty-box {
+          border: 1px dashed #d1d5db;
+          border-radius: 16px;
+          padding: 16px;
+          background: linear-gradient(180deg, #fbfdfb 0%, #f8faf9 100%);
+        }
+
+        .btn-danger {
+          background: linear-gradient(180deg, #fff5f5 0%, #fef2f2 100%);
+          color: #991b1b;
+          border: 1px solid #fecaca;
+          border-radius: 12px;
+          padding: 9px 12px;
+          cursor: pointer;
+          font-weight: 800;
+          white-space: nowrap;
+          min-height: 42px;
+        }
+
+        .btn-success {
+          background: linear-gradient(135deg, #166534 0%, #22c55e 100%);
+          color: #fff;
+          border: none;
+          border-radius: 12px;
+          padding: 9px 12px;
+          cursor: pointer;
+          font-weight: 800;
+          white-space: nowrap;
+          min-height: 42px;
+          box-shadow: 0 10px 24px rgba(34, 197, 94, 0.18);
         }
 
         @media (max-width: 860px) {
@@ -143,6 +496,18 @@ export default async function ProfilePage({
           .friend-row {
             flex-direction: column;
             align-items: stretch;
+          }
+
+          .friend-row-actions {
+            justify-content: stretch;
+          }
+
+          .friend-row-actions form {
+            width: 100%;
+          }
+
+          .friend-row-actions button {
+            width: 100%;
           }
         }
       `}</style>
@@ -254,16 +619,7 @@ export default async function ProfilePage({
             >
               <div style={{ display: 'grid', gap: 16 }}>
                 <div>
-                  <h2
-                    style={{
-                      margin: 0,
-                      fontSize: 24,
-                      lineHeight: 1.1,
-                      color: '#20352a',
-                    }}
-                  >
-                    Profiluppgifter
-                  </h2>
+                  <h2 className="section-title">Profiluppgifter</h2>
 
                   <p className="muted" style={{ margin: '8px 0 0 0', lineHeight: 1.55 }}>
                     Uppdatera dina standardinställningar för namn, handicap och tee.
@@ -385,107 +741,171 @@ export default async function ProfilePage({
                 padding: 20,
               }}
             >
-              <div style={{ display: 'grid', gap: 16 }}>
+              <div className="section-stack">
                 <div>
-                  <h2
-                    style={{
-                      margin: 0,
-                      fontSize: 24,
-                      lineHeight: 1.1,
-                      color: '#20352a',
-                    }}
-                  >
-                    Mina vänner
-                  </h2>
+                  <h2 className="section-title">Mina vänner</h2>
 
                   <p className="muted" style={{ margin: '8px 0 0 0', lineHeight: 1.55 }}>
-                    Lägg till vänner för att snabbt kunna välja dem när du startar en
-                    runda.
+                    Lägg till vänner, följ förfrågningar och acceptera nya kontakter
+                    direkt i appen.
                   </p>
                 </div>
 
-                <form action={addFriend} className="friend-add-form">
-                  <input
-                    name="email"
-                    type="email"
-                    placeholder="Skriv e-postadress"
-                    required
-                    style={{
-                      width: '100%',
-                      minHeight: 54,
-                      padding: '0 16px',
-                      borderRadius: 16,
-                      border: '1px solid #d1d5db',
-                      fontSize: 16,
-                      boxSizing: 'border-box',
-                      background: '#fff',
-                    }}
-                  />
+                <div className="sub-card">
+                  <h3 className="sub-card-title">Lägg till vän</h3>
 
-                  <button
-                    type="submit"
-                    className="button"
-                    style={{
-                      minHeight: 54,
-                      fontWeight: 900,
-                      borderRadius: 16,
-                      minWidth: 140,
-                      background: 'linear-gradient(135deg, #1f6f32 0%, #2f7f37 100%)',
-                      boxShadow: '0 12px 28px rgba(31, 111, 50, 0.16)',
-                    }}
-                  >
-                    Lägg till
-                  </button>
-                </form>
-
-                <div style={{ display: 'grid', gap: 10 }}>
-                  {friends && friends.length > 0 ? (
-                    friends.map((friend) => (
-                      <div key={friend.id} className="friend-row">
-                        <div
-                          style={{
-                            fontWeight: 700,
-                            wordBreak: 'break-word',
-                            color: '#1f3327',
-                            lineHeight: 1.45,
-                          }}
-                        >
-                          👤 {friend.friend_email}
-                        </div>
-
-                        <form action={removeFriend}>
-                          <input type="hidden" name="id" value={friend.id} />
-                          <button
-                            type="submit"
-                            style={{
-                              background: 'linear-gradient(180deg, #fff5f5 0%, #fef2f2 100%)',
-                              color: '#991b1b',
-                              border: '1px solid #fecaca',
-                              borderRadius: 12,
-                              padding: '9px 12px',
-                              cursor: 'pointer',
-                              fontWeight: 800,
-                              whiteSpace: 'nowrap',
-                              minHeight: 42,
-                            }}
-                          >
-                            Ta bort
-                          </button>
-                        </form>
-                      </div>
-                    ))
-                  ) : (
-                    <div
+                  <form action={addFriend} className="friend-add-form">
+                    <input
+                      name="email"
+                      type="email"
+                      placeholder="Skriv e-postadress"
+                      required
                       style={{
-                        border: '1px dashed #d1d5db',
+                        width: '100%',
+                        minHeight: 54,
+                        padding: '0 16px',
                         borderRadius: 16,
-                        padding: 16,
-                        background: 'linear-gradient(180deg, #fbfdfb 0%, #f8faf9 100%)',
+                        border: '1px solid #d1d5db',
+                        fontSize: 16,
+                        boxSizing: 'border-box',
+                        background: '#fff',
+                      }}
+                    />
+
+                    <button
+                      type="submit"
+                      className="button"
+                      style={{
+                        minHeight: 54,
+                        fontWeight: 900,
+                        borderRadius: 16,
+                        minWidth: 140,
+                        background: 'linear-gradient(135deg, #1f6f32 0%, #2f7f37 100%)',
+                        boxShadow: '0 12px 28px rgba(31, 111, 50, 0.16)',
                       }}
                     >
-                      <div className="muted">Inga vänner tillagda ännu.</div>
-                    </div>
-                  )}
+                      Lägg till
+                    </button>
+                  </form>
+                </div>
+
+                <div className="sub-card">
+                  <h3 className="sub-card-title">Inkommande förfrågningar</h3>
+
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    {incomingRequests.length > 0 ? (
+                      incomingRequests.map((request) => (
+                        <div key={request.id} className="friend-row">
+                          <div
+                            style={{
+                              fontWeight: 700,
+                              wordBreak: 'break-word',
+                              color: '#1f3327',
+                              lineHeight: 1.45,
+                            }}
+                          >
+                            📨 {request.requester_email}
+                          </div>
+
+                          <div className="friend-row-actions">
+                            <form action={acceptRequest}>
+                              <input type="hidden" name="id" value={request.id} />
+                              <button type="submit" className="btn-success">
+                                Acceptera
+                              </button>
+                            </form>
+
+                            <form action={declineRequest}>
+                              <input type="hidden" name="id" value={request.id} />
+                              <button type="submit" className="btn-danger">
+                                Avvisa
+                              </button>
+                            </form>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="empty-box">
+                        <div className="muted">Du har inga inkommande vänförfrågningar.</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="sub-card">
+                  <h3 className="sub-card-title">Skickade förfrågningar</h3>
+
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    {outgoingRequests.length > 0 ? (
+                      outgoingRequests.map((request) => (
+                        <div key={request.id} className="friend-row">
+                          <div
+                            style={{
+                              fontWeight: 700,
+                              wordBreak: 'break-word',
+                              color: '#1f3327',
+                              lineHeight: 1.45,
+                            }}
+                          >
+                            ⏳ {request.recipient_email}
+                          </div>
+
+                          <div className="friend-row-actions">
+                            <form action={cancelRequest}>
+                              <input type="hidden" name="id" value={request.id} />
+                              <button type="submit" className="btn-danger">
+                                Ta bort
+                              </button>
+                            </form>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="empty-box">
+                        <div className="muted">Du har inga väntande vänförfrågningar.</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="sub-card">
+                  <h3 className="sub-card-title">Vänner</h3>
+
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    {friends.length > 0 ? (
+                      friends.map((friend) => (
+                        <div key={friend.id} className="friend-row">
+                          <div
+                            style={{
+                              fontWeight: 700,
+                              wordBreak: 'break-word',
+                              color: '#1f3327',
+                              lineHeight: 1.45,
+                            }}
+                          >
+                            👤 {friend.friend_email}
+                          </div>
+
+                          <div className="friend-row-actions">
+                            <form action={removeFriend}>
+                              <input
+                                type="hidden"
+                                name="friend_email"
+                                value={friend.friend_email}
+                              />
+                              <button type="submit" className="btn-danger">
+                                Ta bort
+                              </button>
+                            </form>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="empty-box">
+                        <div className="muted">Inga vänner tillagda ännu.</div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
