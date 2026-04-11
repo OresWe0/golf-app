@@ -1,13 +1,5 @@
 import { Resend } from 'resend'
 
-const resendApiKey = process.env.RESEND_API_KEY
-
-if (!resendApiKey) {
-  throw new Error('RESEND_API_KEY saknas i .env.local')
-}
-
-const resend = new Resend(resendApiKey)
-
 export async function sendFriendRequestEmail({
   to,
   requesterName,
@@ -17,6 +9,14 @@ export async function sendFriendRequestEmail({
   requesterName: string
   acceptUrl: string
 }) {
+  const resendApiKey = process.env.RESEND_API_KEY
+
+  if (!resendApiKey) {
+    throw new Error('RESEND_API_KEY saknas i miljövariablerna')
+  }
+
+  const resend = new Resend(resendApiKey)
+
   await resend.emails.send({
     from: 'Golfappen <noreply@yourdomain.com>',
     to,
@@ -31,7 +31,7 @@ export async function sendFriendRequestEmail({
             href="${acceptUrl}"
             style="
               display: inline-block;
-              background: linear-gradient(135deg, #166534 0%, #22c55e 100%);
+              background: #16a34a;
               color: #ffffff;
               text-decoration: none;
               padding: 12px 18px;
