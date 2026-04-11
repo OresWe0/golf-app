@@ -18,7 +18,7 @@ export async function sendFriendRequestEmail({
   const resend = new Resend(resendApiKey)
 
   await resend.emails.send({
-    from: 'Golfappen <noreply@yourdomain.com>',
+    from: 'Golfappen <onboarding@resend.dev>',
     to,
     subject: `${requesterName} har lagt till dig som vän`,
     html: `

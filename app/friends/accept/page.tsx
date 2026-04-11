@@ -1,188 +1,33 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
-type FriendRequestRow = {
-  id: string
-  requester_id: string
-  requester_email: string
-  recipient_email: string
-  token: string
-  status: 'pending' | 'accepted' | 'declined'
-}
-
-type AcceptPageProps = {
+type AcceptedPageProps = {
   searchParams: Promise<{
-    token?: string
-    error?: string
-    success?: string
+    email?: string
   }>
 }
 
-export default async function AcceptPage({ searchParams }: AcceptPageProps) {
+export default async function AcceptedPage({ searchParams }: AcceptedPageProps) {
   const params = await searchParams
-  const token = params.token?.trim()
-  const errorMessage =
-    typeof params.error === 'string' && params.error.trim()
-      ? params.error.trim()
-      : null
-  const success = params.success === '1'
+  const rawEmail = params.email
 
-  if (!token) {
-    redirect('/dashboard')
-  }
-
-  const safeToken: string = token
   const supabase = await createClient()
 
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // 🔐 Säkerställ att man är inloggad
   if (!user) {
     redirect('/login')
   }
 
-  const currentUserEmail = (user.email ?? '').trim().toLowerCase()
-
-  if (!currentUserEmail) {
-    redirect('/profile?message=Kunde inte läsa din e-postadress')
-  }
-
-  const { data: requestRaw, error: requestError } = await supabase
-    .from('friend_requests')
-    .select('id, requester_id, requester_email, recipient_email, token, status')
-    .eq('token', safeToken)
-    .maybeSingle()
-
-  if (requestError) {
-    console.error('AcceptPage request fetch failed:', requestError)
-  }
-
-  const request = requestRaw as FriendRequestRow | null
-
-  if (!request) {
-    return (
-      <main style={{ padding: 24 }}>
-        <div className="container" style={{ maxWidth: 680 }}>
-          <div className="card">
-            <h1>Vänförfrågan hittades inte</h1>
-            <p className="muted">Länken verkar vara ogiltig eller redan använd.</p>
-            <Link href="/profile" className="button secondary">
-              Till profil
-            </Link>
-          </div>
-        </div>
-      </main>
-    )
-  }
-
-  if (currentUserEmail !== request.recipient_email.trim().toLowerCase()) {
-    return (
-      <main style={{ padding: 24 }}>
-        <div className="container" style={{ maxWidth: 680 }}>
-          <div className="card">
-            <h1>Fel användare</h1>
-            <p className="muted">Den här förfrågan tillhör en annan användare.</p>
-            <Link href="/profile" className="button secondary">
-              Till profil
-            </Link>
-          </div>
-        </div>
-      </main>
-    )
-  }
-
-  const safeRequest: FriendRequestRow = request
-  const requesterEmail = safeRequest.requester_email.trim().toLowerCase()
-
-  async function acceptRequestAction() {
-    'use server'
-
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      redirect('/login')
-    }
-
-    const { error } = await supabase.rpc('accept_friend_request', {
-      request_id_input: safeRequest.id,
-    })
-
-    if (error) {
-      console.error('accept_friend_request rpc failed:', error)
-
-      redirect(
-        `/friends/accept?token=${encodeURIComponent(safeToken)}&error=${encodeURIComponent(
-          'Kunde inte acceptera vänförfrågan'
-        )}`
-      )
-    }
-
-    revalidatePath('/profile')
-    revalidatePath('/dashboard')
-    revalidatePath('/friends/accept')
-
-    redirect(`/friends/accept?token=${encodeURIComponent(safeToken)}&success=1`)
-  }
-
-  if (safeRequest.status === 'accepted' || success) {
-    return (
-      <main style={{ padding: 24 }}>
-        <div className="container" style={{ maxWidth: 680 }}>
-          <div
-            className="card"
-            style={{
-              display: 'grid',
-              gap: 14,
-              borderRadius: 24,
-              border: '1px solid #bbf7d0',
-              background: 'linear-gradient(180deg, #f0fdf4 0%, #ecfdf3 100%)',
-            }}
-          >
-            <span className="badge">🎉 Klar</span>
-
-            <h1 style={{ margin: 0 }}>Vänförfrågan accepterad</h1>
-
-            <p className="muted" style={{ margin: 0 }}>
-              Du är nu vän med <strong>{requesterEmail}</strong>.
-            </p>
-
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <Link href="/profile" className="button">
-                Till profil
-              </Link>
-
-              <Link href="/dashboard" className="button secondary">
-                Till dashboard
-              </Link>
-            </div>
-          </div>
-        </div>
-      </main>
-    )
-  }
-
-  if (safeRequest.status !== 'pending') {
-    return (
-      <main style={{ padding: 24 }}>
-        <div className="container" style={{ maxWidth: 680 }}>
-          <div className="card">
-            <h1>Vänförfrågan är redan hanterad</h1>
-            <p className="muted">Den här förfrågan har redan accepterats eller avböjts.</p>
-            <Link href="/profile" className="button secondary">
-              Till profil
-            </Link>
-          </div>
-        </div>
-      </main>
-    )
-  }
+  // 🧼 Rensa input snyggt
+  const safeEmail =
+    typeof rawEmail === 'string' && rawEmail.trim().length > 0
+      ? rawEmail.trim().toLowerCase()
+      : null
 
   return (
     <main style={{ padding: 24 }}>
@@ -191,44 +36,65 @@ export default async function AcceptPage({ searchParams }: AcceptPageProps) {
           className="card"
           style={{
             display: 'grid',
-            gap: 14,
+            gap: 16,
             borderRadius: 24,
-            border: '1px solid #e5e7eb',
+            border: '1px solid #bbf7d0',
+            background: 'linear-gradient(180deg, #f0fdf4 0%, #ecfdf3 100%)',
+            boxShadow: '0 16px 40px rgba(34, 197, 94, 0.12)',
+            padding: 20,
           }}
         >
-          <span className="badge">🤝 Vänförfrågan</span>
+          {/* Badge */}
+          <span
+            className="badge"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 12px',
+              borderRadius: 999,
+              background: '#dcfce7',
+              fontWeight: 800,
+              width: 'fit-content',
+            }}
+          >
+            🎉 Klar
+          </span>
 
-          <h1 style={{ margin: 0 }}>Acceptera vänförfrågan</h1>
+          {/* Titel */}
+          <h1 style={{ margin: 0 }}>Vänförfrågan accepterad</h1>
 
-          <p className="muted" style={{ margin: 0 }}>
-            <strong>{requesterEmail}</strong> vill bli vän med dig.
+          {/* Text */}
+          <p className="muted" style={{ margin: 0, lineHeight: 1.6 }}>
+            {safeEmail ? (
+              <>
+                Du är nu vän med <strong>{safeEmail}</strong>.
+              </>
+            ) : (
+              <>Vänförfrågan har accepterats.</>
+            )}
           </p>
 
-          {errorMessage ? (
-            <div
-              style={{
-                padding: 12,
-                borderRadius: 12,
-                background: '#fef2f2',
-                border: '1px solid #fecaca',
-              }}
-            >
-              <strong>Något gick fel</strong>
-              <div className="muted" style={{ marginTop: 6 }}>
-                {errorMessage}
-              </div>
-            </div>
-          ) : null}
+          {/* Extra info (liten UX touch) */}
+          <p
+            className="muted"
+            style={{
+              margin: 0,
+              fontSize: 14,
+              opacity: 0.8,
+            }}
+          >
+            Ni kan nu dela rundor och jämföra resultat i appen.
+          </p>
 
+          {/* Knappar */}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <form action={acceptRequestAction}>
-              <button type="submit" className="button">
-                Acceptera
-              </button>
-            </form>
+            <Link href="/profile" className="button">
+              Till profil
+            </Link>
 
-            <Link href="/profile" className="button secondary">
-              Avbryt
+            <Link href="/dashboard" className="button secondary">
+              Till dashboard
             </Link>
           </div>
         </div>
