@@ -3,9 +3,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || 'https://golf-app-hk79.onrender.com'
-
 export async function signIn(formData: FormData) {
   const email = String(formData.get('email') || '')
   const password = String(formData.get('password') || '')
@@ -24,7 +21,7 @@ export async function signIn(formData: FormData) {
 }
 
 export async function signUp(formData: FormData) {
-  const email = String(formData.get('email') || '')
+  const email = String(formData.get('email') || '').trim()
   const password = String(formData.get('password') || '')
   const displayName = String(formData.get('displayName') || '').trim()
   const handicapIndex = String(formData.get('handicapIndex') || '').trim()
@@ -37,7 +34,6 @@ export async function signUp(formData: FormData) {
     email,
     password,
     options: {
-      emailRedirectTo: `${SITE_URL}/auth/callback`,
       data: {
         display_name: displayName || email.split('@')[0] || 'Golfspelare',
         handicap_index: handicapIndex ? Number(handicapIndex) : null,
@@ -91,8 +87,5 @@ export async function updateProfile(formData: FormData) {
     redirect(`/profile?message=${encodeURIComponent(error.message)}`)
   }
 
-  redirect(
-    '/profile?message=' +
-      encodeURIComponent('Profil sparad')
-  )
+  redirect('/profile?message=' + encodeURIComponent('Profil sparad'))
 }
