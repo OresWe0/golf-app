@@ -1,17 +1,37 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import AcceptButton from './AcceptButton'
 
-type AcceptedPageProps = {
+type FriendRequestRow = {
+  id: string
+  requester_id: string
+  requester_email: string
+  recipient_email: string
+  token: string
+  status: 'pending' | 'accepted' | 'declined'
+}
+
+type AcceptPageProps = {
   searchParams: Promise<{
-    email?: string
+    token?: string
+    error?: string
   }>
 }
 
-export default async function AcceptedPage({ searchParams }: AcceptedPageProps) {
+export default async function AcceptPage({ searchParams }: AcceptPageProps) {
   const params = await searchParams
-  const rawEmail = params.email
+  const token = params.token?.trim()
+  const errorMessage =
+    typeof params.error === 'string' && params.error.trim()
+      ? params.error.trim()
+      : null
 
+  if (!token) {
+    redirect('/dashboard')
+  }
+
+  const safeToken = token
   const supabase = await createClient()
 
   const {
@@ -22,10 +42,77 @@ export default async function AcceptedPage({ searchParams }: AcceptedPageProps) 
     redirect('/login')
   }
 
-  const safeEmail =
-    typeof rawEmail === 'string' && rawEmail.trim().length > 0
-      ? rawEmail.trim().toLowerCase()
-      : 'din vän'
+  const currentUserEmail = (user.email ?? '').trim().toLowerCase()
+
+  if (!currentUserEmail) {
+    redirect('/profile?message=Kunde inte läsa din e-postadress')
+  }
+
+  const { data: requestRaw, error: requestError } = await supabase
+    .from('friend_requests')
+    .select('id, requester_id, requester_email, recipient_email, token, status')
+    .eq('token', safeToken)
+    .maybeSingle()
+
+  if (requestError) {
+    console.error('AcceptPage request fetch failed:', requestError)
+  }
+
+  const request = requestRaw as FriendRequestRow | null
+
+  if (!request) {
+    return (
+      <main style={{ padding: 24 }}>
+        <div className="container" style={{ maxWidth: 680 }}>
+          <div className="card">
+            <h1>Vänförfrågan hittades inte</h1>
+            <p className="muted">Länken verkar vara ogiltig eller redan använd.</p>
+            <Link href="/profile" className="button secondary">
+              Till profil
+            </Link>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
+  if (currentUserEmail !== request.recipient_email.trim().toLowerCase()) {
+    return (
+      <main style={{ padding: 24 }}>
+        <div className="container" style={{ maxWidth: 680 }}>
+          <div className="card">
+            <h1>Fel användare</h1>
+            <p className="muted">Den här förfrågan tillhör en annan användare.</p>
+            <Link href="/profile" className="button secondary">
+              Till profil
+            </Link>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
+  const requesterEmail = request.requester_email.trim().toLowerCase()
+
+  if (request.status === 'accepted') {
+    redirect(`/friends/accepted?email=${encodeURIComponent(requesterEmail)}`)
+  }
+
+  if (request.status !== 'pending') {
+    return (
+      <main style={{ padding: 24 }}>
+        <div className="container" style={{ maxWidth: 680 }}>
+          <div className="card">
+            <h1>Vänförfrågan är redan hanterad</h1>
+            <p className="muted">Den här förfrågan har redan accepterats eller avböjts.</p>
+            <Link href="/profile" className="button secondary">
+              Till profil
+            </Link>
+          </div>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main style={{ padding: 24 }}>
@@ -34,28 +121,40 @@ export default async function AcceptedPage({ searchParams }: AcceptedPageProps) 
           className="card"
           style={{
             display: 'grid',
-            gap: 16,
+            gap: 14,
             borderRadius: 24,
-            border: '1px solid #bbf7d0',
-            background: 'linear-gradient(180deg, #f0fdf4 0%, #ecfdf3 100%)',
-            padding: 20,
+            border: '1px solid #e5e7eb',
           }}
         >
-          <span className="badge">🎉 Klar</span>
+          <span className="badge">🤝 Vänförfrågan</span>
 
-          <h1 style={{ margin: 0 }}>Vänförfrågan accepterad</h1>
+          <h1 style={{ margin: 0 }}>Acceptera vänförfrågan</h1>
 
           <p className="muted" style={{ margin: 0 }}>
-            Du är nu vän med <strong>{safeEmail}</strong>.
+            <strong>{requesterEmail}</strong> vill bli vän med dig.
           </p>
 
-          <div style={{ display: 'flex', gap: 10 }}>
-            <Link href="/profile" className="button">
-              Till profil
-            </Link>
+          {errorMessage ? (
+            <div
+              style={{
+                padding: 12,
+                borderRadius: 12,
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+              }}
+            >
+              <strong>Något gick fel</strong>
+              <div className="muted" style={{ marginTop: 6 }}>
+                {errorMessage}
+              </div>
+            </div>
+          ) : null}
 
-            <Link href="/dashboard" className="button secondary">
-              Till dashboard
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <AcceptButton token={safeToken} />
+
+            <Link href="/profile" className="button secondary">
+              Avbryt
             </Link>
           </div>
         </div>
