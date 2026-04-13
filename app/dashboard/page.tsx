@@ -565,8 +565,10 @@ function DashboardHeader({
 
 function NotificationsSection({
   notifications,
+  actorProfiles,
 }: {
   notifications: NotificationRow[]
+  actorProfiles: Profile[]
 }) {
   if (notifications.length === 0) return null
 
@@ -580,7 +582,10 @@ function NotificationsSection({
       />
 
       <div style={{ display: 'grid', gap: 10 }}>
-        {notifications.map((notification) => (
+        {notifications.map((notification) => {
+  const actorName = getNotificationActorName(notification, actorProfiles)
+
+  return (
           <div
             key={notification.id}
             style={{
@@ -591,8 +596,10 @@ function NotificationsSection({
             }}
           >
             <div style={{ fontWeight: 800, color: '#1f3327' }}>
-              {notification.type === 'like' ? '👍' : '💬'} {notification.title}
-            </div>
+  {notification.type === 'like'
+    ? `👍 ${actorName} gillade ditt event`
+    : `💬 ${actorName} kommenterade: ${notification.title.replace('Ny kommentar: ', '')}`}
+</div>
             <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
               {formatFeedEventTime(notification.created_at)}
             </div>
@@ -764,11 +771,26 @@ function SectionHeader({
   )
 }
 
+function getNotificationActorName(
+  notification: NotificationRow,
+  profiles: Profile[]
+) {
+  const actor = profiles.find(
+    (p) => p.id === notification.actor_user_id
+  )
+
+  if (actor?.display_name?.trim()) {
+    return actor.display_name.trim()
+  }
+
+  return 'Någon'
+}
+
 function getCommentAuthorName(
   comment: FeedEventCommentRow,
   roundPlayers: RoundPlayer[]
 ) {
-  const matchingUser = roundPlayers.find(
+ const matchingUser = roundPlayers.find(
     (item) =>
       item.user_id === comment.user_id &&
       typeof item.display_name === 'string' &&
@@ -1409,7 +1431,20 @@ export default async function DashboardPage({
   const allHoleScores = (holeScores as HoleScore[] | null) ?? []
   const allRoundPlayers = (roundPlayers as RoundPlayer[] | null) ?? []
   const notifications = (notificationsData as NotificationRow[] | null) ?? []
+const actorUserIds = notifications
+  .map((n) => n.actor_user_id)
+  .filter((id): id is string => typeof id === 'string')
 
+let actorProfiles: Profile[] = []
+
+if (actorUserIds.length > 0) {
+  const { data } = await supabase
+    .from('profiles')
+    .select('id, display_name')
+    .in('id', actorUserIds)
+
+  actorProfiles = data ?? []
+}
   const friendEmails = ((friendsData as FriendRow[] | null) ?? [])
     .map((friend) => friend.friend_email)
     .filter((email): email is string => typeof email === 'string')
@@ -1644,7 +1679,10 @@ export default async function DashboardPage({
             incomingFriendRequestsCount={incomingFriendRequestsCount}
           />
 
-          <NotificationsSection notifications={notifications} />
+          <NotificationsSection
+  notifications={notifications}
+  actorProfiles={actorProfiles}
+/>
 
           {isAdmin ? <AdminPendingBanner pendingCount={pendingCount} /> : null}
 
