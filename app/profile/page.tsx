@@ -261,13 +261,13 @@ export default async function ProfilePage({
     } = await supabase.auth.getUser()
 
     if (!user) {
-      redirect('/login')
+      return
     }
 
     const id = String(formData.get('id') || '')
 
     if (!id) {
-      redirect('/profile?message=Kunde inte acceptera förfrågan')
+      return
     }
 
     const { error } = await supabase.rpc('accept_friend_request', {
@@ -276,13 +276,11 @@ export default async function ProfilePage({
 
     if (error) {
       console.error('Profile acceptRequest rpc failed:', error)
-      redirect('/profile?message=Kunde inte acceptera vänförfrågan')
+      return
     }
 
     revalidatePath('/profile')
     revalidatePath('/dashboard')
-    
-    redirect('/profile?message=Vän tillagd 🎉')
   }
 
   async function removeFriend(formData: FormData) {
