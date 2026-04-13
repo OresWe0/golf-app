@@ -1,0 +1,47 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { createClient } from '@/lib/supabase/server'
+
+export async function likeFeedEvent(formData: FormData) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return
+
+  const feedEventId = formData.get('feedEventId')
+
+  if (typeof feedEventId !== 'string' || !feedEventId) return
+
+  await supabase.from('feed_event_likes').insert({
+    feed_event_id: feedEventId,
+    user_id: user.id,
+  })
+
+  revalidatePath('/dashboard')
+}
+
+export async function unlikeFeedEvent(formData: FormData) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return
+
+  const feedEventId = formData.get('feedEventId')
+
+  if (typeof feedEventId !== 'string' || !feedEventId) return
+
+  await supabase
+    .from('feed_event_likes')
+    .delete()
+    .eq('feed_event_id', feedEventId)
+    .eq('user_id', user.id)
+
+  revalidatePath('/dashboard')
+}

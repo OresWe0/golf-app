@@ -1,3 +1,4 @@
+import { likeFeedEvent, unlikeFeedEvent } from './actions'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -54,6 +55,11 @@ type FeedEvent = {
   event_type: 'birdie' | 'eagle' | 'hole_in_one'
   hole_number: number
   created_at: string
+}
+type FeedEventLikeRow = {
+  id: string
+  feed_event_id: string
+  user_id: string
 }
 function getSingleParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value
@@ -119,7 +125,7 @@ function getPlayerNameForFeedEvent(
     return matchingUser.display_name.trim()
   }
 
-  return 'En spelare'
+  return 'Okänd spelare'
 }
 
 function formatFeedEventTime(value: string) {
@@ -698,10 +704,14 @@ function FeedEventCard({
   event,
   playerName,
   courseName,
+  likesCount,
+  likedByMe,
 }: {
   event: FeedEvent
   playerName: string
   courseName: string
+  likesCount: number
+  likedByMe: boolean
 }) {
   const eventMeta =
     event.event_type === 'birdie'
@@ -734,6 +744,44 @@ function FeedEventCard({
 
       <div className="muted" style={{ fontSize: 13 }}>
         {timeLabel}
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          flexWrap: 'wrap',
+          marginTop: 4,
+        }}
+      >
+        <div className="muted" style={{ fontSize: 13 }}>
+          👍 {likesCount}
+        </div>
+
+        {likedByMe ? (
+          <form action={unlikeFeedEvent}>
+            <input type="hidden" name="feedEventId" value={event.id} />
+            <button
+              type="submit"
+              className="button secondary"
+              style={{ padding: '8px 12px', minWidth: 90 }}
+            >
+              Gillat
+            </button>
+          </form>
+        ) : (
+          <form action={likeFeedEvent}>
+            <input type="hidden" name="feedEventId" value={event.id} />
+            <button
+              type="submit"
+              className="button secondary"
+              style={{ padding: '8px 12px', minWidth: 90 }}
+            >
+              Gilla
+            </button>
+          </form>
+        )}
       </div>
     </div>
   )
@@ -1229,7 +1277,9 @@ const [
   const allRoundPlayers = (roundPlayers as RoundPlayer[] | null) ?? []
   const friendEmails =
   ((friendsData as FriendRow[] | null) ?? [])
-    .map((friend) => friend.friend_email?.trim().toLowerCase())
+    .map((friend) => friend.friend_email)
+.filter((email): email is string => typeof email === 'string')
+.map((email) => email.trim().toLowerCase())
     .filter((email): email is string => typeof email === 'string' && email.length > 0)
 
 let friendUserIds: string[] = []
@@ -1259,6 +1309,31 @@ if (feedEventsError) {
   console.error('Failed to load feed events:', feedEventsError)
 }
   const feedEvents = (feedEventsData as FeedEvent[] | null) ?? []
+
+let feedEventLikes: FeedEventLikeRow[] = []
+
+if (feedEvents.length > 0) {
+  const { data: feedEventLikesData, error: feedEventLikesError } = await supabase
+    .from('feed_event_likes')
+    .select('id, feed_event_id, user_id')
+    .in(
+      'feed_event_id',
+      feedEvents.map((event) => event.id)
+    )
+
+  if (feedEventLikesError) {
+    console.error('Failed to load feed event likes:', feedEventLikesError)
+  }
+
+  feedEventLikes = (feedEventLikesData as FeedEventLikeRow[] | null) ?? []
+}
+const likesByEventId = new Map<string, FeedEventLikeRow[]>()
+
+for (const like of feedEventLikes) {
+  const existing = likesByEventId.get(like.feed_event_id) ?? []
+  existing.push(like)
+  likesByEventId.set(like.feed_event_id, existing)
+}
   const membershipByRoundId = new Map(
     userMemberships.map((member) => [member.round_id, member.role] as const)
   )
@@ -1445,14 +1520,22 @@ if (feedEventsError) {
               />
             ) : (
               <div style={{ display: 'grid', gap: 10 }}>
-              {feedEvents.map((event) => (
-  <FeedEventCard
-    key={event.id}
-    event={event}
-    playerName={getPlayerNameForFeedEvent(event, allRoundPlayers)}
-    courseName={getCourseNameForFeedEvent(event, allRounds, allCourses)}
-  />
-))}
+              {feedEvents.map((event) => {
+  const likes = likesByEventId.get(event.id) ?? []
+  const likesCount = likes.length
+  const likedByMe = likes.some((like) => like.user_id === user.id)
+
+  return (
+    <FeedEventCard
+      key={event.id}
+      event={event}
+      playerName={getPlayerNameForFeedEvent(event, allRoundPlayers)}
+      courseName={getCourseNameForFeedEvent(event, allRounds, allCourses)}
+      likesCount={likesCount}
+      likedByMe={likedByMe}
+    />
+  )
+})}
               </div>
             )}
           </div>
