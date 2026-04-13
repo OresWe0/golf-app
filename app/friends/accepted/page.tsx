@@ -3,13 +3,13 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
 type AcceptedPageProps = {
-  searchParams: Promise<{
+  searchParams: {
     email?: string
-  }>
+  }
 }
 
 export default async function AcceptedPage({ searchParams }: AcceptedPageProps) {
-  const params = await searchParams
+  const params = searchParams
   const rawEmail = params.email
 
   const supabase = await createClient()
