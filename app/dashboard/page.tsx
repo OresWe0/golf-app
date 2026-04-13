@@ -19,6 +19,24 @@ type Membership = {
   role: 'owner' | 'player'
 }
 
+type FriendRequestRow = {
+  id: string
+  requester_email?: string
+  recipient_email?: string
+  status?: 'pending' | 'accepted' | 'declined'
+}
+
+type HoleScore = {
+  id: string
+  round_player_id: string
+  strokes?: number | null
+}
+
+type RoundPlayer = {
+  id: string
+  round_id: string
+}
+
 function getSingleParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value
 }
@@ -105,25 +123,27 @@ function SectionEmptyState({
   )
 }
 
-function StatCard({
+function HighlightCard({
   label,
   value,
+  sublabel,
   tone,
 }: {
   label: string
-  value: number
-  tone: 'neutral' | 'green' | 'purple' | 'slate'
+  value: string | number
+  sublabel?: string
+  tone: 'green' | 'blue' | 'purple' | 'slate'
 }) {
   const toneMap = {
-    neutral: {
-      background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
-      border: '#e5e7eb',
-      glow: 'rgba(15, 23, 42, 0.06)',
-    },
     green: {
       background: 'linear-gradient(180deg, #f6fff8 0%, #ecfdf3 100%)',
       border: '#ccefd7',
       glow: 'rgba(34, 197, 94, 0.10)',
+    },
+    blue: {
+      background: 'linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%)',
+      border: '#bfdbfe',
+      glow: 'rgba(59, 130, 246, 0.10)',
     },
     purple: {
       background: 'linear-gradient(180deg, #fbf7ff 0%, #f5f3ff 100%)',
@@ -148,13 +168,16 @@ function StatCard({
         background: palette.background,
         border: `1px solid ${palette.border}`,
         boxShadow: `0 14px 30px ${palette.glow}`,
+        minHeight: 116,
+        display: 'grid',
+        alignContent: 'space-between',
+        gap: 10,
       }}
     >
       <div
         className="muted"
         style={{
           fontSize: 13,
-          marginBottom: 8,
           display: 'flex',
           alignItems: 'center',
           gap: 6,
@@ -162,9 +185,73 @@ function StatCard({
       >
         {label}
       </div>
-      <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1, color: '#1f3327' }}>
+
+      <div
+        style={{
+          fontSize: 'clamp(1.6rem, 4vw, 2.2rem)',
+          fontWeight: 900,
+          lineHeight: 1.05,
+          color: '#1f3327',
+          wordBreak: 'break-word',
+        }}
+      >
         {value}
       </div>
+
+      {sublabel ? (
+        <div className="muted" style={{ fontSize: 13, lineHeight: 1.4 }}>
+          {sublabel}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function FriendRequestNotice({
+  incomingFriendRequestsCount,
+}: {
+  incomingFriendRequestsCount: number
+}) {
+  if (incomingFriendRequestsCount <= 0) return null
+
+  return (
+    <div
+      style={{
+        border: '1px solid #fde68a',
+        background: 'linear-gradient(180deg, #fffbeb 0%, #fefce8 100%)',
+        borderRadius: 20,
+        padding: 14,
+        display: 'flex',
+        justifyContent: 'space-between',
+        gap: 14,
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        boxShadow: '0 12px 28px rgba(245, 158, 11, 0.08)',
+      }}
+    >
+      <div>
+        <div style={{ fontWeight: 900, marginBottom: 4, color: '#1f3327' }}>
+          📨 Ny vänförfrågan
+        </div>
+        <div className="muted" style={{ color: '#7c5a12' }}>
+          Du har {incomingFriendRequestsCount} inkommande vänförfrågan
+          {incomingFriendRequestsCount > 1 ? 'ar' : ''} att hantera i Min profil.
+        </div>
+      </div>
+
+      <Link
+        href="/profile"
+        className="button secondary"
+        style={{
+          minWidth: 170,
+          textAlign: 'center',
+          boxSizing: 'border-box',
+          borderColor: '#eed38f',
+          background: '#fffef8',
+        }}
+      >
+        Öppna Min profil
+      </Link>
     </div>
   )
 }
@@ -173,10 +260,12 @@ function DashboardHeader({
   displayName,
   isAdmin,
   pendingCount,
+  incomingFriendRequestsCount,
 }: {
   displayName: string
   isAdmin: boolean
   pendingCount: number
+  incomingFriendRequestsCount: number
 }) {
   return (
     <div className="card" style={dashboardStyles.heroCard}>
@@ -284,13 +373,41 @@ function DashboardHeader({
               </Link>
             ) : null}
 
-            <Link
-              href="/profile"
-              className="button secondary"
-              style={dashboardStyles.softButton}
-            >
-              Min profil
-            </Link>
+            <div style={{ position: 'relative' }}>
+              <Link
+                href="/profile"
+                className="button secondary"
+                style={dashboardStyles.softButton}
+              >
+                Min profil
+              </Link>
+
+              {incomingFriendRequestsCount > 0 ? (
+                <span
+                  aria-label={`${incomingFriendRequestsCount} inkommande vänförfrågningar`}
+                  style={{
+                    position: 'absolute',
+                    top: -8,
+                    right: -8,
+                    minWidth: 24,
+                    height: 24,
+                    borderRadius: 999,
+                    background: '#dc2626',
+                    color: '#fff',
+                    fontSize: 12,
+                    fontWeight: 900,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 7px',
+                    boxShadow: '0 8px 18px rgba(220, 38, 38, 0.26)',
+                    border: '2px solid #fff',
+                  }}
+                >
+                  {incomingFriendRequestsCount}
+                </span>
+              ) : null}
+            </div>
 
             <form action={signOut}>
               <button
@@ -359,30 +476,53 @@ function AdminPendingBanner({
   )
 }
 
-function DashboardStats({
-  coursesCount,
-  activeRoundsCount,
-  playerRoundsCount,
-  completedRoundsCount,
+function DashboardHighlights({
+  bestRoundScore,
+  averageScore,
+  roundsThisYearCount,
+  latestCourseName,
 }: {
-  coursesCount: number
-  activeRoundsCount: number
-  playerRoundsCount: number
-  completedRoundsCount: number
+  bestRoundScore: number | null
+  averageScore: number | null
+  roundsThisYearCount: number
+  latestCourseName: string
 }) {
   return (
     <div
       className="dashboard-stats-grid"
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
         gap: 12,
       }}
     >
-      <StatCard label="⛳ Banor" value={coursesCount} tone="neutral" />
-      <StatCard label="🔥 Aktiva rundor" value={activeRoundsCount} tone="green" />
-      <StatCard label="👥 Delade rundor" value={playerRoundsCount} tone="purple" />
-      <StatCard label="🏁 Avslutade" value={completedRoundsCount} tone="slate" />
+      <HighlightCard
+        label="🏆 Bästa runda"
+        value={bestRoundScore !== null ? bestRoundScore : 'Ingen ännu'}
+        sublabel="Lägsta registrerade slag totalt"
+        tone="green"
+      />
+
+      <HighlightCard
+        label="📊 Snittscore"
+        value={averageScore !== null ? Math.round(averageScore) : '—'}
+        sublabel="Genomsnittligt antal slag"
+        tone="purple"
+      />
+
+      <HighlightCard
+        label="📅 Spelade rundor i år"
+        value={roundsThisYearCount}
+        sublabel="Avslutade rundor under innevarande år"
+        tone="blue"
+      />
+
+      <HighlightCard
+        label="📍 Senaste bana"
+        value={latestCourseName}
+        sublabel="Från din senast avslutade runda"
+        tone="slate"
+      />
     </div>
   )
 }
@@ -871,6 +1011,7 @@ export default async function DashboardPage({
     getSingleParam(resolvedSearchParams.showCompleted) === 'all'
 
   const isAdmin = user.email === ADMIN_EMAIL
+  const currentUserEmail = (user.email ?? '').trim().toLowerCase()
 
   const [
     { data: courses, error: coursesError },
@@ -878,6 +1019,9 @@ export default async function DashboardPage({
     { data: profile, error: profileError },
     { data: memberships, error: membershipsError },
     { data: pendingUsers, error: pendingUsersError },
+    { data: incomingFriendRequests, error: incomingFriendRequestsError },
+    { data: holeScores, error: holeScoresError },
+    { data: roundPlayers, error: roundPlayersError },
   ] = await Promise.all([
     supabase.from('courses').select('*').order('name'),
     supabase.from('rounds').select('*').order('created_at', { ascending: false }),
@@ -886,6 +1030,13 @@ export default async function DashboardPage({
     isAdmin
       ? supabase.from('profiles').select('id').eq('is_approved', false)
       : Promise.resolve({ data: [], error: null }),
+    supabase
+      .from('friend_requests')
+      .select('id')
+      .eq('recipient_email', currentUserEmail)
+      .eq('status', 'pending'),
+    supabase.from('hole_scores').select('*'),
+    supabase.from('round_players').select('*'),
   ])
 
   if (coursesError) console.error('Failed to load courses:', coursesError)
@@ -897,12 +1048,29 @@ export default async function DashboardPage({
   if (pendingUsersError) {
     console.error('Failed to load pending users:', pendingUsersError)
   }
+  if (incomingFriendRequestsError) {
+    console.error(
+      'Failed to load incoming friend requests:',
+      incomingFriendRequestsError
+    )
+  }
+  if (holeScoresError) {
+    console.error('Failed to load hole scores:', holeScoresError)
+  }
+  if (roundPlayersError) {
+    console.error('Failed to load round players:', roundPlayersError)
+  }
 
   const allCourses = (courses as Course[] | null) ?? []
   const allRounds = (rounds as Round[] | null) ?? []
   const userProfile = (profile as Profile | null) ?? null
   const userMemberships = (memberships as Membership[] | null) ?? []
   const pendingCount = pendingUsers?.length ?? 0
+  const incomingFriendRequestsCount =
+    (incomingFriendRequests as FriendRequestRow[] | null)?.length ?? 0
+
+  const allHoleScores = (holeScores as HoleScore[] | null) ?? []
+  const allRoundPlayers = (roundPlayers as RoundPlayer[] | null) ?? []
 
   const membershipByRoundId = new Map(
     userMemberships.map((member) => [member.round_id, member.role] as const)
@@ -912,11 +1080,64 @@ export default async function DashboardPage({
     userProfile?.display_name?.trim() || user.email || 'Golfspelare'
 
   const activeRounds = allRounds.filter((round) => round.status === 'active')
-  const completedRounds = allRounds.filter((round) => round.status !== 'active')
 
-  const playerRoundsCount = allRounds.filter(
-    (round) => membershipByRoundId.get(round.id) === 'player'
-  ).length
+  const completedRounds = allRounds.filter(
+    (round) => round.status === 'finished' || round.status === 'completed'
+  )
+
+  const currentYear = new Date().getFullYear()
+
+  const completedRoundsThisYear = completedRounds.filter((round) => {
+    const createdAt = (round as Round & { created_at?: string }).created_at
+    if (!createdAt) return false
+
+    const date = new Date(createdAt)
+    return !Number.isNaN(date.getTime()) && date.getFullYear() === currentYear
+  })
+
+  const roundsWithScores = completedRounds
+    .map((round) => {
+      const players = allRoundPlayers.filter((player) => player.round_id === round.id)
+
+      if (players.length === 0) return null
+
+      const player = players[0]
+
+      const scores = allHoleScores.filter(
+        (score) => score.round_player_id === player.id
+      )
+
+      const strokes = scores.reduce(
+        (sum, score) => sum + (score.strokes ?? 0),
+        0
+      )
+
+      return {
+        round,
+        strokes,
+      }
+    })
+    .filter((item): item is { round: Round; strokes: number } => item !== null)
+
+  const bestRound =
+    roundsWithScores.length > 0
+      ? roundsWithScores.reduce((best, current) =>
+          current.strokes < best.strokes ? current : best
+        )
+      : null
+
+  const averageScore =
+    roundsWithScores.length > 0
+      ? roundsWithScores.reduce((sum, item) => sum + item.strokes, 0) /
+        roundsWithScores.length
+      : null
+
+  const latestRound = completedRounds[0] ?? null
+
+  const latestCourseName = latestRound
+    ? allCourses.find((course) => course.id === latestRound.course_id)?.name ??
+      'Ingen ännu'
+    : 'Ingen ännu'
 
   return (
     <main style={{ width: '100%', overflowX: 'hidden' }}>
@@ -956,17 +1177,22 @@ export default async function DashboardPage({
             displayName={displayName}
             isAdmin={isAdmin}
             pendingCount={pendingCount}
+            incomingFriendRequestsCount={incomingFriendRequestsCount}
           />
 
           <InstallAppPrompt />
 
+          <FriendRequestNotice
+            incomingFriendRequestsCount={incomingFriendRequestsCount}
+          />
+
           {isAdmin ? <AdminPendingBanner pendingCount={pendingCount} /> : null}
 
-          <DashboardStats
-            coursesCount={allCourses.length}
-            activeRoundsCount={activeRounds.length}
-            playerRoundsCount={playerRoundsCount}
-            completedRoundsCount={completedRounds.length}
+          <DashboardHighlights
+            bestRoundScore={bestRound ? bestRound.strokes : null}
+            averageScore={averageScore}
+            roundsThisYearCount={completedRoundsThisYear.length}
+            latestCourseName={latestCourseName}
           />
         </div>
 
