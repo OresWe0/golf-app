@@ -56,11 +56,13 @@ type FeedEvent = {
   hole_number: number
   created_at: string
 }
+
 type FeedEventLikeRow = {
   id: string
   feed_event_id: string
   user_id: string
 }
+
 type FeedEventCommentRow = {
   id: string
   feed_event_id: string
@@ -68,6 +70,18 @@ type FeedEventCommentRow = {
   body: string
   created_at: string
 }
+
+type NotificationRow = {
+  id: string
+  user_id: string
+  actor_user_id: string | null
+  type: string
+  title: string
+  feed_event_id: string | null
+  is_read: boolean
+  created_at: string
+}
+
 function getSingleParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value
 }
@@ -109,6 +123,7 @@ function getFeedEventLabel(eventType: FeedEvent['event_type']) {
   if (eventType === 'eagle') return '🦅 Eagle'
   return '🎯 Hole-in-one'
 }
+
 function getPlayerNameForFeedEvent(
   event: FeedEvent,
   roundPlayers: RoundPlayer[]
@@ -235,7 +250,9 @@ function SectionEmptyState({
         background: 'linear-gradient(180deg, #fbfdfb 0%, #f8faf9 100%)',
       }}
     >
-      <div style={{ fontWeight: 800, marginBottom: 4, color: '#1f3327' }}>{title}</div>
+      <div style={{ fontWeight: 800, marginBottom: 4, color: '#1f3327' }}>
+        {title}
+      </div>
       <div className="muted">{description}</div>
     </div>
   )
@@ -546,6 +563,46 @@ function DashboardHeader({
   )
 }
 
+function NotificationsSection({
+  notifications,
+}: {
+  notifications: NotificationRow[]
+}) {
+  if (notifications.length === 0) return null
+
+  return (
+    <div className="card" style={dashboardStyles.sectionCard}>
+      <SectionHeader
+        title="Notiser"
+        description="Det senaste som hänt i ditt flöde."
+        count={notifications.length}
+        countTone="slate"
+      />
+
+      <div style={{ display: 'grid', gap: 10 }}>
+        {notifications.map((notification) => (
+          <div
+            key={notification.id}
+            style={{
+              border: '1px solid #e5e7eb',
+              borderRadius: 14,
+              padding: 12,
+              background: '#fafbfc',
+            }}
+          >
+            <div style={{ fontWeight: 800, color: '#1f3327' }}>
+              {notification.type === 'like' ? '👍' : '💬'} {notification.title}
+            </div>
+            <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+              {formatFeedEventTime(notification.created_at)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function AdminPendingBanner({
   pendingCount,
 }: {
@@ -706,6 +763,7 @@ function SectionHeader({
     </div>
   )
 }
+
 function getCommentAuthorName(
   comment: FeedEventCommentRow,
   roundPlayers: RoundPlayer[]
@@ -774,7 +832,6 @@ function FeedEventCard({
         {timeLabel}
       </div>
 
-      {/* 👍 LIKE BLOCK */}
       <div
         style={{
           display: 'flex',
@@ -805,7 +862,6 @@ function FeedEventCard({
         )}
       </div>
 
-      {/* 💬 COMMENT BLOCK */}
       <div style={{ display: 'grid', gap: 8 }}>
         <div className="muted" style={{ fontSize: 13 }}>
           💬 {comments.length}
@@ -824,9 +880,7 @@ function FeedEventCard({
           >
             {comments.map((comment) => (
               <div key={comment.id} style={{ fontSize: 14 }}>
-                <strong>
-                  {getCommentAuthorName(comment, roundPlayers)}:
-                </strong>{' '}
+                <strong>{getCommentAuthorName(comment, roundPlayers)}:</strong>{' '}
                 {comment.body}
               </div>
             ))}
@@ -849,6 +903,7 @@ function FeedEventCard({
     </div>
   )
 }
+
 function ActiveRoundCard({
   round,
   membershipRole,
@@ -958,7 +1013,9 @@ function ActiveRoundCard({
           <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
             Hål
           </div>
-          <div style={{ fontWeight: 900, color: '#1f3327' }}>{round.current_hole}</div>
+          <div style={{ fontWeight: 900, color: '#1f3327' }}>
+            {round.current_hole}
+          </div>
         </div>
       </div>
 
@@ -1273,36 +1330,46 @@ export default async function DashboardPage({
   const isAdmin = user.email === ADMIN_EMAIL
   const currentUserEmail = (user.email ?? '').trim().toLowerCase()
 
-const [
-  { data: courses, error: coursesError },
-  { data: rounds, error: roundsError },
-  { data: profile, error: profileError },
-  { data: memberships, error: membershipsError },
-  { data: pendingUsers, error: pendingUsersError },
-  { data: incomingFriendRequests, error: incomingFriendRequestsError },
-  { data: holeScores, error: holeScoresError },
-  { data: roundPlayers, error: roundPlayersError },
-  { data: friendsData, error: friendsError },
-] = await Promise.all([
-  supabase.from('courses').select('*').order('name'),
-  supabase.from('rounds').select('*').order('created_at', { ascending: false }),
-  supabase.from('profiles').select('*').eq('id', user.id).single(),
-  supabase.from('round_members').select('round_id, role').eq('user_id', user.id),
-  isAdmin
-    ? supabase.from('profiles').select('id').eq('is_approved', false)
-    : Promise.resolve({ data: [], error: null }),
-  supabase
-    .from('friend_requests')
-    .select('id')
-    .eq('recipient_email', currentUserEmail)
-    .eq('status', 'pending'),
-  supabase.from('hole_scores').select('*'),
-  supabase.from('round_players').select('*'),
-  supabase
-    .from('friends')
-    .select('friend_email')
-    .eq('user_id', user.id),
-])
+  const [
+    { data: courses, error: coursesError },
+    { data: rounds, error: roundsError },
+    { data: profile, error: profileError },
+    { data: memberships, error: membershipsError },
+    { data: pendingUsers, error: pendingUsersError },
+    { data: incomingFriendRequests, error: incomingFriendRequestsError },
+    { data: holeScores, error: holeScoresError },
+    { data: roundPlayers, error: roundPlayersError },
+    { data: friendsData, error: friendsError },
+    { data: notificationsData, error: notificationsError },
+  ] = await Promise.all([
+    supabase.from('courses').select('*').order('name'),
+    supabase.from('rounds').select('*').order('created_at', { ascending: false }),
+    supabase.from('profiles').select('*').eq('id', user.id).single(),
+    supabase.from('round_members').select('round_id, role').eq('user_id', user.id),
+    isAdmin
+      ? supabase.from('profiles').select('id').eq('is_approved', false)
+      : Promise.resolve({ data: [], error: null }),
+    supabase
+      .from('friend_requests')
+      .select('id')
+      .eq('recipient_email', currentUserEmail)
+      .eq('status', 'pending'),
+    supabase.from('hole_scores').select('*'),
+    supabase.from('round_players').select('*'),
+    supabase
+      .from('friends')
+      .select('friend_email')
+      .eq('user_id', user.id),
+    supabase
+      .from('notifications')
+      .select(
+        'id, user_id, actor_user_id, type, title, feed_event_id, is_read, created_at'
+      )
+      .eq('user_id', user.id)
+      .eq('is_read', false)
+      .order('created_at', { ascending: false })
+      .limit(10),
+  ])
 
   if (coursesError) console.error('Failed to load courses:', coursesError)
   if (roundsError) console.error('Failed to load rounds:', roundsError)
@@ -1326,8 +1393,11 @@ const [
     console.error('Failed to load round players:', roundPlayersError)
   }
   if (friendsError) {
-  console.error('Failed to load friends:', friendsError)
-}
+    console.error('Failed to load friends:', friendsError)
+  }
+  if (notificationsError) {
+    console.error('Failed to load notifications:', notificationsError)
+  }
 
   const allCourses = (courses as Course[] | null) ?? []
   const allRounds = (rounds as Round[] | null) ?? []
@@ -1338,91 +1408,106 @@ const [
     (incomingFriendRequests as FriendRequestRow[] | null)?.length ?? 0
   const allHoleScores = (holeScores as HoleScore[] | null) ?? []
   const allRoundPlayers = (roundPlayers as RoundPlayer[] | null) ?? []
-  const friendEmails =
-  ((friendsData as FriendRow[] | null) ?? [])
+  const notifications = (notificationsData as NotificationRow[] | null) ?? []
+
+  const friendEmails = ((friendsData as FriendRow[] | null) ?? [])
     .map((friend) => friend.friend_email)
-.filter((email): email is string => typeof email === 'string')
-.map((email) => email.trim().toLowerCase())
-    .filter((email): email is string => typeof email === 'string' && email.length > 0)
+    .filter((email): email is string => typeof email === 'string')
+    .map((email) => email.trim().toLowerCase())
+    .filter(
+      (email): email is string =>
+        typeof email === 'string' && email.length > 0
+    )
 
-let friendUserIds: string[] = []
+  let friendUserIds: string[] = []
 
-if (friendEmails.length > 0) {
-  const { data: friendProfiles, error: friendProfilesError } = await supabase
-    .from('profiles')
-    .select('id, email')
-    .in('email', friendEmails)
+  if (friendEmails.length > 0) {
+    const { data: friendProfiles, error: friendProfilesError } = await supabase
+      .from('profiles')
+      .select('id, email')
+      .in('email', friendEmails)
 
-  if (friendProfilesError) {
-    console.error('Failed to load friend profiles:', friendProfilesError)
+    if (friendProfilesError) {
+      console.error('Failed to load friend profiles:', friendProfilesError)
+    }
+
+    friendUserIds = (friendProfiles ?? []).map((profile) => profile.id)
   }
 
-  friendUserIds = (friendProfiles ?? []).map((profile) => profile.id)
-}
+  const visibleUserIds = Array.from(new Set([user.id, ...friendUserIds]))
 
-const visibleUserIds = Array.from(new Set([user.id, ...friendUserIds]))
-const { data: feedEventsData, error: feedEventsError } = await supabase
-  .from('feed_events')
-  .select('*')
-  .in('user_id', visibleUserIds)
-  .order('created_at', { ascending: false })
-  .limit(10)
+  const { data: feedEventsData, error: feedEventsError } = await supabase
+    .from('feed_events')
+    .select('*')
+    .in('user_id', visibleUserIds)
+    .order('created_at', { ascending: false })
+    .limit(10)
 
-if (feedEventsError) {
-  console.error('Failed to load feed events:', feedEventsError)
-}
+  if (feedEventsError) {
+    console.error('Failed to load feed events:', feedEventsError)
+  }
+
   const feedEvents = (feedEventsData as FeedEvent[] | null) ?? []
 
-let feedEventLikes: FeedEventLikeRow[] = []
+  let feedEventLikes: FeedEventLikeRow[] = []
 
-if (feedEvents.length > 0) {
-  const { data: feedEventLikesData, error: feedEventLikesError } = await supabase
-    .from('feed_event_likes')
-    .select('id, feed_event_id, user_id')
-    .in(
-      'feed_event_id',
-      feedEvents.map((event) => event.id)
-    )
+  if (feedEvents.length > 0) {
+    const { data: feedEventLikesData, error: feedEventLikesError } =
+      await supabase
+        .from('feed_event_likes')
+        .select('id, feed_event_id, user_id')
+        .in(
+          'feed_event_id',
+          feedEvents.map((event) => event.id)
+        )
 
-  if (feedEventLikesError) {
-    console.error('Failed to load feed event likes:', feedEventLikesError)
+    if (feedEventLikesError) {
+      console.error('Failed to load feed event likes:', feedEventLikesError)
+    }
+
+    feedEventLikes = (feedEventLikesData as FeedEventLikeRow[] | null) ?? []
   }
 
-  feedEventLikes = (feedEventLikesData as FeedEventLikeRow[] | null) ?? []
-}
-let feedEventComments: FeedEventCommentRow[] = []
+  let feedEventComments: FeedEventCommentRow[] = []
 
-if (feedEvents.length > 0) {
-  const { data: feedEventCommentsData, error: feedEventCommentsError } = await supabase
-    .from('feed_event_comments')
-    .select('id, feed_event_id, user_id, body, created_at')
-    .in(
-      'feed_event_id',
-      feedEvents.map((event) => event.id)
-    )
-    .order('created_at', { ascending: true })
+  if (feedEvents.length > 0) {
+    const { data: feedEventCommentsData, error: feedEventCommentsError } =
+      await supabase
+        .from('feed_event_comments')
+        .select('id, feed_event_id, user_id, body, created_at')
+        .in(
+          'feed_event_id',
+          feedEvents.map((event) => event.id)
+        )
+        .order('created_at', { ascending: true })
 
-  if (feedEventCommentsError) {
-    console.error('Failed to load feed event comments:', feedEventCommentsError)
+    if (feedEventCommentsError) {
+      console.error(
+        'Failed to load feed event comments:',
+        feedEventCommentsError
+      )
+    }
+
+    feedEventComments =
+      (feedEventCommentsData as FeedEventCommentRow[] | null) ?? []
   }
 
-  feedEventComments =
-    (feedEventCommentsData as FeedEventCommentRow[] | null) ?? []
-}
-const commentsByEventId = new Map<string, FeedEventCommentRow[]>()
+  const commentsByEventId = new Map<string, FeedEventCommentRow[]>()
 
-for (const comment of feedEventComments) {
-  const existing = commentsByEventId.get(comment.feed_event_id) ?? []
-  existing.push(comment)
-  commentsByEventId.set(comment.feed_event_id, existing)
-}
-const likesByEventId = new Map<string, FeedEventLikeRow[]>()
+  for (const comment of feedEventComments) {
+    const existing = commentsByEventId.get(comment.feed_event_id) ?? []
+    existing.push(comment)
+    commentsByEventId.set(comment.feed_event_id, existing)
+  }
 
-for (const like of feedEventLikes) {
-  const existing = likesByEventId.get(like.feed_event_id) ?? []
-  existing.push(like)
-  likesByEventId.set(like.feed_event_id, existing)
-}
+  const likesByEventId = new Map<string, FeedEventLikeRow[]>()
+
+  for (const like of feedEventLikes) {
+    const existing = likesByEventId.get(like.feed_event_id) ?? []
+    existing.push(like)
+    likesByEventId.set(like.feed_event_id, existing)
+  }
+
   const membershipByRoundId = new Map(
     userMemberships.map((member) => [member.round_id, member.role] as const)
   )
@@ -1559,6 +1644,8 @@ for (const like of feedEventLikes) {
             incomingFriendRequestsCount={incomingFriendRequestsCount}
           />
 
+          <NotificationsSection notifications={notifications} />
+
           {isAdmin ? <AdminPendingBanner pendingCount={pendingCount} /> : null}
 
           <DashboardHighlights
@@ -1587,7 +1674,9 @@ for (const like of feedEventLikes) {
             >
               <HighlightCard
                 label="📊 Snittscore"
-                value={averageScore !== null ? Math.round(averageScore).toString() : '—'}
+                value={
+                  averageScore !== null ? Math.round(averageScore).toString() : '—'
+                }
                 sublabel="Genomsnittligt antal slag"
                 tone="purple"
               />
@@ -1609,25 +1698,29 @@ for (const like of feedEventLikes) {
               />
             ) : (
               <div style={{ display: 'grid', gap: 10 }}>
-              {feedEvents.map((event) => {
-  const likes = likesByEventId.get(event.id) ?? []
-  const comments = commentsByEventId.get(event.id) ?? []
-  const likesCount = likes.length
-  const likedByMe = likes.some((like) => like.user_id === user.id)
+                {feedEvents.map((event) => {
+                  const likes = likesByEventId.get(event.id) ?? []
+                  const comments = commentsByEventId.get(event.id) ?? []
+                  const likesCount = likes.length
+                  const likedByMe = likes.some((like) => like.user_id === user.id)
 
-  return (
-    <FeedEventCard
-      key={event.id}
-      event={event}
-      playerName={getPlayerNameForFeedEvent(event, allRoundPlayers)}
-      courseName={getCourseNameForFeedEvent(event, allRounds, allCourses)}
-      likesCount={likesCount}
-      likedByMe={likedByMe}
-      comments={comments}
-      roundPlayers={allRoundPlayers}
-    />
-  )
-})}
+                  return (
+                    <FeedEventCard
+                      key={event.id}
+                      event={event}
+                      playerName={getPlayerNameForFeedEvent(event, allRoundPlayers)}
+                      courseName={getCourseNameForFeedEvent(
+                        event,
+                        allRounds,
+                        allCourses
+                      )}
+                      likesCount={likesCount}
+                      likedByMe={likedByMe}
+                      comments={comments}
+                      roundPlayers={allRoundPlayers}
+                    />
+                  )
+                })}
               </div>
             )}
           </div>

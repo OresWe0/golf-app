@@ -21,6 +21,22 @@ export async function likeFeedEvent(formData: FormData) {
     user_id: user.id,
   })
 
+  const { data: feedEvent } = await supabase
+    .from('feed_events')
+    .select('id, user_id')
+    .eq('id', feedEventId)
+    .single()
+
+  if (feedEvent && feedEvent.user_id !== user.id) {
+    await supabase.from('notifications').insert({
+      user_id: feedEvent.user_id,
+      actor_user_id: user.id,
+      type: 'like',
+      title: 'Någon gillade ditt event',
+      feed_event_id: feedEvent.id,
+    })
+  }
+
   revalidatePath('/dashboard')
 }
 
@@ -71,6 +87,22 @@ export async function addFeedEventComment(formData: FormData) {
     user_id: user.id,
     body: trimmedBody,
   })
+
+  const { data: feedEvent } = await supabase
+    .from('feed_events')
+    .select('id, user_id')
+    .eq('id', feedEventId)
+    .single()
+
+  if (feedEvent && feedEvent.user_id !== user.id) {
+    await supabase.from('notifications').insert({
+      user_id: feedEvent.user_id,
+      actor_user_id: user.id,
+      type: 'comment',
+      title: `Ny kommentar: "${trimmedBody}"`,
+      feed_event_id: feedEvent.id,
+    })
+  }
 
   revalidatePath('/dashboard')
 }
