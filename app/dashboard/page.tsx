@@ -21,9 +21,6 @@ type Membership = {
 
 type FriendRequestRow = {
   id: string
-  requester_email?: string
-  recipient_email?: string
-  status?: 'pending' | 'accepted' | 'declined'
 }
 
 type HoleScore = {
@@ -35,6 +32,14 @@ type HoleScore = {
 type RoundPlayer = {
   id: string
   round_id: string
+  user_id: string | null
+  invited_email?: string | null
+  display_name?: string | null
+  handicap_index?: number | null
+  exact_handicap?: number | null
+  tee_key?: string | null
+  playing_handicap?: number | null
+  sort_order?: number | null
 }
 
 function getSingleParam(value?: string | string[]) {
@@ -231,7 +236,7 @@ function FriendRequestNotice({
     >
       <div>
         <div style={{ fontWeight: 900, marginBottom: 4, color: '#1f3327' }}>
-          📨 Ny vänförfrågan
+          📨 Du har en ny vänförfrågan
         </div>
         <div className="muted" style={{ color: '#7c5a12' }}>
           Du har {incomingFriendRequestsCount} inkommande vänförfrågan
@@ -387,8 +392,8 @@ function DashboardHeader({
                   aria-label={`${incomingFriendRequestsCount} inkommande vänförfrågningar`}
                   style={{
                     position: 'absolute',
-                    top: -8,
-                    right: -8,
+                    top: -6,
+                    right: -6,
                     minWidth: 24,
                     height: 24,
                     borderRadius: 999,
@@ -498,14 +503,14 @@ function DashboardHighlights({
     >
       <HighlightCard
         label="🏆 Bästa runda"
-        value={bestRoundScore !== null ? bestRoundScore : 'Ingen ännu'}
+        value={bestRoundScore ?? 'Ingen ännu'}
         sublabel="Lägsta registrerade slag totalt"
         tone="green"
       />
 
       <HighlightCard
         label="📊 Snittscore"
-        value={averageScore !== null ? Math.round(averageScore) : '—'}
+        value={averageScore !== null ? Math.round(averageScore) : 0}
         sublabel="Genomsnittligt antal slag"
         tone="purple"
       />
@@ -1068,7 +1073,6 @@ export default async function DashboardPage({
   const pendingCount = pendingUsers?.length ?? 0
   const incomingFriendRequestsCount =
     (incomingFriendRequests as FriendRequestRow[] | null)?.length ?? 0
-
   const allHoleScores = (holeScores as HoleScore[] | null) ?? []
   const allRoundPlayers = (roundPlayers as RoundPlayer[] | null) ?? []
 
@@ -1097,20 +1101,22 @@ export default async function DashboardPage({
 
   const roundsWithScores = completedRounds
     .map((round) => {
-      const players = allRoundPlayers.filter((player) => player.round_id === round.id)
+      const player = allRoundPlayers.find(
+        (roundPlayer) =>
+          roundPlayer.round_id === round.id && roundPlayer.user_id === user.id
+      )
 
-      if (players.length === 0) return null
-
-      const player = players[0]
+      if (!player) return null
 
       const scores = allHoleScores.filter(
         (score) => score.round_player_id === player.id
       )
 
-      const strokes = scores.reduce(
-        (sum, score) => sum + (score.strokes ?? 0),
-        0
-      )
+      if (scores.length === 0) return null
+
+      const strokes = scores.reduce((sum, score) => {
+        return sum + (score.strokes ?? 0)
+      }, 0)
 
       return {
         round,
@@ -1135,8 +1141,7 @@ export default async function DashboardPage({
   const latestRound = completedRounds[0] ?? null
 
   const latestCourseName = latestRound
-    ? allCourses.find((course) => course.id === latestRound.course_id)?.name ??
-      'Ingen ännu'
+    ? allCourses.find((c) => c.id === latestRound.course_id)?.name || 'Okänd bana'
     : 'Ingen ännu'
 
   return (
