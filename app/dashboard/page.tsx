@@ -50,9 +50,6 @@ type FeedEvent = {
   event_type: 'birdie' | 'eagle' | 'hole_in_one'
   hole_number: number
   created_at: string
-  profiles?: {
-    display_name?: string | null
-  } | null
 }
 
 function getSingleParam(value?: string | string[]) {
@@ -615,10 +612,17 @@ function SectionHeader({
 
 function FeedEventCard({
   event,
+  playerName,
 }: {
   event: FeedEvent
+  playerName: string
 }) {
-  const playerName = event.profiles?.display_name?.trim() || 'En spelare'
+  const eventText =
+    event.event_type === 'birdie'
+      ? 'birdie'
+      : event.event_type === 'eagle'
+        ? 'eagle'
+        : 'hole-in-one'
 
   return (
     <div
@@ -633,7 +637,7 @@ function FeedEventCard({
       }}
     >
       <div style={{ fontWeight: 900, color: '#1f3327' }}>
-        {playerName} gjorde {getFeedEventLabel(event.event_type).replace(/^.. /, '').toLowerCase()}
+        {playerName} gjorde {eventText}
       </div>
 
       <div className="muted">Hål {event.hole_number}</div>
@@ -1091,22 +1095,10 @@ export default async function DashboardPage({
     supabase.from('hole_scores').select('*'),
     supabase.from('round_players').select('*'),
     supabase
-      .from('feed_events')
-      .select(`
-        id,
-        user_id,
-        round_id,
-        round_player_id,
-        event_type,
-        hole_number,
-        created_at,
-        profiles:user_id (
-          display_name
-        )
-      `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(5),
+  .from('feed_events')
+  .select('*')
+  .order('created_at', { ascending: false })
+  .limit(5),
   ])
 
   if (coursesError) console.error('Failed to load courses:', coursesError)
@@ -1332,8 +1324,12 @@ export default async function DashboardPage({
             ) : (
               <div style={{ display: 'grid', gap: 10 }}>
                 {feedEvents.map((event) => (
-                  <FeedEventCard key={event.id} event={event} />
-                ))}
+             <FeedEventCard
+             key={event.id}
+             event={event}
+             playerName={displayName}
+           />
+))}
               </div>
             )}
           </div>
