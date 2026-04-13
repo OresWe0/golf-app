@@ -583,28 +583,36 @@ function NotificationsSection({
 
       <div style={{ display: 'grid', gap: 10 }}>
         {notifications.map((notification) => {
-  const actorName = getNotificationActorName(notification, actorProfiles)
+          const actorName = getNotificationActorName(
+            notification,
+            actorProfiles
+          )
 
-  return (
-          <div
-            key={notification.id}
-            style={{
-              border: '1px solid #e5e7eb',
-              borderRadius: 14,
-              padding: 12,
-              background: '#fafbfc',
-            }}
-          >
-            <div style={{ fontWeight: 800, color: '#1f3327' }}>
-  {notification.type === 'like'
-    ? `👍 ${actorName} gillade ditt event`
-    : `💬 ${actorName} kommenterade: ${notification.title.replace('Ny kommentar: ', '')}`}
-</div>
-            <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
-              {formatFeedEventTime(notification.created_at)}
+          return (
+            <div
+              key={notification.id}
+              style={{
+                border: '1px solid #e5e7eb',
+                borderRadius: 14,
+                padding: 12,
+                background: '#fafbfc',
+              }}
+            >
+              <div style={{ fontWeight: 800, color: '#1f3327' }}>
+                {notification.type === 'like'
+                  ? `👍 ${actorName} gillade ditt event`
+                  : `💬 ${actorName} kommenterade: ${notification.title.replace(
+                      'Ny kommentar: ',
+                      ''
+                    )}`}
+              </div>
+
+              <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+                {formatFeedEventTime(notification.created_at)}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
