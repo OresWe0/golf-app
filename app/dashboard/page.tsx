@@ -482,13 +482,13 @@ function AdminPendingBanner({
 }
 
 function DashboardHighlights({
-  bestRoundScore,
-  averageScore,
+  bestRound9Score,
+  bestRound18Score,
   roundsThisYearCount,
   latestCourseName,
 }: {
-  bestRoundScore: number | null
-  averageScore: number | null
+  bestRound9Score: number | null
+  bestRound18Score: number | null
   roundsThisYearCount: number
   latestCourseName: string
 }) {
@@ -502,18 +502,20 @@ function DashboardHighlights({
       }}
     >
       <HighlightCard
-        label="🏆 Bästa runda"
-        value={bestRoundScore ?? 'Ingen ännu'}
-        sublabel="Lägsta registrerade slag totalt"
-        tone="green"
-      />
+  label="🏆 Bästa 9 hål"
+  value={bestRound9Score ?? 'Ingen ännu'}
+  sublabel="Lägsta registrerade score på 9 hål"
+  tone="green"
+/>
 
-      <HighlightCard
-        label="📊 Snittscore"
-        value={averageScore !== null ? Math.round(averageScore) : 0}
-        sublabel="Genomsnittligt antal slag"
-        tone="purple"
-      />
+<HighlightCard
+  label="🏆 Bästa 18 hål"
+  value={bestRound18Score ?? 'Ingen ännu'}
+  sublabel="Lägsta registrerade score på 18 hål"
+  tone="blue"
+/>
+
+     
 
       <HighlightCard
         label="📅 Spelade rundor i år"
@@ -1130,13 +1132,27 @@ const roundsWithScores = completedRounds
     }
   })
   .filter((item): item is { round: Round; strokes: number } => item !== null)
+  const roundsWithScores9 = roundsWithScores.filter(
+  (item) => Number(item.round.holes_mode) === 9
+  )
 
-  const bestRound =
-    roundsWithScores.length > 0
-      ? roundsWithScores.reduce((best, current) =>
-          current.strokes < best.strokes ? current : best
-        )
-      : null
+  const roundsWithScores18 = roundsWithScores.filter(
+  (item) => Number(item.round.holes_mode) === 18
+)
+
+  const bestRound9 =
+  roundsWithScores9.length > 0
+    ? roundsWithScores9.reduce((best, current) =>
+        current.strokes < best.strokes ? current : best
+      )
+    : null
+
+  const bestRound18 =
+  roundsWithScores18.length > 0
+    ? roundsWithScores18.reduce((best, current) =>
+        current.strokes < best.strokes ? current : best
+      )
+    : null
 
   const averageScore =
     roundsWithScores.length > 0
@@ -1200,14 +1216,37 @@ const roundsWithScores = completedRounds
           {isAdmin ? <AdminPendingBanner pendingCount={pendingCount} /> : null}
 
           <DashboardHighlights
-            bestRoundScore={bestRound ? bestRound.strokes : null}
-            averageScore={averageScore}
-            roundsThisYearCount={completedRoundsThisYear.length}
-            latestCourseName={latestCourseName}
-          />
+          bestRound9Score={bestRound9 ? bestRound9.strokes : null}
+          bestRound18Score={bestRound18 ? bestRound18.strokes : null}          
+          roundsThisYearCount={completedRoundsThisYear.length}
+          latestCourseName={latestCourseName}
+         />
         </div>
 
         <div style={{ display: 'grid', gap: 18 }}>
+        <div className="card" style={dashboardStyles.sectionCard}>
+        <SectionHeader
+         title="Statistik"
+         description="Din genomsnittliga score baserat på avslutade rundor."
+         count={completedRounds.length}
+         countTone="slate"
+        />
+
+       <div
+       style={{
+       display: 'grid',
+       gridTemplateColumns: '1fr',
+       gap: 12,
+    }}
+  >
+    <HighlightCard
+      label="📊 Snittscore"
+      value={averageScore !== null ? Math.round(averageScore).toString() : '—'}
+      sublabel="Genomsnittligt antal slag"
+      tone="purple"
+    />
+  </div>
+</div>
           <ActiveRoundsSection
             rounds={activeRounds}
             membershipByRoundId={membershipByRoundId}
