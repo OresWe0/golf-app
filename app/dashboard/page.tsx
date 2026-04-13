@@ -92,6 +92,87 @@ function getFeedEventLabel(eventType: FeedEvent['event_type']) {
   if (eventType === 'eagle') return '🦅 Eagle'
   return '🎯 Hole-in-one'
 }
+function getPlayerNameForFeedEvent(
+  event: FeedEvent,
+  roundPlayers: RoundPlayer[]
+) {
+  const roundPlayer = roundPlayers.find(
+    (item) => item.id === event.round_player_id
+  )
+
+  if (roundPlayer?.display_name?.trim()) {
+    return roundPlayer.display_name.trim()
+  }
+
+  const matchingUser = roundPlayers.find(
+    (item) =>
+      item.user_id === event.user_id &&
+      typeof item.display_name === 'string' &&
+      item.display_name.trim().length > 0
+  )
+
+  if (matchingUser?.display_name?.trim()) {
+    return matchingUser.display_name.trim()
+  }
+
+  return 'En spelare'
+}
+
+function formatFeedEventTime(value: string) {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  const now = new Date()
+
+  const sameDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+
+  const sameAsYesterday =
+    date.getFullYear() === yesterday.getFullYear() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getDate() === yesterday.getDate()
+
+  const timeText = date.toLocaleTimeString('sv-SE', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  if (sameDay) {
+    return `Idag ${timeText}`
+  }
+
+  if (sameAsYesterday) {
+    return `Igår ${timeText}`
+  }
+
+  return date.toLocaleString('sv-SE', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function getCourseNameForFeedEvent(
+  event: FeedEvent,
+  rounds: Round[],
+  courses: Course[]
+) {
+  const round = rounds.find((item) => item.id === event.round_id)
+  if (!round) return 'Okänd bana'
+
+  const course = courses.find((item) => item.id === round.course_id)
+  return course?.name || 'Okänd bana'
+}
 
 const dashboardStyles = {
   heroCard: {
@@ -612,9 +693,11 @@ function SectionHeader({
 function FeedEventCard({
   event,
   playerName,
+  courseName,
 }: {
   event: FeedEvent
   playerName: string
+  courseName: string
 }) {
   const eventMeta =
     event.event_type === 'birdie'
@@ -622,6 +705,8 @@ function FeedEventCard({
       : event.event_type === 'eagle'
         ? { emoji: '🦅', text: 'eagle' }
         : { emoji: '🎯', text: 'hole-in-one' }
+
+  const timeLabel = formatFeedEventTime(event.created_at)
 
   return (
     <div
@@ -631,7 +716,7 @@ function FeedEventCard({
         background: 'linear-gradient(180deg, #ffffff 0%, #fafbfc 100%)',
         padding: 14,
         display: 'grid',
-        gap: 6,
+        gap: 8,
         boxShadow: '0 12px 28px rgba(15, 23, 42, 0.04)',
       }}
     >
@@ -639,7 +724,13 @@ function FeedEventCard({
         {eventMeta.emoji} {playerName} gjorde {eventMeta.text}
       </div>
 
-      <div className="muted">Hål {event.hole_number}</div>
+      <div className="muted">
+        Hål {event.hole_number} · {courseName}
+      </div>
+
+      <div className="muted" style={{ fontSize: 13 }}>
+        {timeLabel}
+      </div>
     </div>
   )
 }
@@ -1326,7 +1417,8 @@ export default async function DashboardPage({
   <FeedEventCard
     key={event.id}
     event={event}
-    playerName={displayName}
+    playerName={getPlayerNameForFeedEvent(event, allRoundPlayers)}
+    courseName={getCourseNameForFeedEvent(event, allRounds, allCourses)}
   />
 ))}
               </div>
