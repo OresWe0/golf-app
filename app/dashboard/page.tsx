@@ -50,8 +50,10 @@ type FeedEvent = {
   event_type: 'birdie' | 'eagle' | 'hole_in_one'
   hole_number: number
   created_at: string
+  profiles?: {
+    display_name?: string | null
+  } | null
 }
-
 function getSingleParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value
 }
@@ -612,10 +614,8 @@ function SectionHeader({
 
 function FeedEventCard({
   event,
-  playerName,
 }: {
   event: FeedEvent
-  playerName: string
 }) {
   const eventMeta =
     event.event_type === 'birdie'
@@ -623,6 +623,9 @@ function FeedEventCard({
       : event.event_type === 'eagle'
         ? { emoji: '🦅', text: 'eagle' }
         : { emoji: '🎯', text: 'hole-in-one' }
+
+  const playerName =
+    event.profiles?.display_name?.trim() || 'En spelare'
 
   return (
     <div
@@ -1096,9 +1099,20 @@ export default async function DashboardPage({
     supabase.from('round_players').select('*'),
     supabase
   .from('feed_events')
-  .select('*')
-  .order('created_at', { ascending: false })
-  .limit(5),
+.select(`
+  id,
+  user_id,
+  round_id,
+  round_player_id,
+  event_type,
+  hole_number,
+  created_at,
+  profiles:user_id (
+    display_name
+  )
+`)
+.order('created_at', { ascending: false })
+.limit(5)
   ])
 
   if (coursesError) console.error('Failed to load courses:', coursesError)
@@ -1323,12 +1337,8 @@ export default async function DashboardPage({
               />
             ) : (
               <div style={{ display: 'grid', gap: 10 }}>
-                {feedEvents.map((event) => (
-             <FeedEventCard
-             key={event.id}
-             event={event}
-             playerName={displayName}
-           />
+              {feedEvents.map((event) => (
+  <FeedEventCard key={event.id} event={event} />
 ))}
               </div>
             )}
