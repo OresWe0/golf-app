@@ -1099,25 +1099,28 @@ export default async function DashboardPage({
     return !Number.isNaN(date.getTime()) && date.getFullYear() === currentYear
   })
 
-  const roundsWithScores = completedRounds
-    .map((round) => {
-      const player = allRoundPlayers.find(
-        (roundPlayer) =>
-          roundPlayer.round_id === round.id && roundPlayer.user_id === user.id
-      )
+const roundsWithScores = completedRounds
+  .map((round) => {
+    const player = allRoundPlayers.find(
+      (roundPlayer) =>
+        roundPlayer.round_id === round.id && roundPlayer.user_id === user.id
+    )
 
-      if (!player) return null
+    if (!player) return null
 
-      const scores = allHoleScores.filter(
-        (score) => score.round_player_id === player.id
-      )
-      const expectedHoleCount = Number(round.holes_mode) === 9 ? 9 : 18
-      
-      const validScores = scores.filter(s) => typeof s.storkes === 'number'
-     )
-    
-    if (validScores.lenght < expectedHoleCount) return null
-   const strokes = validScores.reduce((sum, score) => {
+    const scores = allHoleScores.filter(
+      (score) => score.round_player_id === player.id
+    )
+
+    const expectedHoleCount = Number(round.holes_mode) === 9 ? 9 : 18
+
+    const validScores = scores.filter(
+      (score) => typeof score.strokes === 'number'
+    )
+
+    if (validScores.length < expectedHoleCount) return null
+
+    const strokes = validScores.reduce((sum, score) => {
       return sum + (score.strokes ?? 0)
     }, 0)
 
@@ -1126,8 +1129,7 @@ export default async function DashboardPage({
       strokes,
     }
   })
- 
-    .filter((item): item is { round: Round; strokes: number } => item !== null)
+  .filter((item): item is { round: Round; strokes: number } => item !== null)
 
   const bestRound =
     roundsWithScores.length > 0
