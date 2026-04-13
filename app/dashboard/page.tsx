@@ -54,6 +54,7 @@ type FeedEvent = {
     display_name?: string | null
   } | null
 }
+
 function getSingleParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value
 }
@@ -632,7 +633,7 @@ function FeedEventCard({
       }}
     >
       <div style={{ fontWeight: 900, color: '#1f3327' }}>
-        {getFeedEventLabel(event.event_type)} · {playerName}
+        {playerName} gjorde {getFeedEventLabel(event.event_type).replace(/^.. /, '').toLowerCase()}
       </div>
 
       <div className="muted">Hål {event.hole_number}</div>
@@ -1090,22 +1091,22 @@ export default async function DashboardPage({
     supabase.from('hole_scores').select('*'),
     supabase.from('round_players').select('*'),
     supabase
-  .from('feed_events')
-  .select(`
-    id,
-    user_id,
-    round_id,
-    round_player_id,
-    event_type,
-    hole_number,
-    created_at,
-    profiles:user_id (
-      display_name
-    )
-  `)
-  .eq('user_id', user.id)
-  .order('created_at', { ascending: false })
-  .limit(5),
+      .from('feed_events')
+      .select(`
+        id,
+        user_id,
+        round_id,
+        round_player_id,
+        event_type,
+        hole_number,
+        created_at,
+        profiles:user_id (
+          display_name
+        )
+      `)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5),
   ])
 
   if (coursesError) console.error('Failed to load courses:', coursesError)
