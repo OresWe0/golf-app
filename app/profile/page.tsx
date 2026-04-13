@@ -281,8 +281,7 @@ export default async function ProfilePage({
 
     revalidatePath('/profile')
     revalidatePath('/dashboard')
-    revalidatePath('/friends/accept')
-
+    
     redirect('/profile?message=Vän tillagd 🎉')
   }
 
