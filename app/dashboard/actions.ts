@@ -45,3 +45,32 @@ export async function unlikeFeedEvent(formData: FormData) {
 
   revalidatePath('/dashboard')
 }
+
+export async function addFeedEventComment(formData: FormData) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return
+
+  const feedEventId = formData.get('feedEventId')
+  const body = formData.get('body')
+
+  if (typeof feedEventId !== 'string' || !feedEventId) return
+  if (typeof body !== 'string') return
+
+  const trimmedBody = body.trim()
+
+  if (!trimmedBody) return
+  if (trimmedBody.length > 200) return
+
+  await supabase.from('feed_event_comments').insert({
+    feed_event_id: feedEventId,
+    user_id: user.id,
+    body: trimmedBody,
+  })
+
+  revalidatePath('/dashboard')
+}

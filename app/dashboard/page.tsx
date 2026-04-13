@@ -1,4 +1,4 @@
-import { likeFeedEvent, unlikeFeedEvent } from './actions'
+import { likeFeedEvent, unlikeFeedEvent, addFeedEventComment } from './actions'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -60,6 +60,13 @@ type FeedEventLikeRow = {
   id: string
   feed_event_id: string
   user_id: string
+}
+type FeedEventCommentRow = {
+  id: string
+  feed_event_id: string
+  user_id: string
+  body: string
+  created_at: string
 }
 function getSingleParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value
@@ -699,6 +706,23 @@ function SectionHeader({
     </div>
   )
 }
+function getCommentAuthorName(
+  comment: FeedEventCommentRow,
+  roundPlayers: RoundPlayer[]
+) {
+  const matchingUser = roundPlayers.find(
+    (item) =>
+      item.user_id === comment.user_id &&
+      typeof item.display_name === 'string' &&
+      item.display_name.trim().length > 0
+  )
+
+  if (matchingUser?.display_name?.trim()) {
+    return matchingUser.display_name.trim()
+  }
+
+  return 'En spelare'
+}
 
 function FeedEventCard({
   event,
@@ -706,12 +730,16 @@ function FeedEventCard({
   courseName,
   likesCount,
   likedByMe,
+  comments,
+  roundPlayers,
 }: {
   event: FeedEvent
   playerName: string
   courseName: string
   likesCount: number
   likedByMe: boolean
+  comments: FeedEventCommentRow[]
+  roundPlayers: RoundPlayer[]
 }) {
   const eventMeta =
     event.event_type === 'birdie'
@@ -746,6 +774,7 @@ function FeedEventCard({
         {timeLabel}
       </div>
 
+      {/* 👍 LIKE BLOCK */}
       <div
         style={{
           display: 'flex',
@@ -762,26 +791,60 @@ function FeedEventCard({
         {likedByMe ? (
           <form action={unlikeFeedEvent}>
             <input type="hidden" name="feedEventId" value={event.id} />
-            <button
-              type="submit"
-              className="button secondary"
-              style={{ padding: '8px 12px', minWidth: 90 }}
-            >
+            <button type="submit" className="button secondary">
               Gillat
             </button>
           </form>
         ) : (
           <form action={likeFeedEvent}>
             <input type="hidden" name="feedEventId" value={event.id} />
-            <button
-              type="submit"
-              className="button secondary"
-              style={{ padding: '8px 12px', minWidth: 90 }}
-            >
+            <button type="submit" className="button secondary">
               Gilla
             </button>
           </form>
         )}
+      </div>
+
+      {/* 💬 COMMENT BLOCK */}
+      <div style={{ display: 'grid', gap: 8 }}>
+        <div className="muted" style={{ fontSize: 13 }}>
+          💬 {comments.length}
+        </div>
+
+        {comments.length > 0 && (
+          <div
+            style={{
+              display: 'grid',
+              gap: 6,
+              padding: 10,
+              borderRadius: 12,
+              background: '#f8fafc',
+              border: '1px solid #e5e7eb',
+            }}
+          >
+            {comments.map((comment) => (
+              <div key={comment.id} style={{ fontSize: 14 }}>
+                <strong>
+                  {getCommentAuthorName(comment, roundPlayers)}:
+                </strong>{' '}
+                {comment.body}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <form action={addFeedEventComment} style={{ display: 'grid', gap: 6 }}>
+          <input type="hidden" name="feedEventId" value={event.id} />
+          <input
+            type="text"
+            name="body"
+            maxLength={200}
+            placeholder="Skriv en kommentar..."
+          />
+          <button type="submit" className="button secondary">
+            Kommentera
+          </button>
+        </form>
       </div>
     </div>
   )
@@ -1327,6 +1390,32 @@ if (feedEvents.length > 0) {
 
   feedEventLikes = (feedEventLikesData as FeedEventLikeRow[] | null) ?? []
 }
+let feedEventComments: FeedEventCommentRow[] = []
+
+if (feedEvents.length > 0) {
+  const { data: feedEventCommentsData, error: feedEventCommentsError } = await supabase
+    .from('feed_event_comments')
+    .select('id, feed_event_id, user_id, body, created_at')
+    .in(
+      'feed_event_id',
+      feedEvents.map((event) => event.id)
+    )
+    .order('created_at', { ascending: true })
+
+  if (feedEventCommentsError) {
+    console.error('Failed to load feed event comments:', feedEventCommentsError)
+  }
+
+  feedEventComments =
+    (feedEventCommentsData as FeedEventCommentRow[] | null) ?? []
+}
+const commentsByEventId = new Map<string, FeedEventCommentRow[]>()
+
+for (const comment of feedEventComments) {
+  const existing = commentsByEventId.get(comment.feed_event_id) ?? []
+  existing.push(comment)
+  commentsByEventId.set(comment.feed_event_id, existing)
+}
 const likesByEventId = new Map<string, FeedEventLikeRow[]>()
 
 for (const like of feedEventLikes) {
@@ -1522,6 +1611,7 @@ for (const like of feedEventLikes) {
               <div style={{ display: 'grid', gap: 10 }}>
               {feedEvents.map((event) => {
   const likes = likesByEventId.get(event.id) ?? []
+  const comments = commentsByEventId.get(event.id) ?? []
   const likesCount = likes.length
   const likedByMe = likes.some((like) => like.user_id === user.id)
 
@@ -1533,6 +1623,8 @@ for (const like of feedEventLikes) {
       courseName={getCourseNameForFeedEvent(event, allRounds, allCourses)}
       likesCount={likesCount}
       likedByMe={likedByMe}
+      comments={comments}
+      roundPlayers={allRoundPlayers}
     />
   )
 })}
