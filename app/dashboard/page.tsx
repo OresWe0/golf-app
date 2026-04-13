@@ -1111,18 +1111,22 @@ export default async function DashboardPage({
       const scores = allHoleScores.filter(
         (score) => score.round_player_id === player.id
       )
-      const expectedHoleCount = round.holes_mode === 9 ? 9 : 18
-      if (scores.length !== expectedHoleCount) return null
+      const expectedHoleCount = Number(round.holes_mode) === 9 ? 9 : 18
+      
+      const validScores = scores.filter(s) => typeof s.storkes === 'number'
+     )
+    
+    if (validScores.lenght < expectedHoleCount) return null
+   const strokes = validScores.reduce((sum, score) => {
+      return sum + (score.strokes ?? 0)
+    }, 0)
 
-      const strokes = scores.reduce((sum, score) => {
-        return sum + (score.strokes ?? 0)
-      }, 0)
-
-      return {
-        round,
-        strokes,
-      }
-    })
+    return {
+      round,
+      strokes,
+    }
+  })
+ 
     .filter((item): item is { round: Round; strokes: number } => item !== null)
 
   const bestRound =
