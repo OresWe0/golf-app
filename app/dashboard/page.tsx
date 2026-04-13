@@ -617,12 +617,12 @@ function FeedEventCard({
   event: FeedEvent
   playerName: string
 }) {
-  const eventText =
+  const eventMeta =
     event.event_type === 'birdie'
-      ? 'birdie'
+      ? { emoji: '🐦', text: 'birdie' }
       : event.event_type === 'eagle'
-        ? 'eagle'
-        : 'hole-in-one'
+        ? { emoji: '🦅', text: 'eagle' }
+        : { emoji: '🎯', text: 'hole-in-one' }
 
   return (
     <div
@@ -637,7 +637,7 @@ function FeedEventCard({
       }}
     >
       <div style={{ fontWeight: 900, color: '#1f3327' }}>
-        {playerName} gjorde {eventText}
+        {eventMeta.emoji} {playerName} gjorde {eventMeta.text}
       </div>
 
       <div className="muted">Hål {event.hole_number}</div>
