@@ -42,6 +42,16 @@ type RoundPlayer = {
   sort_order?: number | null
 }
 
+type FeedEvent = {
+  id: string
+  user_id: string
+  round_id: string
+  round_player_id: string
+  event_type: 'birdie' | 'eagle' | 'hole_in_one'
+  hole_number: number
+  created_at: string
+}
+
 function getSingleParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value
 }
@@ -76,6 +86,12 @@ function getScoringLabel(scoringMode: Round['scoring_mode']) {
 
 function getRoundHref(round: Round) {
   return `/rounds/${round.id}?hole=${round.current_hole}`
+}
+
+function getFeedEventLabel(eventType: FeedEvent['event_type']) {
+  if (eventType === 'birdie') return '🐦 Birdie'
+  if (eventType === 'eagle') return '🦅 Eagle'
+  return '🎯 Hole-in-one'
 }
 
 const dashboardStyles = {
@@ -502,20 +518,18 @@ function DashboardHighlights({
       }}
     >
       <HighlightCard
-  label="🏆 Bästa 9 hål"
-  value={bestRound9Score ?? 'Ingen ännu'}
-  sublabel="Lägsta registrerade score på 9 hål"
-  tone="green"
-/>
+        label="🏆 Bästa 9 hål"
+        value={bestRound9Score ?? 'Ingen ännu'}
+        sublabel="Lägsta registrerade score på 9 hål"
+        tone="green"
+      />
 
-<HighlightCard
-  label="🏆 Bästa 18 hål"
-  value={bestRound18Score ?? 'Ingen ännu'}
-  sublabel="Lägsta registrerade score på 18 hål"
-  tone="blue"
-/>
-
-     
+      <HighlightCard
+        label="🏆 Bästa 18 hål"
+        value={bestRound18Score ?? 'Ingen ännu'}
+        sublabel="Lägsta registrerade score på 18 hål"
+        tone="blue"
+      />
 
       <HighlightCard
         label="📅 Spelade rundor i år"
@@ -592,6 +606,32 @@ function SectionHeader({
       >
         {count} st
       </div>
+    </div>
+  )
+}
+
+function FeedEventCard({
+  event,
+}: {
+  event: FeedEvent
+}) {
+  return (
+    <div
+      style={{
+        border: '1px solid #e5e7eb',
+        borderRadius: 18,
+        background: 'linear-gradient(180deg, #ffffff 0%, #fafbfc 100%)',
+        padding: 14,
+        display: 'grid',
+        gap: 6,
+        boxShadow: '0 12px 28px rgba(15, 23, 42, 0.04)',
+      }}
+    >
+      <div style={{ fontWeight: 900, color: '#1f3327' }}>
+        {getFeedEventLabel(event.event_type)}
+      </div>
+
+      <div className="muted">Hål {event.hole_number}</div>
     </div>
   )
 }
@@ -1029,6 +1069,7 @@ export default async function DashboardPage({
     { data: incomingFriendRequests, error: incomingFriendRequestsError },
     { data: holeScores, error: holeScoresError },
     { data: roundPlayers, error: roundPlayersError },
+    { data: feedEventsData, error: feedEventsError },
   ] = await Promise.all([
     supabase.from('courses').select('*').order('name'),
     supabase.from('rounds').select('*').order('created_at', { ascending: false }),
@@ -1044,6 +1085,12 @@ export default async function DashboardPage({
       .eq('status', 'pending'),
     supabase.from('hole_scores').select('*'),
     supabase.from('round_players').select('*'),
+    supabase
+      .from('feed_events')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5),
   ])
 
   if (coursesError) console.error('Failed to load courses:', coursesError)
@@ -1067,6 +1114,9 @@ export default async function DashboardPage({
   if (roundPlayersError) {
     console.error('Failed to load round players:', roundPlayersError)
   }
+  if (feedEventsError) {
+    console.error('Failed to load feed events:', feedEventsError)
+  }
 
   const allCourses = (courses as Course[] | null) ?? []
   const allRounds = (rounds as Round[] | null) ?? []
@@ -1077,6 +1127,7 @@ export default async function DashboardPage({
     (incomingFriendRequests as FriendRequestRow[] | null)?.length ?? 0
   const allHoleScores = (holeScores as HoleScore[] | null) ?? []
   const allRoundPlayers = (roundPlayers as RoundPlayer[] | null) ?? []
+  const feedEvents = (feedEventsData as FeedEvent[] | null) ?? []
 
   const membershipByRoundId = new Map(
     userMemberships.map((member) => [member.round_id, member.role] as const)
@@ -1101,58 +1152,59 @@ export default async function DashboardPage({
     return !Number.isNaN(date.getTime()) && date.getFullYear() === currentYear
   })
 
-const roundsWithScores = completedRounds
-  .map((round) => {
-    const player = allRoundPlayers.find(
-      (roundPlayer) =>
-        roundPlayer.round_id === round.id && roundPlayer.user_id === user.id
-    )
+  const roundsWithScores = completedRounds
+    .map((round) => {
+      const player = allRoundPlayers.find(
+        (roundPlayer) =>
+          roundPlayer.round_id === round.id && roundPlayer.user_id === user.id
+      )
 
-    if (!player) return null
+      if (!player) return null
 
-    const scores = allHoleScores.filter(
-      (score) => score.round_player_id === player.id
-    )
+      const scores = allHoleScores.filter(
+        (score) => score.round_player_id === player.id
+      )
 
-    const expectedHoleCount = Number(round.holes_mode) === 9 ? 9 : 18
+      const expectedHoleCount = Number(round.holes_mode) === 9 ? 9 : 18
 
-    const validScores = scores.filter(
-      (score) => typeof score.strokes === 'number'
-    )
+      const validScores = scores.filter(
+        (score) => typeof score.strokes === 'number'
+      )
 
-    if (validScores.length < expectedHoleCount) return null
+      if (validScores.length < expectedHoleCount) return null
 
-    const strokes = validScores.reduce((sum, score) => {
-      return sum + (score.strokes ?? 0)
-    }, 0)
+      const strokes = validScores.reduce((sum, score) => {
+        return sum + (score.strokes ?? 0)
+      }, 0)
 
-    return {
-      round,
-      strokes,
-    }
-  })
-  .filter((item): item is { round: Round; strokes: number } => item !== null)
+      return {
+        round,
+        strokes,
+      }
+    })
+    .filter((item): item is { round: Round; strokes: number } => item !== null)
+
   const roundsWithScores9 = roundsWithScores.filter(
-  (item) => Number(item.round.holes_mode) === 9
+    (item) => Number(item.round.holes_mode) === 9
   )
 
   const roundsWithScores18 = roundsWithScores.filter(
-  (item) => Number(item.round.holes_mode) === 18
-)
+    (item) => Number(item.round.holes_mode) === 18
+  )
 
   const bestRound9 =
-  roundsWithScores9.length > 0
-    ? roundsWithScores9.reduce((best, current) =>
-        current.strokes < best.strokes ? current : best
-      )
-    : null
+    roundsWithScores9.length > 0
+      ? roundsWithScores9.reduce((best, current) =>
+          current.strokes < best.strokes ? current : best
+        )
+      : null
 
   const bestRound18 =
-  roundsWithScores18.length > 0
-    ? roundsWithScores18.reduce((best, current) =>
-        current.strokes < best.strokes ? current : best
-      )
-    : null
+    roundsWithScores18.length > 0
+      ? roundsWithScores18.reduce((best, current) =>
+          current.strokes < best.strokes ? current : best
+        )
+      : null
 
   const averageScore =
     roundsWithScores.length > 0
@@ -1216,37 +1268,60 @@ const roundsWithScores = completedRounds
           {isAdmin ? <AdminPendingBanner pendingCount={pendingCount} /> : null}
 
           <DashboardHighlights
-          bestRound9Score={bestRound9 ? bestRound9.strokes : null}
-          bestRound18Score={bestRound18 ? bestRound18.strokes : null}          
-          roundsThisYearCount={completedRoundsThisYear.length}
-          latestCourseName={latestCourseName}
-         />
+            bestRound9Score={bestRound9 ? bestRound9.strokes : null}
+            bestRound18Score={bestRound18 ? bestRound18.strokes : null}
+            roundsThisYearCount={completedRoundsThisYear.length}
+            latestCourseName={latestCourseName}
+          />
         </div>
 
         <div style={{ display: 'grid', gap: 18 }}>
-        <div className="card" style={dashboardStyles.sectionCard}>
-        <SectionHeader
-         title="Statistik"
-         description="Din genomsnittliga score baserat på avslutade rundor."
-         count={completedRounds.length}
-         countTone="slate"
-        />
+          <div className="card" style={dashboardStyles.sectionCard}>
+            <SectionHeader
+              title="Statistik"
+              description="Din genomsnittliga score baserat på avslutade rundor."
+              count={completedRounds.length}
+              countTone="slate"
+            />
 
-       <div
-       style={{
-       display: 'grid',
-       gridTemplateColumns: '1fr',
-       gap: 12,
-    }}
-  >
-    <HighlightCard
-      label="📊 Snittscore"
-      value={averageScore !== null ? Math.round(averageScore).toString() : '—'}
-      sublabel="Genomsnittligt antal slag"
-      tone="purple"
-    />
-  </div>
-</div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr',
+                gap: 12,
+              }}
+            >
+              <HighlightCard
+                label="📊 Snittscore"
+                value={averageScore !== null ? Math.round(averageScore).toString() : '—'}
+                sublabel="Genomsnittligt antal slag"
+                tone="purple"
+              />
+            </div>
+          </div>
+
+          <div className="card" style={dashboardStyles.sectionCard}>
+            <SectionHeader
+              title="Vänflöde"
+              description="Senaste höjdpunkterna i spelet."
+              count={feedEvents.length}
+              countTone="slate"
+            />
+
+            {feedEvents.length === 0 ? (
+              <SectionEmptyState
+                title="Inga höjdpunkter ännu"
+                description="Birdies, eagles och hole-in-one dyker upp här."
+              />
+            ) : (
+              <div style={{ display: 'grid', gap: 10 }}>
+                {feedEvents.map((event) => (
+                  <FeedEventCard key={event.id} event={event} />
+                ))}
+              </div>
+            )}
+          </div>
+
           <ActiveRoundsSection
             rounds={activeRounds}
             membershipByRoundId={membershipByRoundId}
