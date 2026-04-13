@@ -29,6 +29,10 @@ type HoleScore = {
   strokes?: number | null
 }
 
+type FriendRow = {
+  friend_email: string | null
+}
+
 type RoundPlayer = {
   id: string
   round_id: string
@@ -1158,38 +1162,36 @@ export default async function DashboardPage({
   const isAdmin = user.email === ADMIN_EMAIL
   const currentUserEmail = (user.email ?? '').trim().toLowerCase()
 
-  const [
-    { data: courses, error: coursesError },
-    { data: rounds, error: roundsError },
-    { data: profile, error: profileError },
-    { data: memberships, error: membershipsError },
-    { data: pendingUsers, error: pendingUsersError },
-    { data: incomingFriendRequests, error: incomingFriendRequestsError },
-    { data: holeScores, error: holeScoresError },
-    { data: roundPlayers, error: roundPlayersError },
-    { data: feedEventsData, error: feedEventsError },
-  ] = await Promise.all([
-    supabase.from('courses').select('*').order('name'),
-    supabase.from('rounds').select('*').order('created_at', { ascending: false }),
-    supabase.from('profiles').select('*').eq('id', user.id).single(),
-    supabase.from('round_members').select('round_id, role').eq('user_id', user.id),
-    isAdmin
-      ? supabase.from('profiles').select('id').eq('is_approved', false)
-      : Promise.resolve({ data: [], error: null }),
-    supabase
-      .from('friend_requests')
-      .select('id')
-      .eq('recipient_email', currentUserEmail)
-      .eq('status', 'pending'),
-    supabase.from('hole_scores').select('*'),
-    supabase.from('round_players').select('*'),
-    
+const [
+  { data: courses, error: coursesError },
+  { data: rounds, error: roundsError },
+  { data: profile, error: profileError },
+  { data: memberships, error: membershipsError },
+  { data: pendingUsers, error: pendingUsersError },
+  { data: incomingFriendRequests, error: incomingFriendRequestsError },
+  { data: holeScores, error: holeScoresError },
+  { data: roundPlayers, error: roundPlayersError },
+  { data: friendsData, error: friendsError },
+] = await Promise.all([
+  supabase.from('courses').select('*').order('name'),
+  supabase.from('rounds').select('*').order('created_at', { ascending: false }),
+  supabase.from('profiles').select('*').eq('id', user.id).single(),
+  supabase.from('round_members').select('round_id, role').eq('user_id', user.id),
+  isAdmin
+    ? supabase.from('profiles').select('id').eq('is_approved', false)
+    : Promise.resolve({ data: [], error: null }),
   supabase
-  .from('feed_events')
-  .select('*')
-  .order('created_at', { ascending: false })
-  .limit(5)
-  ])
+    .from('friend_requests')
+    .select('id')
+    .eq('recipient_email', currentUserEmail)
+    .eq('status', 'pending'),
+  supabase.from('hole_scores').select('*'),
+  supabase.from('round_players').select('*'),
+  supabase
+    .from('friends')
+    .select('friend_email')
+    .eq('user_id', user.id),
+])
 
   if (coursesError) console.error('Failed to load courses:', coursesError)
   if (roundsError) console.error('Failed to load rounds:', roundsError)
@@ -1212,9 +1214,9 @@ export default async function DashboardPage({
   if (roundPlayersError) {
     console.error('Failed to load round players:', roundPlayersError)
   }
-  if (feedEventsError) {
-    console.error('Failed to load feed events:', feedEventsError)
-  }
+  if (friendsError) {
+  console.error('Failed to load friends:', friendsError)
+}
 
   const allCourses = (courses as Course[] | null) ?? []
   const allRounds = (rounds as Round[] | null) ?? []
@@ -1225,8 +1227,38 @@ export default async function DashboardPage({
     (incomingFriendRequests as FriendRequestRow[] | null)?.length ?? 0
   const allHoleScores = (holeScores as HoleScore[] | null) ?? []
   const allRoundPlayers = (roundPlayers as RoundPlayer[] | null) ?? []
-  const feedEvents = (feedEventsData as FeedEvent[] | null) ?? []
+  const friendEmails =
+  ((friendsData as FriendRow[] | null) ?? [])
+    .map((friend) => friend.friend_email?.trim().toLowerCase())
+    .filter((email): email is string => typeof email === 'string' && email.length > 0)
 
+let friendUserIds: string[] = []
+
+if (friendEmails.length > 0) {
+  const { data: friendProfiles, error: friendProfilesError } = await supabase
+    .from('profiles')
+    .select('id, email')
+    .in('email', friendEmails)
+
+  if (friendProfilesError) {
+    console.error('Failed to load friend profiles:', friendProfilesError)
+  }
+
+  friendUserIds = (friendProfiles ?? []).map((profile) => profile.id)
+}
+
+const visibleUserIds = Array.from(new Set([user.id, ...friendUserIds]))
+const { data: feedEventsData, error: feedEventsError } = await supabase
+  .from('feed_events')
+  .select('*')
+  .in('user_id', visibleUserIds)
+  .order('created_at', { ascending: false })
+  .limit(10)
+
+if (feedEventsError) {
+  console.error('Failed to load feed events:', feedEventsError)
+}
+  const feedEvents = (feedEventsData as FeedEvent[] | null) ?? []
   const membershipByRoundId = new Map(
     userMemberships.map((member) => [member.round_id, member.role] as const)
   )
