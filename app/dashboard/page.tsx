@@ -1092,7 +1092,7 @@ export default async function DashboardPage({
       .eq('status', 'pending'),
     supabase.from('hole_scores').select('*'),
     supabase.from('round_players').select('*'),
-    supabase
+    
   supabase
   .from('feed_events')
   .select('*')
