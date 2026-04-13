@@ -6,7 +6,10 @@ import { updateProfile } from '@/app/login/actions'
 import { sendFriendRequestEmail } from '@/lib/email'
 import type { Profile } from '@/lib/types'
 
-type SearchParams = Promise<{ message?: string }>
+type SearchParams = Promise<{
+  message?: string
+  type?: 'success' | 'warning' | 'error'
+}>
 
 type FriendRow = {
   id: string
@@ -72,6 +75,8 @@ export default async function ProfilePage({
   const outgoingRequests = (outgoingRequestsRaw as FriendRequestRow[] | null) ?? []
   const incomingRequests = (incomingRequestsRaw as FriendRequestRow[] | null) ?? []
 
+  const messageType = params.type || 'success'
+
   async function addFriend(formData: FormData) {
     'use server'
 
@@ -89,15 +94,15 @@ export default async function ProfilePage({
     const ownEmail = (user.email ?? '').trim().toLowerCase()
 
     if (!email) {
-      redirect('/profile?message=Du måste ange en e-postadress')
+      redirect('/profile?message=Du måste ange en e-postadress&type=error')
     }
 
     if (!ownEmail) {
-      redirect('/profile?message=Kunde inte läsa din e-postadress')
+      redirect('/profile?message=Kunde inte läsa din e-postadress&type=error')
     }
 
     if (email === ownEmail) {
-      redirect('/profile?message=Du kan inte lägga till dig själv')
+      redirect('/profile?message=Du kan inte lägga till dig själv&type=error')
     }
 
     const { data: existingFriend } = await supabase
@@ -108,7 +113,7 @@ export default async function ProfilePage({
       .maybeSingle()
 
     if (existingFriend) {
-      redirect('/profile?message=Ni är redan vänner')
+      redirect('/profile?message=Ni är redan vänner&type=warning')
     }
 
     const { data: existingPendingOutgoing } = await supabase
@@ -120,7 +125,7 @@ export default async function ProfilePage({
       .maybeSingle()
 
     if (existingPendingOutgoing) {
-      redirect('/profile?message=Vänförfrågan är redan skickad')
+      redirect('/profile?message=Vänförfrågan är redan skickad&type=warning')
     }
 
     const { data: existingPendingIncoming } = await supabase
@@ -132,7 +137,9 @@ export default async function ProfilePage({
       .maybeSingle()
 
     if (existingPendingIncoming) {
-      redirect('/profile?message=Du har redan en inkommande vänförfrågan från den här användaren')
+      redirect(
+        '/profile?message=Du har redan en inkommande vänförfrågan från den här användaren&type=warning'
+      )
     }
 
     const { data: senderProfile } = await supabase
@@ -153,13 +160,13 @@ export default async function ProfilePage({
 
     if (error || !request) {
       console.error('addFriend request insert failed:', error)
-      redirect('/profile?message=Kunde inte skapa vänförfrågan')
+      redirect('/profile?message=Kunde inte skapa vänförfrågan&type=error')
     }
 
     const appUrl = process.env.NEXT_PUBLIC_SITE_URL
 
     if (!appUrl) {
-      redirect('/profile?message=NEXT_PUBLIC_SITE_URL saknas i .env.local')
+      redirect('/profile?message=NEXT_PUBLIC_SITE_URL saknas i .env.local&type=error')
     }
 
     const acceptUrl = `${appUrl}/friends/accept?token=${request.token}`
@@ -174,13 +181,17 @@ export default async function ProfilePage({
       })
     } catch (error) {
       console.error('Friend request email failed:', error)
-      redirect('/profile?message=Förfrågan skapades men mejlet kunde inte skickas')
+
+      revalidatePath('/profile')
+      revalidatePath('/dashboard')
+
+      redirect('/profile?message=Förfrågan skapades, men mejlet kunde inte skickas&type=warning')
     }
 
     revalidatePath('/profile')
     revalidatePath('/dashboard')
 
-    redirect('/profile?message=Vänförfrågan skickad')
+    redirect('/profile?message=Vänförfrågan skickad&type=success')
   }
 
   async function cancelRequest(formData: FormData) {
@@ -199,7 +210,7 @@ export default async function ProfilePage({
     const id = String(formData.get('id') || '')
 
     if (!id) {
-      redirect('/profile?message=Kunde inte ta bort förfrågan')
+      redirect('/profile?message=Kunde inte ta bort förfrågan&type=error')
     }
 
     await supabase
@@ -212,7 +223,7 @@ export default async function ProfilePage({
     revalidatePath('/profile')
     revalidatePath('/dashboard')
 
-    redirect('/profile?message=Vänförfrågan borttagen')
+    redirect('/profile?message=Vänförfrågan borttagen&type=success')
   }
 
   async function declineRequest(formData: FormData) {
@@ -232,7 +243,7 @@ export default async function ProfilePage({
     const ownEmail = (user.email ?? '').trim().toLowerCase()
 
     if (!id || !ownEmail) {
-      redirect('/profile?message=Kunde inte avvisa förfrågan')
+      redirect('/profile?message=Kunde inte avvisa förfrågan&type=error')
     }
 
     await supabase
@@ -248,7 +259,7 @@ export default async function ProfilePage({
     revalidatePath('/profile')
     revalidatePath('/dashboard')
 
-    redirect('/profile?message=Vänförfrågan avvisad')
+    redirect('/profile?message=Vänförfrågan avvisad&type=success')
   }
 
   async function acceptRequest(formData: FormData) {
@@ -296,10 +307,12 @@ export default async function ProfilePage({
       redirect('/login')
     }
 
-    const friendEmail = String(formData.get('friend_email') || '').trim().toLowerCase()
+    const friendEmail = String(formData.get('friend_email') || '')
+      .trim()
+      .toLowerCase()
 
     if (!friendEmail) {
-      redirect('/profile?message=Kunde inte ta bort vän')
+      redirect('/profile?message=Kunde inte ta bort vän&type=error')
     }
 
     await supabase
@@ -311,8 +324,33 @@ export default async function ProfilePage({
     revalidatePath('/profile')
     revalidatePath('/dashboard')
 
-    redirect('/profile?message=Vän borttagen')
+    redirect('/profile?message=Vän borttagen&type=success')
   }
+
+  const flashStyles =
+    messageType === 'success'
+      ? {
+          background: 'linear-gradient(180deg, #f0fdf4 0%, #ecfdf3 100%)',
+          border: '1px solid #bbf7d0',
+          color: '#166534',
+          iconBg: '#dcfce7',
+        }
+      : messageType === 'warning'
+      ? {
+          background: 'linear-gradient(180deg, #fffbeb 0%, #fefce8 100%)',
+          border: '1px solid #fde68a',
+          color: '#92400e',
+          iconBg: '#fef3c7',
+        }
+      : {
+          background: 'linear-gradient(180deg, #fef2f2 0%, #fee2e2 100%)',
+          border: '1px solid #fecaca',
+          color: '#991b1b',
+          iconBg: '#fee2e2',
+        }
+
+  const flashIcon =
+    messageType === 'success' ? '✅' : messageType === 'warning' ? '⚠️' : '❌'
 
   return (
     <main style={{ width: '100%', overflowX: 'hidden' }}>
@@ -434,6 +472,81 @@ export default async function ProfilePage({
           box-shadow: 0 10px 24px rgba(34, 197, 94, 0.18);
         }
 
+        .flash-banner {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 16px;
+          border-radius: 18px;
+          font-weight: 800;
+          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+          animation: flashFadeOut 6s ease forwards;
+          transform-origin: top center;
+          overflow: hidden;
+        }
+
+        .flash-banner-icon {
+          width: 36px;
+          height: 36px;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
+          flex-shrink: 0;
+        }
+
+        .flash-banner-text {
+          line-height: 1.45;
+          word-break: break-word;
+        }
+
+        @keyframes flashFadeOut {
+          0% {
+            opacity: 0;
+            transform: translateY(-6px);
+            max-height: 120px;
+            margin-top: 0;
+            margin-bottom: 0;
+            padding-top: 14px;
+            padding-bottom: 14px;
+          }
+          8% {
+            opacity: 1;
+            transform: translateY(0);
+            max-height: 120px;
+            margin-top: 0;
+            margin-bottom: 0;
+            padding-top: 14px;
+            padding-bottom: 14px;
+          }
+          72% {
+            opacity: 1;
+            transform: translateY(0);
+            max-height: 120px;
+            margin-top: 0;
+            margin-bottom: 0;
+            padding-top: 14px;
+            padding-bottom: 14px;
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-8px);
+            max-height: 0;
+            margin-top: -6px;
+            margin-bottom: -6px;
+            padding-top: 0;
+            padding-bottom: 0;
+            border-width: 0;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .flash-banner {
+            animation: none;
+          }
+        }
+
         @media (max-width: 860px) {
           .profile-grid {
             grid-template-columns: 1fr;
@@ -460,6 +573,10 @@ export default async function ProfilePage({
 
           .friend-row-actions button {
             width: 100%;
+          }
+
+          .flash-banner {
+            align-items: flex-start;
           }
         }
       `}</style>
@@ -548,17 +665,23 @@ export default async function ProfilePage({
 
           {params.message ? (
             <div
-              className="profile-section-card"
+              className="flash-banner"
+              role="status"
+              aria-live="polite"
               style={{
-                padding: 14,
-                background: 'linear-gradient(180deg, #f0fdf4 0%, #ecfdf3 100%)',
-                border: '1px solid #bbf7d0',
-                color: '#166534',
-                borderRadius: 18,
-                fontWeight: 800,
+                background: flashStyles.background,
+                border: flashStyles.border,
+                color: flashStyles.color,
               }}
             >
-              {params.message}
+              <div
+                className="flash-banner-icon"
+                style={{ background: flashStyles.iconBg }}
+                aria-hidden="true"
+              >
+                {flashIcon}
+              </div>
+              <div className="flash-banner-text">{params.message}</div>
             </div>
           ) : null}
 
