@@ -1,3 +1,4 @@
+import { sendPushNotification } from '@/lib/send-push'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
@@ -186,49 +187,107 @@ export async function POST(
     }
 
     const { error: insertFeedEventError } = await supabase
-      .from('feed_events')
-      .insert({
-        user_id: roundPlayer.user_id,
-        round_id: id,
-        round_player_id: roundPlayerId,
-        event_type: eventType,
-        hole_number: holeNumber,
-      })
+  .from('feed_events')
+  .insert({
+    user_id: roundPlayer.user_id,
+    round_id: id,
+    round_player_id: roundPlayerId,
+    event_type: eventType,
+    hole_number: holeNumber,
+  })
 
-    if (insertFeedEventError) {
-      return NextResponse.json(
-        { error: insertFeedEventError.message },
-        { status: 400 }
-      )
+if (insertFeedEventError) {
+  return NextResponse.json(
+    { error: insertFeedEventError.message },
+    { status: 400 }
+  )
+}
+// 🔥 Skicka push vid birdie/eagle/hole-in-one
+if (
+  eventType === 'birdie' ||
+  eventType === 'eagle' ||
+  eventType === 'hole_in_one'
+) {
+  const { data: actorProfile } = await supabase
+    .from('profiles')
+    .select('display_name, email')
+    .eq('id', roundPlayer.user_id)
+    .maybeSingle()
+
+  const actorName =
+    actorProfile?.display_name?.trim() ||
+    actorProfile?.email?.trim() ||
+    'Din vän'
+
+  // 1. hämta vänners e-post
+  const { data: friends, error: friendsError } = await supabase
+    .from('friends')
+    .select('friend_email')
+    .eq('user_id', roundPlayer.user_id)
+
+  if (friendsError) {
+    console.error('Failed to load friends for push:', friendsError)
+  } else {
+    const friendEmails =
+      friends
+        ?.map((friend) => friend.friend_email?.trim().toLowerCase())
+        .filter((email): email is string => Boolean(email)) ?? []
+
+    if (friendEmails.length > 0) {
+      // 2. hitta profiler för dessa vänner
+      const { data: friendProfiles, error: friendProfilesError } = await supabase
+        .from('profiles')
+        .select('id, email, push_friend_activity_enabled')
+        .in('email', friendEmails)
+
+      if (friendProfilesError) {
+        console.error('Failed to load friend profiles for push:', friendProfilesError)
+      } else {
+        const enabledFriendIds =
+          friendProfiles
+            ?.filter((profile) => profile.push_friend_activity_enabled)
+            .map((profile) => profile.id) ?? []
+
+        if (enabledFriendIds.length > 0) {
+          // 3. hämta deras subscriptions
+          const { data: subscriptions, error: subscriptionsError } = await supabase
+            .from('push_subscriptions')
+            .select('endpoint, p256dh, auth, user_id')
+            .in('user_id', enabledFriendIds)
+
+          if (subscriptionsError) {
+            console.error('Failed to load push subscriptions:', subscriptionsError)
+          } else {
+            let title = '⛳ Ny aktivitet'
+            let body = `${actorName} gjorde något bra!`
+
+            if (eventType === 'birdie') {
+              title = '🐦 Birdie!'
+              body = `${actorName} gjorde birdie på hål ${holeNumber}`
+            }
+
+            if (eventType === 'eagle') {
+              title = '🦅 Eagle!'
+              body = `${actorName} gjorde eagle på hål ${holeNumber}`
+            }
+
+            if (eventType === 'hole_in_one') {
+              title = '🎯 Hole-in-one!'
+              body = `${actorName} gjorde hole-in-one på hål ${holeNumber}!`
+            }
+
+            await Promise.all(
+              (subscriptions ?? []).map((sub) =>
+                sendPushNotification(sub, {
+                  title,
+                  body,
+                  url: '/dashboard',
+                })
+              )
+            )
+          }
+        }
+      }
     }
   }
-
-  const requestedNextHole = holeNumber < endHole ? holeNumber + 1 : endHole
-  const requestedStatus = holeNumber >= endHole ? 'completed' : 'active'
-
-  const currentRoundHole =
-    typeof round.current_hole === 'number' && Number.isFinite(round.current_hole)
-      ? round.current_hole
-      : startHole
-
-  const safeNextHole = Math.max(currentRoundHole, requestedNextHole)
-  const nextStatus = round.status === 'completed' ? 'completed' : requestedStatus
-
-  const { error: updateRoundError } = await supabase
-    .from('rounds')
-    .update({
-      current_hole: safeNextHole,
-      status: nextStatus,
-    })
-    .eq('id', id)
-
-  if (updateRoundError) {
-    return NextResponse.json({ error: updateRoundError.message }, { status: 400 })
-  }
-
-  return NextResponse.json({
-    ok: true,
-    currentHole: safeNextHole,
-    status: nextStatus,
-  })
 }
