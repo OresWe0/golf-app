@@ -1511,7 +1511,7 @@ export default async function DashboardPage({
     .select('*')
     .in('user_id', visibleUserIds)
     .order('created_at', { ascending: false })
-    .limit(10)
+    .limit(5)
 
   if (feedEventsError) {
     console.error('Failed to load feed events:', feedEventsError)
