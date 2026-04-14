@@ -276,7 +276,7 @@ if (
               body = `${actorName} gjorde hole-in-one på hål ${holeNumber}!`
             }
 
-            await Promise.all(
+                        await Promise.all(
               (subscriptions ?? []).map((sub) =>
                 sendPushNotification(sub, {
                   title,
@@ -290,4 +290,35 @@ if (
       }
     }
   }
+}
+}
+
+const requestedNextHole = holeNumber < endHole ? holeNumber + 1 : endHole
+  const requestedStatus = holeNumber >= endHole ? 'completed' : 'active'
+
+  const currentRoundHole =
+    typeof round.current_hole === 'number' && Number.isFinite(round.current_hole)
+      ? round.current_hole
+      : startHole
+
+  const safeNextHole = Math.max(currentRoundHole, requestedNextHole)
+  const nextStatus = round.status === 'completed' ? 'completed' : requestedStatus
+
+  const { error: updateRoundError } = await supabase
+    .from('rounds')
+    .update({
+      current_hole: safeNextHole,
+      status: nextStatus,
+    })
+    .eq('id', id)
+
+  if (updateRoundError) {
+    return NextResponse.json({ error: updateRoundError.message }, { status: 400 })
+  }
+
+  return NextResponse.json({
+    ok: true,
+    currentHole: safeNextHole,
+    status: nextStatus,
+  })
 }
