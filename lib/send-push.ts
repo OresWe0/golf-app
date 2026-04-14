@@ -1,11 +1,5 @@
 import webpush from 'web-push'
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT!,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-)
-
 export async function sendPushNotification(
   subscription: {
     endpoint: string
@@ -18,6 +12,21 @@ export async function sendPushNotification(
     url?: string
   }
 ) {
+  const vapidSubject = process.env.VAPID_SUBJECT
+  const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY
+
+  if (!vapidSubject || !vapidPublicKey || !vapidPrivateKey) {
+    console.error('Missing VAPID environment variables')
+    return
+  }
+
+  webpush.setVapidDetails(
+    vapidSubject,
+    vapidPublicKey,
+    vapidPrivateKey
+  )
+
   try {
     await webpush.sendNotification(
       {
