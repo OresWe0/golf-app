@@ -16,10 +16,15 @@ export async function likeFeedEvent(formData: FormData) {
 
   if (typeof feedEventId !== 'string' || !feedEventId) return
 
-  await supabase.from('feed_event_likes').insert({
-    feed_event_id: feedEventId,
-    user_id: user.id,
-  })
+  await supabase
+  .from('feed_event_likes')
+  .upsert(
+    {
+      feed_event_id: feedEventId,
+      user_id: user.id,
+    },
+    { onConflict: 'feed_event_id,user_id' }
+  )
 
   const { data: feedEvent } = await supabase
     .from('feed_events')
@@ -103,6 +108,28 @@ export async function addFeedEventComment(formData: FormData) {
       feed_event_id: feedEvent.id,
     })
   }
+
+  revalidatePath('/dashboard')
+}
+
+export async function markNotificationAsRead(formData: FormData) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return
+
+  const notificationId = formData.get('notificationId')
+
+  if (typeof notificationId !== 'string' || !notificationId) return
+
+  await supabase
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('id', notificationId)
+    .eq('user_id', user.id)
 
   revalidatePath('/dashboard')
 }

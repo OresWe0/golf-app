@@ -1,4 +1,9 @@
-import { likeFeedEvent, unlikeFeedEvent, addFeedEventComment } from './actions'
+import {
+  likeFeedEvent,
+  unlikeFeedEvent,
+  addFeedEventComment,
+  markNotificationAsRead,
+} from './actions'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -596,20 +601,42 @@ function NotificationsSection({
                 borderRadius: 14,
                 padding: 12,
                 background: '#fafbfc',
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: 12,
+                alignItems: 'center',
+                flexWrap: 'wrap',
               }}
             >
-              <div style={{ fontWeight: 800, color: '#1f3327' }}>
-                {notification.type === 'like'
-                  ? `👍 ${actorName} gillade ditt event`
-                  : `💬 ${actorName} kommenterade: ${notification.title.replace(
-                      'Ny kommentar: ',
-                      ''
-                    )}`}
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontWeight: 800, color: '#1f3327' }}>
+                  {notification.type === 'like'
+                    ? `👍 ${actorName} gillade ditt event`
+                    : `💬 ${actorName} kommenterade: ${notification.title.replace(
+                        'Ny kommentar: ',
+                        ''
+                      )}`}
+                </div>
+
+                <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+                  {formatFeedEventTime(notification.created_at)}
+                </div>
               </div>
 
-              <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
-                {formatFeedEventTime(notification.created_at)}
-              </div>
+              <form action={markNotificationAsRead}>
+                <input
+                  type="hidden"
+                  name="notificationId"
+                  value={notification.id}
+                />
+                <button
+                  type="submit"
+                  className="button secondary"
+                  style={{ minWidth: 120 }}
+                >
+                  ✓ Klart
+                </button>
+              </form>
             </div>
           )
         })}
@@ -783,9 +810,7 @@ function getNotificationActorName(
   notification: NotificationRow,
   profiles: Profile[]
 ) {
-  const actor = profiles.find(
-    (p) => p.id === notification.actor_user_id
-  )
+  const actor = profiles.find((p) => p.id === notification.actor_user_id)
 
   if (actor?.display_name?.trim()) {
     return actor.display_name.trim()
@@ -798,7 +823,7 @@ function getCommentAuthorName(
   comment: FeedEventCommentRow,
   roundPlayers: RoundPlayer[]
 ) {
- const matchingUser = roundPlayers.find(
+  const matchingUser = roundPlayers.find(
     (item) =>
       item.user_id === comment.user_id &&
       typeof item.display_name === 'string' &&
@@ -1439,20 +1464,22 @@ export default async function DashboardPage({
   const allHoleScores = (holeScores as HoleScore[] | null) ?? []
   const allRoundPlayers = (roundPlayers as RoundPlayer[] | null) ?? []
   const notifications = (notificationsData as NotificationRow[] | null) ?? []
-const actorUserIds = notifications
-  .map((n) => n.actor_user_id)
-  .filter((id): id is string => typeof id === 'string')
 
-let actorProfiles: Profile[] = []
+  const actorUserIds = notifications
+    .map((n) => n.actor_user_id)
+    .filter((id): id is string => typeof id === 'string')
 
-if (actorUserIds.length > 0) {
-  const { data } = await supabase
-    .from('profiles')
-    .select('id, display_name')
-    .in('id', actorUserIds)
+  let actorProfiles: Profile[] = []
 
-  actorProfiles = data ?? []
-}
+  if (actorUserIds.length > 0) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, display_name')
+      .in('id', actorUserIds)
+
+    actorProfiles = data ?? []
+  }
+
   const friendEmails = ((friendsData as FriendRow[] | null) ?? [])
     .map((friend) => friend.friend_email)
     .filter((email): email is string => typeof email === 'string')
@@ -1688,9 +1715,9 @@ if (actorUserIds.length > 0) {
           />
 
           <NotificationsSection
-  notifications={notifications}
-  actorProfiles={actorProfiles}
-/>
+            notifications={notifications}
+            actorProfiles={actorProfiles}
+          />
 
           {isAdmin ? <AdminPendingBanner pendingCount={pendingCount} /> : null}
 
