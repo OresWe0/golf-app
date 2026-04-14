@@ -1,9 +1,9 @@
 import webpush from 'web-push'
 
 webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT=mailto:sigge@dufvander.se,
-  process.env.BLEDoaNnCSLz-6MpDCCf7ZMJ2xoLma7Hb0xeG5-vmuJ1JMe10TCcd-nC-oSMOV8cY9C0AENTIEC8YjZaICEAH3I,
-  process.env.AOZLRtyKx8Gpwd0uQdTM60tpB_H3WZq-6KqVoipGxqk
+  process.env.VAPID_SUBJECT!,
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!
 )
 
 export async function sendPushNotification(
