@@ -116,7 +116,7 @@ function getRoleLabel(role?: Membership['role']) {
 }
 
 function getScoringLabel(scoringMode: Round['scoring_mode']) {
-  return scoringMode === 'stableford' ? 'Stableford' : 'Slagspel'
+  return scoringMode === 'stableford' ? 'Poängbogey' : 'Slagspel'
 }
 
 function getRoundHref(round: Round) {
@@ -445,7 +445,7 @@ function DashboardHeader({
                 color: '#20352a',
               }}
             >
-              Dashboard
+              ⛳ Startsidan
             </h1>
 
             <p
@@ -519,7 +519,7 @@ function DashboardHeader({
                 className="button secondary"
                 style={dashboardStyles.softButton}
               >
-                Min profil
+                👤 Profil & vänner
               </Link>
 
               {incomingFriendRequestsCount > 0 ? (
@@ -1052,7 +1052,7 @@ function ActiveRoundCard({
           }}
         >
           <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-            Mode
+            Spelform
           </div>
           <div style={{ fontWeight: 900, color: '#1f3327' }}>{scoring}</div>
         </div>
@@ -1732,7 +1732,7 @@ export default async function DashboardPage({
         <div style={{ display: 'grid', gap: 18 }}>
           <div className="card" style={dashboardStyles.sectionCard}>
             <SectionHeader
-              title="Statistik"
+              title="📊 Din statistik"
               description="Din genomsnittliga score baserat på avslutade rundor."
               count={completedRounds.length}
               countTone="slate"
