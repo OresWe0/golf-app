@@ -9,6 +9,7 @@ export type Profile = {
   display_name?: string | null
   handicap_index?: number | null
   default_tee?: string | null
+  push_friend_activity_enabled?: boolean | null
 }
 
 export type Round = {
