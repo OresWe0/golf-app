@@ -131,21 +131,6 @@ function getFeedEventLabel(eventType: FeedEvent['event_type']) {
   return '🎯 Hole-in-one'
 }
 
-function getCourseNameForFeedEvent(
-  event: FeedEvent,
-  rounds: Round[],
-  courses: Course[]
-) {
-  if (event.course_name?.trim()) {
-    return event.course_name.trim()
-  }
-
-  const round = rounds.find((item) => item.id === event.round_id)
-  if (!round) return 'Okänd bana'
-
-  const course = courses.find((item) => item.id === round.course_id)
-  return course?.name || 'Okänd bana'
-}
 function formatFeedEventTime(value: string) {
   const date = new Date(value)
 
