@@ -961,6 +961,13 @@ function HoleImageModal({
   distanceToFront,
   distanceToCenter,
   distanceToBack,
+  zoom,
+  pan,
+  isZooming,
+  onMapTap,
+  onMapTouchStart,
+  onMapTouchMove,
+  onMapTouchEnd,
 }: {
   show: boolean
   onClose: () => void
@@ -977,6 +984,13 @@ function HoleImageModal({
   distanceToFront: number | null
   distanceToCenter: number | null
   distanceToBack: number | null
+  zoom: number
+  pan: { x: number; y: number }
+  isZooming: boolean
+  onMapTap: () => void
+  onMapTouchStart: TouchEventHandler<HTMLDivElement>
+  onMapTouchMove: TouchEventHandler<HTMLDivElement>
+  onMapTouchEnd: TouchEventHandler<HTMLDivElement>
 }) {
   if (!show) return null
 
@@ -1108,31 +1122,56 @@ function HoleImageModal({
         </div>
 
         <div
-          style={{
-            display: 'grid',
-            placeItems: 'center',
-            background: '#111827',
-            minHeight: 280,
-          }}
-        >
-          {holeImageError ? (
-            <div style={{ color: '#fff', padding: 24, textAlign: 'center' }}>
-              Ingen hålbild hittades för hål {previewHoleNumber}.
-            </div>
-          ) : (
-            <img
-              src={holeImageSrc}
-              alt={`Hål ${previewHoleNumber}`}
-              onError={() => setHoleImageError(true)}
-              style={{
-                width: '100%',
-                height: '100%',
-                maxHeight: '70vh',
-                objectFit: 'contain',
-              }}
-            />
-          )}
-        </div>
+  style={{
+    display: 'grid',
+    placeItems: 'center',
+    background: '#111827',
+    minHeight: 280,
+  }}
+>
+  <div
+    onClick={onMapTap}
+    onTouchStart={onMapTouchStart}
+    onTouchMove={onMapTouchMove}
+    onTouchEnd={onMapTouchEnd}
+    style={{
+      position: 'relative',
+      width: '100%',
+      height: '100%',
+      maxHeight: '70vh',
+      overflow: 'hidden',
+      touchAction: 'none',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}
+  >
+    {holeImageError ? (
+      <div style={{ color: '#fff', padding: 24, textAlign: 'center' }}>
+        Ingen hålbild hittades för hål {previewHoleNumber}.
+      </div>
+    ) : (
+      <img
+        src={holeImageSrc}
+        alt={`Hål ${previewHoleNumber}`}
+        onError={() => setHoleImageError(true)}
+        draggable={false}
+        style={{
+          width: '100%',
+          height: '100%',
+          maxHeight: '70vh',
+          objectFit: 'contain',
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          transformOrigin: 'center center',
+          transition: isZooming ? 'none' : 'transform 0.18s ease',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          pointerEvents: 'auto',
+        }}
+      />
+    )}
+  </div>
+</div>
 
         <div className="hp-modal-actions">
           <button
@@ -1397,6 +1436,15 @@ export function HolePlay({
   const [holeImageError, setHoleImageError] = useState(false)
   const [previewHoleNumber, setPreviewHoleNumber] = useState<number>(hole.hole_number)
   const [showFinishModal, setShowFinishModal] = useState(false)
+const [zoom, setZoom] = useState(1)
+const [pan, setPan] = useState({ x: 0, y: 0 })
+const [isZooming, setIsZooming] = useState(false)
+
+const lastTapRef = useRef(0)
+const pinchStartDistanceRef = useRef<number | null>(null)
+const pinchStartZoomRef = useRef(1)
+const panStartRef = useRef<{ x: number; y: number } | null>(null)
+const dragStartRef = useRef<{ x: number; y: number } | null>(null)
 
   const [playerPosition, setPlayerPosition] = useState<GpsPoint | null>(null)
   const [distanceStatus, setDistanceStatus] = useState<DistanceStatus>('idle')
@@ -1453,6 +1501,90 @@ export function HolePlay({
     setDistanceToCenter(null)
     setDistanceToBack(null)
   }
+
+const resetMapZoom = () => {
+  setZoom(1)
+  setPan({ x: 0, y: 0 })
+  setIsZooming(false)
+}
+
+function getTouchDistance(touches: React.TouchList) {
+  if (touches.length < 2) return 0
+
+  const dx = touches[0].clientX - touches[1].clientX
+  const dy = touches[0].clientY - touches[1].clientY
+
+  return Math.sqrt(dx * dx + dy * dy)
+}
+
+const handleMapTap = () => {
+  const now = Date.now()
+  const isDoubleTap = now - lastTapRef.current < 280
+
+  if (isDoubleTap) {
+    if (zoom > 1) {
+      setZoom(1)
+      setPan({ x: 0, y: 0 })
+    } else {
+      setZoom(2.2)
+      setPan({ x: 0, y: 0 })
+    }
+  }
+
+  lastTapRef.current = now
+}
+
+const handleMapTouchStart: TouchEventHandler<HTMLDivElement> = (e) => {
+  if (e.touches.length === 2) {
+    pinchStartDistanceRef.current = getTouchDistance(e.touches)
+    pinchStartZoomRef.current = zoom
+    setIsZooming(true)
+    return
+  }
+
+  if (e.touches.length === 1 && zoom > 1) {
+    dragStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    }
+    panStartRef.current = pan
+  }
+}
+
+const handleMapTouchMove: TouchEventHandler<HTMLDivElement> = (e) => {
+  if (e.touches.length === 2 && pinchStartDistanceRef.current) {
+    const newDistance = getTouchDistance(e.touches)
+    const ratio = newDistance / pinchStartDistanceRef.current
+    const nextZoom = Math.max(1, Math.min(4, pinchStartZoomRef.current * ratio))
+    setZoom(nextZoom)
+    return
+  }
+
+  if (e.touches.length === 1 && zoom > 1 && dragStartRef.current && panStartRef.current) {
+    const dx = e.touches[0].clientX - dragStartRef.current.x
+    const dy = e.touches[0].clientY - dragStartRef.current.y
+
+    setPan({
+      x: panStartRef.current.x + dx,
+      y: panStartRef.current.y + dy,
+    })
+  }
+}
+
+const handleMapTouchEnd: TouchEventHandler<HTMLDivElement> = () => {
+  pinchStartDistanceRef.current = null
+  dragStartRef.current = null
+  panStartRef.current = null
+  setIsZooming(false)
+
+  setZoom((currentZoom) => {
+    if (currentZoom <= 1.02) {
+      setPan({ x: 0, y: 0 })
+      return 1
+    }
+    return currentZoom
+  })
+}
 
   const stopWatchingPosition = () => {
     if (
@@ -1645,45 +1777,48 @@ const navigateTo = (target: string) => {
     }))
   }
 
-  const openHoleImage = () => {
-    setPreviewHoleNumber(hole.hole_number)
-    setHoleImageError(false)
-    setShowHoleImage(true)
-    setPlayerPosition(null)
-    resetDistanceState()
-    setDistanceStatus('loading')
-    setDistanceErrorMessage(null)
-  }
+const openHoleImage = () => {
+  resetMapZoom()
+  setPreviewHoleNumber(hole.hole_number)
+  setHoleImageError(false)
+  setShowHoleImage(true)
+  setPlayerPosition(null)
+  resetDistanceState()
+  setDistanceStatus('loading')
+  setDistanceErrorMessage(null)
+}
 
   const closeHoleImage = () => {
+    resetMapZoom()
     setShowHoleImage(false)
     setDistanceStatus('idle')
     setDistanceErrorMessage(null)
     resetDistanceState()
   }
 
-  const previewPreviousHole = () => {
-    if (previewHoleNumber > startHole) {
-      setPreviewHoleNumber((prev) => prev - 1)
-      setHoleImageError(false)
+const previewPreviousHole = () => {
+  if (previewHoleNumber > startHole) {
+    resetMapZoom()
+    setPreviewHoleNumber((prev) => prev - 1)
+    setHoleImageError(false)
 
-      if (playerPosition) {
-        setDistanceStatus('loading')
-      }
+    if (playerPosition) {
+      setDistanceStatus('loading')
     }
   }
+}
 
-  const previewNextHole = () => {
-    if (previewHoleNumber < endHole) {
-      setPreviewHoleNumber((prev) => prev + 1)
-      setHoleImageError(false)
+const previewNextHole = () => {
+  if (previewHoleNumber < endHole) {
+    resetMapZoom()
+    setPreviewHoleNumber((prev) => prev + 1)
+    setHoleImageError(false)
 
-      if (playerPosition) {
-        setDistanceStatus('loading')
-      }
+    if (playerPosition) {
+      setDistanceStatus('loading')
     }
   }
-
+}
   const onTouchStart: TouchEventHandler<HTMLDivElement> = (e) => {
     touchStartX.current = e.changedTouches[0]?.clientX ?? null
   }
@@ -1999,23 +2134,30 @@ useEffect(() => {
         />
       </div>
 
-      <HoleImageModal
-        show={showHoleImage}
-        onClose={closeHoleImage}
-        previewHoleNumber={previewHoleNumber}
-        startHole={startHole}
-        endHole={endHole}
-        onPrevious={previewPreviousHole}
-        onNext={previewNextHole}
-        holeImageSrc={holeImageSrc}
-        holeImageError={holeImageError}
-        setHoleImageError={setHoleImageError}
-        distanceStatus={distanceStatus}
-        distanceErrorMessage={distanceErrorMessage}
-        distanceToFront={distanceToFront}
-        distanceToCenter={distanceToCenter}
-        distanceToBack={distanceToBack}
-      />
+<HoleImageModal
+  show={showHoleImage}
+  onClose={closeHoleImage}
+  previewHoleNumber={previewHoleNumber}
+  startHole={startHole}
+  endHole={endHole}
+  onPrevious={previewPreviousHole}
+  onNext={previewNextHole}
+  holeImageSrc={holeImageSrc}
+  holeImageError={holeImageError}
+  setHoleImageError={setHoleImageError}
+  distanceStatus={distanceStatus}
+  distanceErrorMessage={distanceErrorMessage}
+  distanceToFront={distanceToFront}
+  distanceToCenter={distanceToCenter}
+  distanceToBack={distanceToBack}
+  zoom={zoom}
+  pan={pan}
+  isZooming={isZooming}
+  onMapTap={handleMapTap}
+  onMapTouchStart={handleMapTouchStart}
+  onMapTouchMove={handleMapTouchMove}
+  onMapTouchEnd={handleMapTouchEnd}
+/>
 
       <FinishRoundModal
         open={showFinishModal}
