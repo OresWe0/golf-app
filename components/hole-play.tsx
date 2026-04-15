@@ -1482,7 +1482,16 @@ export function HolePlay({
     setDistanceErrorMessage(null)
   }
 
-  
+const navigateTo = (target: string) => {
+  if (isNavigatingRef.current) return
+
+  clearPostSaveTimeout()
+  clearToastTimeout()
+
+  isNavigatingRef.current = true
+  router.push(target, { scroll: false })
+}  
+
   const goPrevious = () => {
     if (!canInteract) return
 
