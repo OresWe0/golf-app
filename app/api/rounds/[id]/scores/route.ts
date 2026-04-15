@@ -1,6 +1,8 @@
 import { sendPushNotification } from '@/lib/send-push'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
+
 
 type ScoreUpdate = {
   roundPlayerId: string
@@ -25,6 +27,16 @@ export async function POST(
 ) {
   const { id } = await params
   const supabase = await createClient()
+const supabaseAdmin = createAdminClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+)
 
   const {
     data: { user },
@@ -208,7 +220,7 @@ if (
   eventType === 'eagle' ||
   eventType === 'hole_in_one'
 ) {
-  const { data: actorProfile } = await supabase
+  const { data: actorProfile } = await supabaseAdmin
     .from('profiles')
     .select('display_name, email')
     .eq('id', roundPlayer.user_id)
@@ -235,7 +247,7 @@ if (
 
     if (friendEmails.length > 0) {
       // 2. hitta profiler för dessa vänner
-      const { data: friendProfiles, error: friendProfilesError } = await supabase
+      const { data: friendProfiles, error: friendProfilesError } = await supabaseAdmin
         .from('profiles')
         .select('id, email, push_friend_activity_enabled')
         .in('email', friendEmails)
@@ -250,7 +262,7 @@ if (
 
         if (enabledFriendIds.length > 0) {
           // 3. hämta deras subscriptions
-          const { data: subscriptions, error: subscriptionsError } = await supabase
+          const { data: subscriptions, error: subscriptionsError } = await supabaseAdmin
             .from('push_subscriptions')
             .select('endpoint, p256dh, auth, user_id')
             .in('user_id', enabledFriendIds)
