@@ -1162,24 +1162,25 @@ export default async function SummaryPage({
                   const isActive = player.id === selectedPlayer.id
 
                   return (
-                    <Link
-                      key={player.id}
-                      href={`/rounds/${id}/summary?player=${player.id}&hole=${returnHole}`}
-                      style={{
-                        flex: '0 0 auto',
-                        padding: '10px 14px',
-                        borderRadius: 999,
-                        border: isActive ? '1px solid #166534' : '1px solid #d1d5db',
-                        background: isActive ? '#166534' : '#fff',
-                        color: isActive ? '#fff' : '#0f172a',
-                        whiteSpace: 'nowrap',
-                        fontSize: 14,
-                        fontWeight: 800,
-                        lineHeight: 1,
-                      }}
-                    >
-                      {player.name}
-                    </Link>
+                   <Link
+  key={player.id}
+  href={`/rounds/${id}/summary?player=${player.id}&hole=${returnHole}`}
+  scroll={false}
+  style={{
+    flex: '0 0 auto',
+    padding: '10px 14px',
+    borderRadius: 999,
+    border: isActive ? '1px solid #166534' : '1px solid #d1d5db',
+    background: isActive ? '#166534' : '#fff',
+    color: isActive ? '#fff' : '#0f172a',
+    whiteSpace: 'nowrap',
+    fontSize: 14,
+    fontWeight: 800,
+    lineHeight: 1,
+  }}
+>
+  {player.name}
+</Link>
                   )
                 })}
               </div>
