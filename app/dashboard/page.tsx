@@ -190,6 +190,37 @@ function getCourseNameForFeedEvent(
   const course = courses.find((item) => item.id === round.course_id)
   return course?.name || 'Okänd bana'
 }
+
+function getPlayerNameForFeedEvent(
+  event: FeedEvent,
+  roundPlayers: RoundPlayer[]
+) {
+  if (event.player_name?.trim()) {
+    return event.player_name.trim()
+  }
+
+  const roundPlayer = roundPlayers.find(
+    (item) => item.id === event.round_player_id
+  )
+
+  if (roundPlayer?.display_name?.trim()) {
+    return roundPlayer.display_name.trim()
+  }
+
+  const matchingUser = roundPlayers.find(
+    (item) =>
+      item.user_id === event.user_id &&
+      typeof item.display_name === 'string' &&
+      item.display_name.trim().length > 0
+  )
+
+  if (matchingUser?.display_name?.trim()) {
+    return matchingUser.display_name.trim()
+  }
+
+  return 'Okänd spelare'
+}
+  
 const dashboardStyles = {
   heroCard: {
     background:
