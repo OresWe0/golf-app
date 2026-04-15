@@ -256,6 +256,8 @@ const styles = {
     paddingBottom: 'calc(146px + env(safe-area-inset-bottom))',
     display: 'grid',
     gap: 12,
+    overscrollBehavior: 'contain',
+    WebkitTapHighlightColor: 'transparent',
   } satisfies CSSProperties,
 
   glassPanel: {
@@ -594,42 +596,45 @@ function ScoreButton({
   const label = getLabel(score, par)
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      onMouseDown={(e) => {
-        e.currentTarget.style.transform = 'scale(0.96)'
-      }}
-      onMouseUp={(e) => {
-        e.currentTarget.style.transform = isSelected ? 'scale(1.03)' : 'scale(1)'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = isSelected ? 'scale(1.03)' : 'scale(1)'
-      }}
-      style={{
-        position: 'relative',
-        overflow: 'hidden',
-        borderRadius: 22,
-        padding: '16px 8px',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        minHeight: 92,
-        display: 'grid',
-        placeItems: 'center',
-        gap: 4,
-        background: isSelected ? tone.background : 'rgba(255,255,255,0.78)',
-        border: isSelected ? tone.border : '1px solid #d1d5db',
-        color: isSelected ? tone.color : '#0f172a',
-        boxShadow: isSelected
-          ? `0 0 0 3px ${tone.glow}, 0 14px 30px rgba(15, 23, 42, 0.16)`
-          : '0 3px 10px rgba(15, 23, 42, 0.04)',
-        transform: isSelected ? 'scale(1.03)' : 'scale(1)',
-        transition:
-          'transform 0.14s ease, box-shadow 0.18s ease, background 0.18s ease, border 0.18s ease, color 0.18s ease',
-        animation: isSelected ? 'scorePop 0.22s ease, softPulse 0.5s ease' : 'none',
-        opacity: disabled ? 0.9 : 1,
-      }}
-      disabled={disabled}
-    >
+  <button
+  type="button"
+  onClick={onClick}
+  onMouseDown={(e) => {
+    e.currentTarget.style.transform = 'scale(0.96)'
+  }}
+  onMouseUp={(e) => {
+    e.currentTarget.style.transform = isSelected ? 'scale(1.03)' : 'scale(1)'
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.transform = isSelected ? 'scale(1.03)' : 'scale(1)'
+  }}
+  style={{
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 22,
+    padding: '16px 8px',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    minHeight: 92,
+    display: 'grid',
+    placeItems: 'center',
+    gap: 4,
+    touchAction: 'manipulation',
+    userSelect: 'none',
+    WebkitUserSelect: 'none',
+    background: isSelected ? tone.background : 'rgba(255,255,255,0.78)',
+    border: isSelected ? tone.border : '1px solid #d1d5db',
+    color: isSelected ? tone.color : '#0f172a',
+    boxShadow: isSelected
+      ? `0 0 0 3px ${tone.glow}, 0 14px 30px rgba(15, 23, 42, 0.16)`
+      : '0 3px 10px rgba(15, 23, 42, 0.04)',
+    transform: isSelected ? 'scale(1.03)' : 'scale(1)',
+    transition:
+      'transform 0.14s ease, box-shadow 0.18s ease, background 0.18s ease, border 0.18s ease, color 0.18s ease',
+    animation: isSelected ? 'scorePop 0.22s ease, softPulse 0.5s ease' : 'none',
+    opacity: disabled ? 0.9 : 1,
+  }}
+  disabled={disabled}
+>
       <div
         style={{
           fontSize: 18,
@@ -914,6 +919,9 @@ function PlayerScoreCard({
           type="button"
           onClick={onClearScore}
           style={{
+            touchAction: 'manipulation',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
             border: '1px solid rgba(209,213,219,0.95)',
             background: 'rgba(255,255,255,0.84)',
             borderRadius: 20,
@@ -1298,6 +1306,9 @@ function BottomBar({
             fontWeight: 900,
             cursor: canInteract ? 'pointer' : 'not-allowed',
             boxShadow: canInteract ? '0 16px 32px rgba(31, 111, 50, 0.22)' : 'none',
+            touchAction: 'manipulation',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
           }}
         >
           ←
@@ -1326,6 +1337,9 @@ function BottomBar({
             letterSpacing: 0.2,
             animation: !canInteract || !isReadyToAdvance ? 'none' : 'ctaReadyPulse 1.2s ease 1',
             transition: 'transform 0.16s ease, box-shadow 0.18s ease, background 0.18s ease',
+            touchAction: 'manipulation',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
           }}
         >
           {loading
@@ -1364,6 +1378,8 @@ export function HolePlay({
   const watchIdRef = useRef<number | null>(null)
   const isSavingRef = useRef(false)
   const isNavigatingRef = useRef(false)
+  const scrollYByHoleRef = useRef<Record<number, number>>({})
+  const prevHoleRef = useRef<number | null>(null)
 
   const createValuesFromScores = () =>
     Object.fromEntries(
@@ -1466,16 +1482,7 @@ export function HolePlay({
     setDistanceErrorMessage(null)
   }
 
-  const navigateTo = (target: string) => {
-    if (isNavigatingRef.current) return
-
-    clearPostSaveTimeout()
-    clearToastTimeout()
-
-    isNavigatingRef.current = true
-    router.push(target)
-  }
-
+  
   const goPrevious = () => {
     if (!canInteract) return
 
@@ -1693,30 +1700,44 @@ export function HolePlay({
   }
 
   useEffect(() => {
-    setValues(createValuesFromScores())
-    setPreviewHoleNumber(hole.hole_number)
-    setHoleImageError(false)
-    setShowFinishModal(false)
-    setSaveState('idle')
+  setValues(createValuesFromScores())
+  setPreviewHoleNumber(hole.hole_number)
+  setHoleImageError(false)
+  setShowFinishModal(false)
+  setSaveState('idle')
 
-    hasUserChangedScoreRef.current = false
-    isSavingRef.current = false
-    isNavigatingRef.current = false
+  hasUserChangedScoreRef.current = false
+  isSavingRef.current = false
+  isNavigatingRef.current = false
 
-    setLoading(false)
+  setLoading(false)
 
-    clearPostSaveTimeout()
-    clearToastTimeout()
+  clearPostSaveTimeout()
+  clearToastTimeout()
+}, [hole.hole_number, scores])
 
+useEffect(() => {
+  // första render → gör inget
+  if (prevHoleRef.current === null) {
+    prevHoleRef.current = hole.hole_number
+    return
+  }
+
+  // bara scrolla om hålet faktiskt ändras
+  if (prevHoleRef.current !== hole.hole_number) {
     const timer = setTimeout(() => {
       firstPlayerCardRef.current?.scrollIntoView({
-        behavior: 'smooth',
+        behavior: 'auto',
         block: 'start',
       })
     }, 80)
 
+    prevHoleRef.current = hole.hole_number
+
     return () => clearTimeout(timer)
-  }, [hole.hole_number, scores])
+  }
+}, [hole.hole_number])
+    
 
   useEffect(() => {
     return () => {
