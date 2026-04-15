@@ -60,6 +60,8 @@ type FeedEvent = {
   event_type: 'birdie' | 'eagle' | 'hole_in_one'
   hole_number: number
   created_at: string
+  player_name?: string | null
+  course_name?: string | null
 }
 
 type FeedEventLikeRow = {
@@ -129,32 +131,21 @@ function getFeedEventLabel(eventType: FeedEvent['event_type']) {
   return '🎯 Hole-in-one'
 }
 
-function getPlayerNameForFeedEvent(
+function getCourseNameForFeedEvent(
   event: FeedEvent,
-  roundPlayers: RoundPlayer[]
+  rounds: Round[],
+  courses: Course[]
 ) {
-  const roundPlayer = roundPlayers.find(
-    (item) => item.id === event.round_player_id
-  )
-
-  if (roundPlayer?.display_name?.trim()) {
-    return roundPlayer.display_name.trim()
+  if (event.course_name?.trim()) {
+    return event.course_name.trim()
   }
 
-  const matchingUser = roundPlayers.find(
-    (item) =>
-      item.user_id === event.user_id &&
-      typeof item.display_name === 'string' &&
-      item.display_name.trim().length > 0
-  )
+  const round = rounds.find((item) => item.id === event.round_id)
+  if (!round) return 'Okänd bana'
 
-  if (matchingUser?.display_name?.trim()) {
-    return matchingUser.display_name.trim()
-  }
-
-  return 'Okänd spelare'
+  const course = courses.find((item) => item.id === round.course_id)
+  return course?.name || 'Okänd bana'
 }
-
 function formatFeedEventTime(value: string) {
   const date = new Date(value)
 
@@ -204,13 +195,16 @@ function getCourseNameForFeedEvent(
   rounds: Round[],
   courses: Course[]
 ) {
+  if (event.course_name?.trim()) {
+    return event.course_name.trim()
+  }
+
   const round = rounds.find((item) => item.id === event.round_id)
   if (!round) return 'Okänd bana'
 
   const course = courses.find((item) => item.id === round.course_id)
   return course?.name || 'Okänd bana'
 }
-
 const dashboardStyles = {
   heroCard: {
     background:

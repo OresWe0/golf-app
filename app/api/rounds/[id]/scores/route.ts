@@ -198,7 +198,24 @@ const supabaseAdmin = createAdminClient(
       continue
     }
 
-    const { error: insertFeedEventError } = await supabase
+    const { data: playerProfile } = await supabaseAdmin
+  .from('profiles')
+  .select('display_name, email')
+  .eq('id', roundPlayer.user_id)
+  .maybeSingle()
+
+const playerName =
+  playerProfile?.display_name?.trim() ||
+  playerProfile?.email?.trim() ||
+  'Okänd spelare'
+
+const { data: courseDetails } = await supabase
+  .from('courses')
+  .select('name')
+  .eq('id', round.course_id)
+  .maybeSingle()
+
+const { error: insertFeedEventError } = await supabase
   .from('feed_events')
   .insert({
     user_id: roundPlayer.user_id,
@@ -206,6 +223,8 @@ const supabaseAdmin = createAdminClient(
     round_player_id: roundPlayerId,
     event_type: eventType,
     hole_number: holeNumber,
+    player_name: playerName,
+    course_name: courseDetails?.name ?? null,
   })
 
 if (insertFeedEventError) {
