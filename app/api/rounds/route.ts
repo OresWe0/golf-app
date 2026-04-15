@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { sendPushNotification } from '@/lib/send-push'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import {
   calculatePlayingHandicap,
@@ -265,7 +267,87 @@ export async function POST(request: Request) {
   if (scoreError) {
     return NextResponse.json({ error: scoreError.message }, { status: 400 })
   }
+// 🔥 Skicka push: vän är ute på banan nu
+const supabaseAdmin = createAdminClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+)
 
+const { data: actorProfile } = await supabaseAdmin
+  .from('profiles')
+  .select('display_name, email')
+  .eq('id', user.id)
+  .maybeSingle()
+
+const actorName =
+  actorProfile?.display_name?.trim() ||
+  actorProfile?.email?.trim() ||
+  'Din vän'
+
+const { data: friends, error: friendsError } = await supabase
+  .from('friends')
+  .select('friend_email')
+  .eq('user_id', user.id)
+
+if (friendsError) {
+  console.error('Failed to load friends for round start push:', friendsError)
+} else {
+  const friendEmails =
+    friends
+      ?.map((friend) => friend.friend_email?.trim().toLowerCase())
+      .filter((email): email is string => Boolean(email)) ?? []
+
+  if (friendEmails.length > 0) {
+    const { data: friendProfiles, error: friendProfilesError } =
+      await supabaseAdmin
+        .from('profiles')
+        .select('id, email, push_friend_activity_enabled')
+        .in('email', friendEmails)
+
+    if (friendProfilesError) {
+      console.error(
+        'Failed to load friend profiles for round start push:',
+        friendProfilesError
+      )
+    } else {
+      const enabledFriendIds =
+        friendProfiles
+          ?.filter((profile) => profile.push_friend_activity_enabled)
+          .map((profile) => profile.id) ?? []
+
+      if (enabledFriendIds.length > 0) {
+        const { data: subscriptions, error: subscriptionsError } =
+          await supabaseAdmin
+            .from('push_subscriptions')
+            .select('endpoint, p256dh, auth, user_id')
+            .in('user_id', enabledFriendIds)
+
+        if (subscriptionsError) {
+          console.error(
+            'Failed to load push subscriptions for round start:',
+            subscriptionsError
+          )
+        } else {
+          await Promise.all(
+            (subscriptions ?? []).map((sub) =>
+              sendPushNotification(sub, {
+                title: '⛳ Vän på banan',
+                body: `${actorName} är ute på banan nu`,
+                url: '/dashboard',
+              })
+            )
+          )
+        }
+      }
+    }
+  }
+}
   return NextResponse.json({
     roundId: round.id,
     startHole,
