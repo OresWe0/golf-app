@@ -224,10 +224,10 @@ function getPlayerNameForFeedEvent(
 const dashboardStyles = {
   heroCard: {
     background:
-      'linear-gradient(180deg, rgba(248,251,247,0.98) 0%, rgba(255,255,255,0.98) 100%)',
-    border: '1px solid #dbeedc',
+      'linear-gradient(135deg, #163b2a 0%, #1f6b45 55%, #38a169 100%)',
+    border: '1px solid rgba(255,255,255,0.18)',
     borderRadius: 28,
-    boxShadow: '0 20px 52px rgba(15, 23, 42, 0.08)',
+    boxShadow: '0 24px 56px rgba(22, 59, 42, 0.28)',
   },
   sectionCard: {
     borderRadius: 24,
@@ -419,7 +419,7 @@ function DashboardHeader({
 }) {
   return (
     <div className="card" style={dashboardStyles.heroCard}>
-      <div style={{ display: 'grid', gap: 18 }}>
+      <div style={{ display: 'grid', gap: 20 }}>
         <div
           style={{
             display: 'flex',
@@ -431,16 +431,17 @@ function DashboardHeader({
         >
           <div style={{ maxWidth: 720 }}>
             <span
-              className="badge"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 6,
                 padding: '10px 14px',
                 borderRadius: 999,
-                background: 'linear-gradient(180deg, #eef8ef 0%, #e7f2e8 100%)',
-                border: '1px solid #d6e5d7',
+                background: 'rgba(255,255,255,0.14)',
+                border: '1px solid rgba(255,255,255,0.18)',
+                color: '#ffffff',
                 fontWeight: 900,
+                backdropFilter: 'blur(6px)',
               }}
             >
               👋 Inloggad som {displayName}
@@ -448,27 +449,30 @@ function DashboardHeader({
 
             <h1
               style={{
-                marginTop: 16,
+                marginTop: 18,
                 marginBottom: 12,
-                fontSize: 'clamp(2rem, 4vw, 3rem)',
-                lineHeight: 1,
-                color: '#20352a',
+                fontSize: 'clamp(2.2rem, 5vw, 3.4rem)',
+                lineHeight: 0.95,
+                color: '#ffffff',
+                letterSpacing: -1,
               }}
             >
-              ⛳ Startsidan
+              Träffa fairway,
+              <br />
+              <span style={{ fontWeight: 900 }}>{displayName}</span>
             </h1>
 
             <p
-              className="muted"
               style={{
                 margin: 0,
                 lineHeight: 1.6,
                 fontSize: 16,
                 maxWidth: 720,
+                color: 'rgba(255,255,255,0.88)',
               }}
             >
-              Starta en ny runda eller fortsätt en aktiv runda med dina golfvänner.
-              Ditt sparade HCP används som standard.
+              Redo för nästa runda? Starta snabbt, fortsätt en aktiv runda eller
+              följ dina golfvänner.
             </p>
           </div>
 
@@ -476,10 +480,10 @@ function DashboardHeader({
             <div
               style={{
                 ...dashboardStyles.pill,
-                background: 'linear-gradient(180deg, #fff5d9 0%, #fef3c7 100%)',
+                background: 'rgba(255, 245, 217, 0.96)',
                 color: '#92400e',
-                border: '1px solid #f4d57c',
-                boxShadow: '0 10px 24px rgba(245, 158, 11, 0.14)',
+                border: '1px solid rgba(244, 213, 124, 0.95)',
+                boxShadow: '0 10px 24px rgba(15, 23, 42, 0.16)',
               }}
             >
               {pendingCount} väntar på godkännande
@@ -493,12 +497,14 @@ function DashboardHeader({
             className="button"
             style={{
               width: '100%',
-              minHeight: 60,
-              fontSize: 20,
+              minHeight: 64,
+              fontSize: 21,
               fontWeight: 900,
-              borderRadius: 20,
-              background: 'linear-gradient(135deg, #166534 0%, #22c55e 100%)',
-              boxShadow: '0 18px 40px rgba(34, 197, 94, 0.24)',
+              borderRadius: 22,
+              background: 'linear-gradient(135deg, #0f2f20 0%, #166534 100%)',
+              color: '#fff',
+              boxShadow: '0 20px 42px rgba(15, 47, 32, 0.32)',
+              border: '1px solid rgba(255,255,255,0.12)',
             }}
           >
             ⛳ Starta ny runda
@@ -517,7 +523,12 @@ function DashboardHeader({
               <Link
                 href="/admin/users"
                 className="button secondary"
-                style={dashboardStyles.softButton}
+                style={{
+                  ...dashboardStyles.softButton,
+                  background: 'rgba(255,255,255,0.14)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255,255,255,0.16)',
+                }}
               >
                 Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
               </Link>
@@ -527,7 +538,12 @@ function DashboardHeader({
               <Link
                 href="/profile"
                 className="button secondary"
-                style={dashboardStyles.softButton}
+                style={{
+                  ...dashboardStyles.softButton,
+                  background: 'rgba(255,255,255,0.14)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255,255,255,0.16)',
+                }}
               >
                 👤 Profil & vänner
               </Link>
@@ -566,6 +582,9 @@ function DashboardHeader({
                 style={{
                   width: '100%',
                   minWidth: 120,
+                  background: 'rgba(255,255,255,0.14)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255,255,255,0.16)',
                 }}
               >
                 Logga ut
