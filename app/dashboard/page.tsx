@@ -869,7 +869,7 @@ function FeedEventCard({
   likesCount,
   likedByMe,
   comments,
-  roundPlayers,
+  profiles,
 }: {
   event: FeedEvent
   playerName: string
@@ -877,7 +877,7 @@ function FeedEventCard({
   likesCount: number
   likedByMe: boolean
   comments: FeedEventCommentRow[]
-  roundPlayers: RoundPlayer[]
+  profiles: Profile[]
 }) {
   const eventMeta =
     event.event_type === 'birdie'
@@ -1010,9 +1010,10 @@ function FeedEventCard({
         </div>
       </div>
     </div>
-  )
+   })}
+  </div>
 })}
-
+</div>
         <form action={addFeedEventComment} style={{ display: 'grid', gap: 6 }}>
           <input type="hidden" name="feedEventId" value={event.id} />
           <input
@@ -1849,20 +1850,20 @@ export default async function DashboardPage({
                   const likedByMe = likes.some((like) => like.user_id === user.id)
 
                   return (
-                    <FeedEventCard
-                      key={event.id}
-                      event={event}
-                      playerName={getPlayerNameForFeedEvent(event, allRoundPlayers)}
-                      courseName={getCourseNameForFeedEvent(
-                        event,
-                        allRounds,
-                        allCourses
-                      )}
-                      likesCount={likesCount}
-                      likedByMe={likedByMe}
-                      comments={comments}
-                      roundPlayers={allRoundPlayers}
-                    />
+  <FeedEventCard
+  key={event.id}
+  event={event}
+  playerName={getPlayerNameForFeedEvent(event, allRoundPlayers)}
+  courseName={getCourseNameForFeedEvent(
+    event,
+    allRounds,
+    allCourses
+  )}
+  likesCount={likesCount}
+  likedByMe={likedByMe}
+  comments={comments}
+  profiles={actorProfiles}
+/>
                   )
                 })}
               </div>
