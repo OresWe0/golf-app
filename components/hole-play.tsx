@@ -52,6 +52,8 @@ type Props = {
   leaderboard?: LeaderboardEntry[]
   playerStreaks?: Record<string, number>
   selectedHoleIndexes: number[]
+  courseImageSlug?: string
+  holeGpsByNumber?: Record<number, HoleGpsData>
 }
 
 type GpsPoint = {
@@ -1406,6 +1408,8 @@ export function HolePlay({
   leaderboard = [],
   playerStreaks,
   selectedHoleIndexes,
+  courseImageSlug = 'karsta',
+  holeGpsByNumber = {},
 }: Props) {
   const router = useRouter()
 
@@ -1468,7 +1472,8 @@ const dragStartRef = useRef<{ x: number; y: number } | null>(null)
     return Array.from(new Set([...base, extra])).sort((a, b) => a - b)
   }, [hole.par])
 
-  const holeImageSrc = `/course-images/karsta/${previewHoleNumber}.jpg`
+  const safeCourseImageSlug = courseImageSlug || 'karsta'
+  const holeImageSrc = `/course-images/${safeCourseImageSlug}/${previewHoleNumber}.jpg`
 
   const allPlayersHaveScores = (candidateValues: Record<string, string>) => {
     if (!players.length) return false
@@ -1598,7 +1603,7 @@ const handleMapTouchEnd: TouchEventHandler<HTMLDivElement> = () => {
   }
 
   const updateDistancesForHole = (coords: GpsPoint, holeNumber: number) => {
-    const holeGps = HOLE_GPS_DATA[holeNumber]
+    const holeGps = holeGpsByNumber[holeNumber] ?? HOLE_GPS_DATA[holeNumber]
 
     if (!holeGps) {
       resetDistanceState()

@@ -51,6 +51,29 @@ type CourseLike = {
   name: string
 }
 
+type HoleGpsRow = {
+  hole_number: number
+  front_lat: number
+  front_lng: number
+  center_lat: number
+  center_lng: number
+  back_lat: number
+  back_lng: number
+}
+
+function toCourseImageSlug(name?: string | null) {
+  const source = String(name ?? '').trim().toLowerCase()
+  if (!source) return 'karsta'
+
+  const normalized = source
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+  return normalized || 'karsta'
+}
+
 function parseHoleNumber(value?: string) {
   const parsed = Number(value)
   if (!Number.isFinite(parsed) || parsed < 1) return 1
@@ -340,6 +363,7 @@ export default async function RoundPage({
     { data: courseData },
     { data: holesData },
     { data: allScoreRowsData },
+    { data: holeGpsData },
   ] = await Promise.all([
     supabase.from('round_players').select('*').eq('round_id', id).order('sort_order'),
     supabase.from('courses').select('*').eq('id', round.course_id).single(),
@@ -349,6 +373,12 @@ export default async function RoundPage({
       .eq('course_id', round.course_id)
       .order('hole_number'),
     supabase.from('hole_scores').select('*').eq('round_id', id).order('hole_number'),
+    supabase
+      .from('course_hole_gps')
+      .select(
+        'hole_number, front_lat, front_lng, center_lat, center_lng, back_lat, back_lng'
+      )
+      .eq('course_id', round.course_id),
   ])
 
   if (!courseData || !holesData || !playersData) {
@@ -359,6 +389,17 @@ export default async function RoundPage({
   const course = courseData as CourseLike
   const holes = holesData as HoleLike[]
   const scoreRows = (allScoreRowsData ?? []) as HoleScoreRow[]
+  const holeGpsRows = (holeGpsData ?? []) as HoleGpsRow[]
+  const holeGpsByNumber = Object.fromEntries(
+    holeGpsRows.map((row) => [
+      row.hole_number,
+      {
+        front: { lat: row.front_lat, lng: row.front_lng },
+        center: { lat: row.center_lat, lng: row.center_lng },
+        back: { lat: row.back_lat, lng: row.back_lng },
+      },
+    ])
+  )
 
   const startHole = round.start_hole ?? 1
   const endHole = round.end_hole ?? holes.length
@@ -419,6 +460,8 @@ export default async function RoundPage({
           scores={currentHoleScores}
           leaderboard={leaderboard}
           selectedHoleIndexes={selectedHoleIndexes}
+          courseImageSlug={toCourseImageSlug(course.name)}
+          holeGpsByNumber={holeGpsByNumber}
         />
       </div>
     </main>
