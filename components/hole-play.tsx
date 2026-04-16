@@ -1148,7 +1148,7 @@ function HoleImageModal({
       justifyContent: 'center',
     }}
   >
-    {holeImageError ? (
+    {!holeImageSrc || holeImageError ? (
       <div style={{ color: '#fff', padding: 24, textAlign: 'center' }}>
         Ingen hålbild hittades för hål {previewHoleNumber}.
       </div>
@@ -1408,7 +1408,7 @@ export function HolePlay({
   leaderboard = [],
   playerStreaks,
   selectedHoleIndexes,
-  courseImageSlug = 'karsta',
+  courseImageSlug,
   holeGpsByNumber = {},
 }: Props) {
   const router = useRouter()
@@ -1440,7 +1440,7 @@ export function HolePlay({
   const [holeImageError, setHoleImageError] = useState(false)
   const [previewHoleNumber, setPreviewHoleNumber] = useState<number>(hole.hole_number)
   const [showFinishModal, setShowFinishModal] = useState(false)
-const [activeCourseImageSlug, setActiveCourseImageSlug] = useState(courseImageSlug || 'karsta')
+const [activeCourseImageSlug, setActiveCourseImageSlug] = useState(courseImageSlug || '')
 const [zoom, setZoom] = useState(1)
 const [pan, setPan] = useState({ x: 0, y: 0 })
 const [isZooming, setIsZooming] = useState(false)
@@ -1473,17 +1473,16 @@ const dragStartRef = useRef<{ x: number; y: number } | null>(null)
     return Array.from(new Set([...base, extra])).sort((a, b) => a - b)
   }, [hole.par])
 
-  const safeCourseImageSlug = courseImageSlug || 'karsta'
-  const holeImageSrc = `/course-images/${activeCourseImageSlug}/${previewHoleNumber}.jpg`
+  const safeCourseImageSlug = (courseImageSlug ?? '').trim()
+  const holeImageSrc =
+    activeCourseImageSlug === 'lindesberg'
+      ? '/course-images/lindesberg/base.jpg'
+      : activeCourseImageSlug
+        ? `/course-images/${activeCourseImageSlug}/${previewHoleNumber}.jpg`
+        : ''
 
   const handleHoleImageError = (value: boolean) => {
     if (!value) {
-      setHoleImageError(false)
-      return
-    }
-
-    if (activeCourseImageSlug !== 'karsta') {
-      setActiveCourseImageSlug('karsta')
       setHoleImageError(false)
       return
     }

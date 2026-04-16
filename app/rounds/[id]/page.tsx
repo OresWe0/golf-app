@@ -64,7 +64,7 @@ type HoleGpsRow = {
 
 function toCourseImageSlug(name?: string | null) {
   const source = String(name ?? '').trim().toLowerCase()
-  if (!source) return 'karsta'
+  if (!source) return undefined
 
   const normalized = source
     .normalize('NFKD')
@@ -73,8 +73,9 @@ function toCourseImageSlug(name?: string | null) {
     .replace(/^-+|-+$/g, '')
 
   if (normalized.includes('karsta')) return 'karsta'
+  if (normalized.includes('lindesberg')) return 'lindesberg'
 
-  return normalized || 'karsta'
+  return normalized || undefined
 }
 
 function parseHoleNumber(value?: string) {
