@@ -72,6 +72,8 @@ function toCourseImageSlug(name?: string | null) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 
+  if (normalized.includes('karsta')) return 'karsta'
+
   return normalized || 'karsta'
 }
 

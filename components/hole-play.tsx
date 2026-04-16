@@ -1440,6 +1440,7 @@ export function HolePlay({
   const [holeImageError, setHoleImageError] = useState(false)
   const [previewHoleNumber, setPreviewHoleNumber] = useState<number>(hole.hole_number)
   const [showFinishModal, setShowFinishModal] = useState(false)
+const [activeCourseImageSlug, setActiveCourseImageSlug] = useState(courseImageSlug || 'karsta')
 const [zoom, setZoom] = useState(1)
 const [pan, setPan] = useState({ x: 0, y: 0 })
 const [isZooming, setIsZooming] = useState(false)
@@ -1473,7 +1474,22 @@ const dragStartRef = useRef<{ x: number; y: number } | null>(null)
   }, [hole.par])
 
   const safeCourseImageSlug = courseImageSlug || 'karsta'
-  const holeImageSrc = `/course-images/${safeCourseImageSlug}/${previewHoleNumber}.jpg`
+  const holeImageSrc = `/course-images/${activeCourseImageSlug}/${previewHoleNumber}.jpg`
+
+  const handleHoleImageError = (value: boolean) => {
+    if (!value) {
+      setHoleImageError(false)
+      return
+    }
+
+    if (activeCourseImageSlug !== 'karsta') {
+      setActiveCourseImageSlug('karsta')
+      setHoleImageError(false)
+      return
+    }
+
+    setHoleImageError(true)
+  }
 
   const allPlayersHaveScores = (candidateValues: Record<string, string>) => {
     if (!players.length) return false
@@ -1785,6 +1801,7 @@ const navigateTo = (target: string) => {
 const openHoleImage = () => {
   resetMapZoom()
   setPreviewHoleNumber(hole.hole_number)
+  setActiveCourseImageSlug(safeCourseImageSlug)
   setHoleImageError(false)
   setShowHoleImage(true)
   setPlayerPosition(null)
@@ -1976,6 +1993,11 @@ useEffect(() => {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [showHoleImage, previewHoleNumber, startHole, endHole])
 
+  useEffect(() => {
+    setActiveCourseImageSlug(safeCourseImageSlug)
+    setHoleImageError(false)
+  }, [safeCourseImageSlug])
+
   return (
     <>
       <style>{`
@@ -2149,7 +2171,7 @@ useEffect(() => {
   onNext={previewNextHole}
   holeImageSrc={holeImageSrc}
   holeImageError={holeImageError}
-  setHoleImageError={setHoleImageError}
+  setHoleImageError={handleHoleImageError}
   distanceStatus={distanceStatus}
   distanceErrorMessage={distanceErrorMessage}
   distanceToFront={distanceToFront}
