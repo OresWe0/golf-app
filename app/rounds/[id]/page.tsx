@@ -39,6 +39,7 @@ type RoundLike = {
   id: string
   title: string
   course_id: string
+  owner_id: string
   current_hole: number | null
   start_hole: number | null
   end_hole: number | null
@@ -344,7 +345,9 @@ export default async function RoundPage({
 
   const { data: roundData } = await supabase
     .from('rounds')
-    .select('*')
+    .select(
+      'id, title, owner_id, course_id, current_hole, start_hole, end_hole, holes_mode, scoring_mode'
+    )
     .eq('id', id)
     .single()
 
@@ -353,6 +356,19 @@ export default async function RoundPage({
   }
 
   const round = roundData as RoundLike
+
+  if (round.owner_id !== user.id) {
+    const { data: membership } = await supabase
+      .from('round_members')
+      .select('id')
+      .eq('round_id', id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (!membership) {
+      notFound()
+    }
+  }
 
   const requestedHoleNumber = resolvedSearchParams.hole
     ? parseHoleNumber(resolvedSearchParams.hole)
@@ -365,14 +381,22 @@ export default async function RoundPage({
     { data: allScoreRowsData },
     { data: holeGpsData },
   ] = await Promise.all([
-    supabase.from('round_players').select('*').eq('round_id', id).order('sort_order'),
-    supabase.from('courses').select('*').eq('id', round.course_id).single(),
+    supabase
+      .from('round_players')
+      .select('id, display_name, exact_handicap, playing_handicap, tee_key')
+      .eq('round_id', id)
+      .order('sort_order'),
+    supabase.from('courses').select('id, name').eq('id', round.course_id).single(),
     supabase
       .from('course_holes')
-      .select('*')
+      .select('hole_number, par, hcp_index')
       .eq('course_id', round.course_id)
       .order('hole_number'),
-    supabase.from('hole_scores').select('*').eq('round_id', id).order('hole_number'),
+    supabase
+      .from('hole_scores')
+      .select('round_player_id, hole_number, strokes')
+      .eq('round_id', id)
+      .order('hole_number'),
     supabase
       .from('course_hole_gps')
       .select(

@@ -561,18 +561,45 @@ export default async function SummaryPage({
   const resolvedSearchParams = await searchParams
 
   const [{ data: round }, { data: players }, { data: scoreRows }] = await Promise.all([
-    supabase.from('rounds').select('*').eq('id', id).single(),
-    supabase.from('round_players').select('*').eq('round_id', id).order('sort_order'),
-    supabase.from('hole_scores').select('*').eq('round_id', id).order('hole_number'),
+    supabase
+      .from('rounds')
+      .select(
+        'id, owner_id, course_id, title, scoring_mode, status, holes_mode, start_hole, end_hole'
+      )
+      .eq('id', id)
+      .single(),
+    supabase
+      .from('round_players')
+      .select('id, display_name, exact_handicap, playing_handicap, tee_key')
+      .eq('round_id', id)
+      .order('sort_order'),
+    supabase
+      .from('hole_scores')
+      .select('round_player_id, hole_number, strokes')
+      .eq('round_id', id)
+      .order('hole_number'),
   ])
 
   if (!round || !players || !scoreRows) notFound()
 
+  if (round.owner_id !== user.id) {
+    const { data: membership } = await supabase
+      .from('round_members')
+      .select('id')
+      .eq('round_id', id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (!membership) {
+      notFound()
+    }
+  }
+
   const [{ data: course }, { data: holes }] = await Promise.all([
-    supabase.from('courses').select('*').eq('id', round.course_id).single(),
+    supabase.from('courses').select('id, name').eq('id', round.course_id).single(),
     supabase
       .from('course_holes')
-      .select('*')
+      .select('hole_number, par, hcp_index')
       .eq('course_id', round.course_id)
       .order('hole_number'),
   ])
@@ -581,7 +608,11 @@ export default async function SummaryPage({
 
   const startHole = round.start_hole ?? 1
   const endHole = round.end_hole ?? holes.length
-  const returnHole = Number(resolvedSearchParams.hole || startHole)
+  const parsedReturnHole = Number(resolvedSearchParams.hole)
+  const returnHole =
+    Number.isFinite(parsedReturnHole) && parsedReturnHole >= startHole && parsedReturnHole <= endHole
+      ? Math.floor(parsedReturnHole)
+      : startHole
 
   const visibleHoles = holes.filter(
     (hole: HoleLike) => hole.hole_number >= startHole && hole.hole_number <= endHole

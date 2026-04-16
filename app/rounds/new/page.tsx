@@ -30,8 +30,12 @@ export default async function NewRoundPage() {
 
   const [{ data: courses }, { data: profile }, { data: friendsRaw }] =
     await Promise.all([
-      supabase.from('courses').select('*').order('name'),
-      supabase.from('profiles').select('*').eq('id', user.id).single(),
+      supabase.from('courses').select('id, name').order('name'),
+      supabase
+        .from('profiles')
+        .select('id, display_name, handicap_index, default_tee')
+        .eq('id', user.id)
+        .single(),
       supabase
         .from('friends')
         .select('id, friend_email, friend_name')
@@ -56,7 +60,9 @@ export default async function NewRoundPage() {
 
   const friends: FriendRow[] =
     friendsRaw?.map((friend) => {
-      const email = friend.friend_email.trim().toLowerCase()
+      const email = String(friend.friend_email ?? '')
+        .trim()
+        .toLowerCase()
 
       const matchedProfile =
         normalizedFriendProfiles.find(
