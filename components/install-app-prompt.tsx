@@ -16,7 +16,7 @@ const VISIT_COUNT_KEY = 'install-app-prompt-visit-count'
 const DISMISS_DAYS = 7
 const ANDROID_FALLBACK_MIN_VISITS = 2
 const FALLBACK_DELAY_MS = 1500
-const ALLOWED_ROUTES = ['/dashboard']
+const ALLOWED_ROUTES = ['/dashboard', '/install']
 
 function isIosDevice() {
   if (typeof window === 'undefined') return false

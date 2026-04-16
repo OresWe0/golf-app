@@ -214,12 +214,17 @@ export default async function ProfilePage({
       redirect('/profile?message=Kunde inte ta bort förfrågan&type=error')
     }
 
-    await supabase
+    const { error } = await supabase
       .from('friend_requests')
       .delete()
       .eq('id', id)
       .eq('requester_id', user.id)
       .eq('status', 'pending')
+
+    if (error) {
+      console.error('cancelRequest failed:', error)
+      redirect('/profile?message=Kunde inte ta bort fÃ¶rfrÃ¥gan&type=error')
+    }
 
     revalidatePath('/profile')
     revalidatePath('/dashboard')
@@ -247,7 +252,7 @@ export default async function ProfilePage({
       redirect('/profile?message=Kunde inte avvisa förfrågan&type=error')
     }
 
-    await supabase
+    const { error } = await supabase
       .from('friend_requests')
       .update({
         status: 'declined',
@@ -256,6 +261,11 @@ export default async function ProfilePage({
       .eq('id', id)
       .eq('recipient_email', ownEmail)
       .eq('status', 'pending')
+
+    if (error) {
+      console.error('declineRequest failed:', error)
+      redirect('/profile?message=Kunde inte avvisa fÃ¶rfrÃ¥gan&type=error')
+    }
 
     revalidatePath('/profile')
     revalidatePath('/dashboard')
@@ -316,11 +326,16 @@ export default async function ProfilePage({
       redirect('/profile?message=Kunde inte ta bort vän&type=error')
     }
 
-    await supabase
+    const { error } = await supabase
       .from('friends')
       .delete()
       .eq('user_id', user.id)
       .eq('friend_email', friendEmail)
+
+    if (error) {
+      console.error('removeFriend failed:', error)
+      redirect('/profile?message=Kunde inte ta bort vÃ¤n&type=error')
+    }
 
     revalidatePath('/profile')
     revalidatePath('/dashboard')
