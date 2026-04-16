@@ -181,48 +181,56 @@ export async function POST(request: Request) {
   }
 
   const memberMap = new Map<string, 'owner' | 'player'>([[user.id, 'owner']])
+  let playerRows: Array<Record<string, unknown>> = []
 
-  const playerRows = players.map((player, index) => {
-    const email = String(player.email || '').trim().toLowerCase()
-    const profile = email ? profileByEmail.get(email) : null
-    const userId = profile?.id ?? null
+  try {
+    playerRows = players.map((player, index) => {
+      const email = String(player.email || '').trim().toLowerCase()
+      const profile = email ? profileByEmail.get(email) : null
+      const userId = profile?.id ?? null
 
-    if (userId && !memberMap.has(userId)) {
-      memberMap.set(userId, userId === user.id ? 'owner' : 'player')
-    }
+      if (userId && !memberMap.has(userId)) {
+        memberMap.set(userId, userId === user.id ? 'owner' : 'player')
+      }
 
-    const exactHandicap = player.handicapIndex ?? profile?.handicap_index ?? null
-    const teeKey = normalizeTeeKey(player.teeKey ?? profile?.default_tee ?? 'yellow')
-    const tee = teeByKey.get(teeKey)
+      const exactHandicap = player.handicapIndex ?? profile?.handicap_index ?? null
+      const teeKey = normalizeTeeKey(player.teeKey ?? profile?.default_tee ?? 'yellow')
+      const tee = teeByKey.get(teeKey)
 
-    if (!tee) {
-      throw new Error(`Ogiltig tee: ${teeKey}`)
-    }
+      if (!tee) {
+        throw new Error(`Ogiltig tee: ${teeKey}`)
+      }
 
-    const courseHandicap = calculatePlayingHandicap({
-      handicapIndex: exactHandicap,
-      slopeRating: tee.slope_rating ?? null,
-      courseRating: tee.course_rating ?? null,
-      par: tee.tee_par ?? course.total_par,
+      const courseHandicap = calculatePlayingHandicap({
+        handicapIndex: exactHandicap,
+        slopeRating: tee.slope_rating ?? null,
+        courseRating: tee.course_rating ?? null,
+        par: tee.tee_par ?? course.total_par,
+      })
+
+      const playingHandicap = getPlayingHandicapForSelectedHoles(
+        courseHandicap,
+        visibleHoles.map((hole) => hole.hcp_index)
+      )
+
+      return {
+        round_id: round.id,
+        user_id: userId,
+        invited_email: email || null,
+        display_name: player.name,
+        handicap_index: exactHandicap,
+        exact_handicap: exactHandicap,
+        tee_key: teeKey,
+        playing_handicap: playingHandicap,
+        sort_order: player.sortOrder ?? index + 1,
+      }
     })
-
-    const playingHandicap = getPlayingHandicapForSelectedHoles(
-      courseHandicap,
-      visibleHoles.map((hole) => hole.hcp_index)
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Ogiltig spelardata.' },
+      { status: 400 }
     )
-
-    return {
-      round_id: round.id,
-      user_id: userId,
-      invited_email: email || null,
-      display_name: player.name,
-      handicap_index: exactHandicap,
-      exact_handicap: exactHandicap,
-      tee_key: teeKey,
-      playing_handicap: playingHandicap,
-      sort_order: player.sortOrder ?? index + 1,
-    }
-  })
+  }
 
   const { error: membersError } = await supabase
     .from('round_members')
@@ -268,9 +276,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: scoreError.message }, { status: 400 })
   }
 // 🔥 Skicka push: vän är ute på banan nu
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!supabaseUrl || !serviceRoleKey) {
+  return NextResponse.json(
+    { error: 'Serverkonfiguration saknas fÃ¶r push.' },
+    { status: 500 }
+  )
+}
+
 const supabaseAdmin = createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  supabaseUrl,
+  serviceRoleKey,
   {
     auth: {
       autoRefreshToken: false,
@@ -334,7 +352,7 @@ if (friendsError) {
             subscriptionsError
           )
         } else {
-          await Promise.all(
+          await Promise.allSettled(
             (subscriptions ?? []).map((sub) =>
               sendPushNotification(sub, {
                 title: '⛳ Vän på banan',

@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 
-
 type ScoreUpdate = {
   roundPlayerId: string
   strokes: number | null
@@ -11,10 +10,7 @@ type ScoreUpdate = {
 
 type FeedEventType = 'birdie' | 'eagle' | 'hole_in_one'
 
-function getFeedEventType(
-  strokes: number,
-  par: number
-): FeedEventType | null {
+function getFeedEventType(strokes: number, par: number): FeedEventType | null {
   if (strokes === 1) return 'hole_in_one'
   if (strokes === par - 2) return 'eagle'
   if (strokes === par - 1) return 'birdie'
@@ -27,16 +23,23 @@ export async function POST(
 ) {
   const { id } = await params
   const supabase = await createClient()
-const supabaseAdmin = createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    return NextResponse.json(
+      { error: 'Serverkonfiguration saknas fÃ¶r push.' },
+      { status: 500 }
+    )
+  }
+
+  const supabaseAdmin = createAdminClient(supabaseUrl, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
-  }
-)
+  })
 
   const {
     data: { user },
@@ -48,16 +51,40 @@ const supabaseAdmin = createAdminClient(
 
   const body = await request.json().catch(() => null)
   const holeNumber = Number(body?.holeNumber)
-  const scoreUpdates: ScoreUpdate[] = Array.isArray(body?.scores)
-    ? body.scores
-    : []
+  const rawScoreUpdates: ScoreUpdate[] = Array.isArray(body?.scores) ? body.scores : []
 
   if (!Number.isInteger(holeNumber) || holeNumber < 1) {
-    return NextResponse.json({ error: 'Ogiltigt hålnummer.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ogiltigt hÃ¥lnummer.' }, { status: 400 })
   }
 
-  if (scoreUpdates.length === 0) {
+  if (rawScoreUpdates.length === 0) {
     return NextResponse.json({ error: 'Inga scorer att spara.' }, { status: 400 })
+  }
+
+  const scoreUpdates: ScoreUpdate[] = []
+  const seenRoundPlayerIds = new Set<string>()
+
+  for (const score of rawScoreUpdates) {
+    const roundPlayerId = String(score.roundPlayerId || '').trim()
+    const strokes = score.strokes == null ? null : Number(score.strokes)
+
+    if (!roundPlayerId) {
+      return NextResponse.json({ error: 'Saknar roundPlayerId.' }, { status: 400 })
+    }
+
+    if (seenRoundPlayerIds.has(roundPlayerId)) {
+      return NextResponse.json(
+        { error: `Duplicerad roundPlayerId: ${roundPlayerId}` },
+        { status: 400 }
+      )
+    }
+
+    if (strokes != null && (!Number.isFinite(strokes) || strokes < 1)) {
+      return NextResponse.json({ error: 'Ogiltig score.' }, { status: 400 })
+    }
+
+    seenRoundPlayerIds.add(roundPlayerId)
+    scoreUpdates.push({ roundPlayerId, strokes })
   }
 
   const { data: round, error: roundError } = await supabase
@@ -72,7 +99,7 @@ const supabaseAdmin = createAdminClient(
 
   if (round.owner_id !== user.id) {
     return NextResponse.json(
-      { error: 'Du har inte behörighet att spara score i denna runda.' },
+      { error: 'Du har inte behÃ¶righet att spara score i denna runda.' },
       { status: 403 }
     )
   }
@@ -82,249 +109,191 @@ const supabaseAdmin = createAdminClient(
 
   if (holeNumber < startHole || holeNumber > endHole) {
     return NextResponse.json(
-      { error: 'Hålet ligger utanför rundans intervall.' },
+      { error: 'HÃ¥let ligger utanfÃ¶r rundans intervall.' },
       { status: 400 }
     )
   }
 
-  for (const score of scoreUpdates) {
-    const roundPlayerId = String(score.roundPlayerId || '')
-    const strokes = score.strokes == null ? null : Number(score.strokes)
-
-    if (!roundPlayerId) {
-      return NextResponse.json({ error: 'Saknar roundPlayerId.' }, { status: 400 })
-    }
-
-    if (strokes != null && (!Number.isFinite(strokes) || strokes < 1)) {
-      return NextResponse.json({ error: 'Ogiltig score.' }, { status: 400 })
-    }
-  }
-
-  // Spara scorer
-  for (const score of scoreUpdates) {
-    const roundPlayerId = String(score.roundPlayerId || '')
-    const strokes = score.strokes == null ? null : Number(score.strokes)
-
-    const { error } = await supabase
-      .from('hole_scores')
-      .update({ strokes })
-      .eq('round_id', id)
-      .eq('round_player_id', roundPlayerId)
-      .eq('hole_number', holeNumber)
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 })
-    }
-  }
-
-  // Hämta spelare i rundan så att feed-events kopplas till rätt user_id
-  const roundPlayerIds = scoreUpdates.map((score) => String(score.roundPlayerId || ''))
+  const roundPlayerIds = scoreUpdates.map((score) => score.roundPlayerId)
 
   const { data: roundPlayers, error: roundPlayersError } = await supabase
     .from('round_players')
     .select('id, user_id')
+    .eq('round_id', id)
     .in('id', roundPlayerIds)
 
   if (roundPlayersError) {
     return NextResponse.json({ error: roundPlayersError.message }, { status: 400 })
   }
 
-  const roundPlayerById = new Map(
-    (roundPlayers ?? []).map((player) => [player.id, player] as const)
-  )
-
-  if (!round.course_id) {
+  if (!roundPlayers || roundPlayers.length !== roundPlayerIds.length) {
     return NextResponse.json(
-      { error: 'Rundan saknar course_id.' },
+      { error: 'En eller flera spelare tillhÃ¶r inte rundan.' },
       { status: 400 }
     )
   }
 
-  // Hämta par för aktuellt hål
-  const { data: holeRows, error: holeError } = await supabase
-    .from('course_holes')
-    .select('par')
-    .eq('course_id', round.course_id)
-    .eq('hole_number', holeNumber)
-    .limit(1)
+  const roundPlayerById = new Map(roundPlayers.map((player) => [player.id, player] as const))
+
+  for (const score of scoreUpdates) {
+    const { data: updatedScoreRow, error } = await supabase
+      .from('hole_scores')
+      .update({ strokes: score.strokes })
+      .eq('round_id', id)
+      .eq('round_player_id', score.roundPlayerId)
+      .eq('hole_number', holeNumber)
+      .select('id')
+      .maybeSingle()
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 })
+    }
+
+    if (!updatedScoreRow) {
+      return NextResponse.json(
+        { error: `Ingen scorerad hittades fÃ¶r spelare ${score.roundPlayerId}.` },
+        { status: 400 }
+      )
+    }
+  }
+
+  if (!round.course_id) {
+    return NextResponse.json({ error: 'Rundan saknar course_id.' }, { status: 400 })
+  }
+
+  const [{ data: holeRows, error: holeError }, { data: courseDetails }] = await Promise.all([
+    supabase
+      .from('course_holes')
+      .select('par')
+      .eq('course_id', round.course_id)
+      .eq('hole_number', holeNumber)
+      .limit(1),
+    supabase.from('courses').select('name').eq('id', round.course_id).maybeSingle(),
+  ])
 
   if (holeError || !holeRows || holeRows.length === 0) {
-    return NextResponse.json(
-      { error: 'Kunde inte hitta hålets par.' },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: 'Kunde inte hitta hÃ¥lets par.' }, { status: 400 })
   }
 
   const par = Number(holeRows[0].par)
 
   if (!Number.isFinite(par) || par < 1) {
-    return NextResponse.json(
-      { error: 'Ogiltigt par-värde för hålet.' },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: 'Ogiltigt par-vÃ¤rde fÃ¶r hÃ¥let.' }, { status: 400 })
   }
 
-  // Skapa eller ta bort feed-events för detta hål
   for (const score of scoreUpdates) {
-    const roundPlayerId = String(score.roundPlayerId || '')
-    const strokes = score.strokes == null ? null : Number(score.strokes)
-    const roundPlayer = roundPlayerById.get(roundPlayerId)
+    const roundPlayer = roundPlayerById.get(score.roundPlayerId)
+    if (!roundPlayer?.user_id) continue
 
-    if (!roundPlayer?.user_id) {
-      continue
-    }
-
-    // Ta alltid bort gammal event för samma spelare + hål först
     const { error: deleteFeedEventError } = await supabase
       .from('feed_events')
       .delete()
-      .eq('round_player_id', roundPlayerId)
+      .eq('round_id', id)
+      .eq('round_player_id', score.roundPlayerId)
       .eq('hole_number', holeNumber)
 
     if (deleteFeedEventError) {
-      return NextResponse.json(
-        { error: deleteFeedEventError.message },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: deleteFeedEventError.message }, { status: 400 })
     }
 
-    if (strokes == null) {
-      continue
-    }
+    if (score.strokes == null) continue
 
-    const eventType = getFeedEventType(strokes, par)
-
-    if (!eventType) {
-      continue
-    }
+    const eventType = getFeedEventType(score.strokes, par)
+    if (!eventType) continue
 
     const { data: playerProfile } = await supabaseAdmin
-  .from('profiles')
-  .select('display_name, email')
-  .eq('id', roundPlayer.user_id)
-  .maybeSingle()
+      .from('profiles')
+      .select('display_name, email')
+      .eq('id', roundPlayer.user_id)
+      .maybeSingle()
 
-const playerName =
-  playerProfile?.display_name?.trim() ||
-  playerProfile?.email?.trim() ||
-  'Okänd spelare'
+    const playerName =
+      playerProfile?.display_name?.trim() || playerProfile?.email?.trim() || 'OkÃ¤nd spelare'
 
-const { data: courseDetails } = await supabase
-  .from('courses')
-  .select('name')
-  .eq('id', round.course_id)
-  .maybeSingle()
+    const { error: insertFeedEventError } = await supabase.from('feed_events').insert({
+      user_id: roundPlayer.user_id,
+      round_id: id,
+      round_player_id: score.roundPlayerId,
+      event_type: eventType,
+      hole_number: holeNumber,
+      player_name: playerName,
+      course_name: courseDetails?.name ?? null,
+    })
 
-const { error: insertFeedEventError } = await supabase
-  .from('feed_events')
-  .insert({
-    user_id: roundPlayer.user_id,
-    round_id: id,
-    round_player_id: roundPlayerId,
-    event_type: eventType,
-    hole_number: holeNumber,
-    player_name: playerName,
-    course_name: courseDetails?.name ?? null,
-  })
+    if (insertFeedEventError) {
+      return NextResponse.json({ error: insertFeedEventError.message }, { status: 400 })
+    }
 
-if (insertFeedEventError) {
-  return NextResponse.json(
-    { error: insertFeedEventError.message },
-    { status: 400 }
-  )
-}
-// 🔥 Skicka push vid birdie/eagle/hole-in-one
-if (
-  eventType === 'birdie' ||
-  eventType === 'eagle' ||
-  eventType === 'hole_in_one'
-) {
-  const { data: actorProfile } = await supabaseAdmin
-    .from('profiles')
-    .select('display_name, email')
-    .eq('id', roundPlayer.user_id)
-    .maybeSingle()
+    const { data: friends, error: friendsError } = await supabase
+      .from('friends')
+      .select('friend_email')
+      .eq('user_id', roundPlayer.user_id)
 
-  const actorName =
-    actorProfile?.display_name?.trim() ||
-    actorProfile?.email?.trim() ||
-    'Din vän'
+    if (friendsError) {
+      console.error('Failed to load friends for push:', friendsError)
+      continue
+    }
 
-  // 1. hämta vänners e-post
-  const { data: friends, error: friendsError } = await supabase
-    .from('friends')
-    .select('friend_email')
-    .eq('user_id', roundPlayer.user_id)
-
-  if (friendsError) {
-    console.error('Failed to load friends for push:', friendsError)
-  } else {
     const friendEmails =
       friends
         ?.map((friend) => friend.friend_email?.trim().toLowerCase())
         .filter((email): email is string => Boolean(email)) ?? []
 
-    if (friendEmails.length > 0) {
-      // 2. hitta profiler för dessa vänner
-      const { data: friendProfiles, error: friendProfilesError } = await supabaseAdmin
-        .from('profiles')
-        .select('id, email, push_friend_activity_enabled')
-        .in('email', friendEmails)
+    if (friendEmails.length === 0) continue
 
-      if (friendProfilesError) {
-        console.error('Failed to load friend profiles for push:', friendProfilesError)
-      } else {
-        const enabledFriendIds =
-          friendProfiles
-            ?.filter((profile) => profile.push_friend_activity_enabled)
-            .map((profile) => profile.id) ?? []
+    const { data: friendProfiles, error: friendProfilesError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, push_friend_activity_enabled')
+      .in('email', friendEmails)
 
-        if (enabledFriendIds.length > 0) {
-          // 3. hämta deras subscriptions
-          const { data: subscriptions, error: subscriptionsError } = await supabaseAdmin
-            .from('push_subscriptions')
-            .select('endpoint, p256dh, auth, user_id')
-            .in('user_id', enabledFriendIds)
-
-          if (subscriptionsError) {
-            console.error('Failed to load push subscriptions:', subscriptionsError)
-          } else {
-            let title = '⛳ Ny aktivitet'
-            let body = `${actorName} gjorde något bra!`
-
-            if (eventType === 'birdie') {
-              title = '🐦 Birdie!'
-              body = `${actorName} gjorde birdie på hål ${holeNumber}`
-            }
-
-            if (eventType === 'eagle') {
-              title = '🦅 Eagle!'
-              body = `${actorName} gjorde eagle på hål ${holeNumber}`
-            }
-
-            if (eventType === 'hole_in_one') {
-              title = '🎯 Hole-in-one!'
-              body = `${actorName} gjorde hole-in-one på hål ${holeNumber}!`
-            }
-
-                        await Promise.all(
-              (subscriptions ?? []).map((sub) =>
-                sendPushNotification(sub, {
-                  title,
-                  body,
-                  url: '/dashboard',
-                })
-              )
-            )
-          }
-        }
-      }
+    if (friendProfilesError) {
+      console.error('Failed to load friend profiles for push:', friendProfilesError)
+      continue
     }
-  }
-}
-}
 
-const requestedNextHole = holeNumber < endHole ? holeNumber + 1 : endHole
+    const enabledFriendIds =
+      friendProfiles
+        ?.filter((profile) => profile.push_friend_activity_enabled)
+        .map((profile) => profile.id) ?? []
+
+    if (enabledFriendIds.length === 0) continue
+
+    const { data: subscriptions, error: subscriptionsError } = await supabaseAdmin
+      .from('push_subscriptions')
+      .select('endpoint, p256dh, auth, user_id')
+      .in('user_id', enabledFriendIds)
+
+    if (subscriptionsError) {
+      console.error('Failed to load push subscriptions:', subscriptionsError)
+      continue
+    }
+
+    let title = 'â›³ Ny aktivitet'
+    let pushBody = `${playerName} gjorde nÃ¥got bra!`
+
+    if (eventType === 'birdie') {
+      title = 'ðŸ¦ Birdie!'
+      pushBody = `${playerName} gjorde birdie pÃ¥ hÃ¥l ${holeNumber}`
+    } else if (eventType === 'eagle') {
+      title = 'ðŸ¦… Eagle!'
+      pushBody = `${playerName} gjorde eagle pÃ¥ hÃ¥l ${holeNumber}`
+    } else if (eventType === 'hole_in_one') {
+      title = 'ðŸŽ¯ Hole-in-one!'
+      pushBody = `${playerName} gjorde hole-in-one pÃ¥ hÃ¥l ${holeNumber}!`
+    }
+
+    await Promise.allSettled(
+      (subscriptions ?? []).map((sub) =>
+        sendPushNotification(sub, {
+          title,
+          body: pushBody,
+          url: '/dashboard',
+        })
+      )
+    )
+  }
+
+  const requestedNextHole = holeNumber < endHole ? holeNumber + 1 : endHole
   const requestedStatus = holeNumber >= endHole ? 'completed' : 'active'
 
   const currentRoundHole =

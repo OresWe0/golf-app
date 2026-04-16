@@ -98,6 +98,7 @@ export function receivedStrokesOnHole(
 ) {
   if (!playingHandicap || playingHandicap <= 0) return 0
   if (!holeIndex || holeIndex <= 0) return 0
+  if (!holesCount || holesCount <= 0) return 0
 
   const base = Math.floor(playingHandicap / holesCount)
   const remainder = playingHandicap % holesCount
