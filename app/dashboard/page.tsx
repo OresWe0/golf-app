@@ -1010,10 +1010,10 @@ function FeedEventCard({
         </div>
       </div>
     </div>
+  )
    })}
   </div>
-})}
-</div>
+  )}
         <form action={addFeedEventComment} style={{ display: 'grid', gap: 6 }}>
           <input type="hidden" name="feedEventId" value={event.id} />
           <input
