@@ -228,6 +228,7 @@ const dashboardStyles = {
     border: '1px solid rgba(255,255,255,0.18)',
     borderRadius: 28,
     boxShadow: '0 24px 56px rgba(22, 59, 42, 0.28)',
+    marginBottom: 24,
   },
   sectionCard: {
     borderRadius: 24,
@@ -501,7 +502,7 @@ function DashboardHeader({
               fontSize: 21,
               fontWeight: 900,
               borderRadius: 22,
-              background: 'linear-gradient(135deg, #0f2f20 0%, #166534 100%)',
+              background: 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)',
               color: '#fff',
               boxShadow: '0 20px 42px rgba(15, 47, 32, 0.32)',
               border: '1px solid rgba(255,255,255,0.12)',
