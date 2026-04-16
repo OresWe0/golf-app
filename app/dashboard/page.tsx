@@ -851,17 +851,12 @@ function getNotificationActorName(
 
 function getCommentAuthorName(
   comment: FeedEventCommentRow,
-  roundPlayers: RoundPlayer[]
+  profiles: Profile[]
 ) {
-  const matchingUser = roundPlayers.find(
-    (item) =>
-      item.user_id === comment.user_id &&
-      typeof item.display_name === 'string' &&
-      item.display_name.trim().length > 0
-  )
+  const author = profiles.find((p) => p.id === comment.user_id)
 
-  if (matchingUser?.display_name?.trim()) {
-    return matchingUser.display_name.trim()
+  if (author?.display_name?.trim()) {
+    return author.display_name.trim()
   }
 
   return 'En spelare'
@@ -963,14 +958,60 @@ function FeedEventCard({
               border: '1px solid #e5e7eb',
             }}
           >
-            {comments.map((comment) => (
-              <div key={comment.id} style={{ fontSize: 14 }}>
-                <strong>{getCommentAuthorName(comment, roundPlayers)}:</strong>{' '}
-                {comment.body}
-              </div>
-            ))}
-          </div>
-        )}
+            {comments.map((comment) => {
+  const authorName = getCommentAuthorName(comment, profiles)
+
+  return (
+    <div
+      key={comment.id}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '10px 12px',
+        borderRadius: 14,
+        background: '#f0fdf4',
+        border: '1px solid #bbf7d0',
+      }}
+    >
+      <div
+        aria-hidden="true"
+        style={{
+          width: 30,
+          height: 30,
+          borderRadius: 999,
+          background: 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)',
+          color: '#fff',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 13,
+          fontWeight: 900,
+          flexShrink: 0,
+          boxShadow: '0 6px 14px rgba(34, 197, 94, 0.08)',
+        }}
+      >
+        {authorName.charAt(0).toUpperCase()}
+      </div>
+
+      <div style={{ minWidth: 0 }}>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 6,
+            alignItems: 'baseline',
+          }}
+        >
+          <span style={{ fontWeight: 800, color: '#1f2937' }}>
+            {authorName}
+          </span>
+          <span style={{ color: '#374151' }}>{comment.body}</span>
+        </div>
+      </div>
+    </div>
+  )
+})}
 
         <form action={addFeedEventComment} style={{ display: 'grid', gap: 6 }}>
           <input type="hidden" name="feedEventId" value={event.id} />
