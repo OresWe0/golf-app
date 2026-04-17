@@ -1478,6 +1478,20 @@ const dragStartRef = useRef<{ x: number; y: number } | null>(null)
     ? `/course-images/${activeCourseImageSlug}/${previewHoleNumber}.jpg`
     : ''
 
+  useEffect(() => {
+    if (currentHole < endHole) {
+      router.prefetch('/rounds/' + roundId + '?hole=' + (currentHole + 1))
+    } else {
+      router.prefetch('/rounds/' + roundId + '/summary')
+    }
+
+    if (currentHole > startHole) {
+      router.prefetch('/rounds/' + roundId + '?hole=' + (currentHole - 1))
+    }
+
+    router.prefetch('/dashboard')
+  }, [router, roundId, currentHole, startHole, endHole])
+
   const handleHoleImageError = (value: boolean) => {
     if (!value) {
       setHoleImageError(false)
@@ -1746,22 +1760,19 @@ const navigateTo = (target: string) => {
         navigator.vibrate([20, 18, 20])
       }
 
-      postSaveTimeoutRef.current = setTimeout(() => {
-        if (isNavigatingRef.current) return
-
-        if (currentHole === endHole) {
-          isSavingRef.current = false
-          setShowFinishModal(true)
-          return
-        }
-
+      if (currentHole === endHole) {
         isSavingRef.current = false
-        goNext()
-      }, 260)
-    } finally {
-      setLoading(false)
+        setLoading(false)
+        setShowFinishModal(true)
+        return
+      }
 
-      if (currentHole !== endHole && !postSaveTimeoutRef.current) {
+      isSavingRef.current = false
+      goNext()
+      return
+    } finally {
+      if (!isNavigatingRef.current) {
+        setLoading(false)
         isSavingRef.current = false
       }
     }
@@ -2091,10 +2102,14 @@ useEffect(() => {
         @media (max-width: 720px) {
           .hp-grid-2,
           .hp-selected-row,
-          .hp-bottom-actions,
           .hp-modal-actions,
           .hp-finish-actions {
             grid-template-columns: 1fr;
+          }
+
+          .hp-bottom-actions {
+            grid-template-columns: 90px 1fr;
+            gap: 10px;
           }
 
           .hp-top3 {
@@ -2109,6 +2124,10 @@ useEffect(() => {
         @media (max-width: 420px) {
           .hp-score-grid {
             gap: 8px;
+          }
+
+          .hp-bottom-actions {
+            grid-template-columns: 84px 1fr;
           }
         }
       `}</style>
