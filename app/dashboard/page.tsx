@@ -119,13 +119,13 @@ function buildDashboardHref(params: {
 }
 
 function getRoleLabel(role?: Membership['role']) {
-  if (role === 'owner') return 'Ägare'
+  if (role === 'owner') return 'Ã„gare'
   if (role === 'player') return 'Spelare'
   return 'Ej deltagare'
 }
 
 function getScoringLabel(scoringMode: Round['scoring_mode']) {
-  return scoringMode === 'stableford' ? 'Poängbogey' : 'Slagspel'
+  return scoringMode === 'stableford' ? 'PoÃ¤ngbogey' : 'Slagspel'
 }
 
 function getRoundHref(round: Round) {
@@ -133,9 +133,9 @@ function getRoundHref(round: Round) {
 }
 
 function getFeedEventLabel(eventType: FeedEvent['event_type']) {
-  if (eventType === 'birdie') return '🐦 Birdie'
-  if (eventType === 'eagle') return '🦅 Eagle'
-  return '🎯 Hole-in-one'
+  if (eventType === 'birdie') return 'ðŸ¦ Birdie'
+  if (eventType === 'eagle') return 'ðŸ¦… Eagle'
+  return 'ðŸŽ¯ Hole-in-one'
 }
 
 function formatFeedEventTime(value: string) {
@@ -170,7 +170,7 @@ function formatFeedEventTime(value: string) {
   }
 
   if (sameAsYesterday) {
-    return `Igår ${timeText}`
+    return `IgÃ¥r ${timeText}`
   }
 
   return date.toLocaleString('sv-SE', {
@@ -192,10 +192,10 @@ function getCourseNameForFeedEvent(
   }
 
   const round = rounds.find((item) => item.id === event.round_id)
-  if (!round) return 'Okänd bana'
+  if (!round) return 'OkÃ¤nd bana'
 
   const course = courses.find((item) => item.id === round.course_id)
-  return course?.name || 'Okänd bana'
+  return course?.name || 'OkÃ¤nd bana'
 }
 
 function getPlayerNameForFeedEvent(
@@ -225,7 +225,7 @@ function getPlayerNameForFeedEvent(
     return matchingUser.display_name.trim()
   }
 
-  return 'Okänd spelare'
+  return 'OkÃ¤nd spelare'
 }
   
 function normalizeCourseSearchText(value: string) {
@@ -404,10 +404,10 @@ function FriendRequestNotice({
     >
       <div>
         <div style={{ fontWeight: 900, marginBottom: 4, color: '#1f3327' }}>
-          📨 Du har en ny vänförfrågan
+          ðŸ“¨ Du har en ny vÃ¤nfÃ¶rfrÃ¥gan
         </div>
         <div className="muted" style={{ color: '#7c5a12' }}>
-          Du har {incomingFriendRequestsCount} inkommande vänförfrågan
+          Du har {incomingFriendRequestsCount} inkommande vÃ¤nfÃ¶rfrÃ¥gan
           {incomingFriendRequestsCount > 1 ? 'ar' : ''} att hantera i Min profil.
         </div>
       </div>
@@ -423,7 +423,7 @@ function FriendRequestNotice({
           background: '#fffef8',
         }}
       >
-        Öppna Min profil
+        Ã–ppna Min profil
       </Link>
     </div>
   )
@@ -467,7 +467,7 @@ function DashboardHeader({
                 backdropFilter: 'blur(6px)',
               }}
             >
-              👋 Inloggad som {displayName}
+              ðŸ‘‹ Inloggad som {displayName}
             </span>
 
             <h1
@@ -480,7 +480,7 @@ function DashboardHeader({
                 letterSpacing: -1,
               }}
             >
-              Träffa fairway,
+              TrÃ¤ffa fairway,
               <br />
               <span style={{ fontWeight: 900 }}>{displayName}</span>
             </h1>
@@ -494,8 +494,8 @@ function DashboardHeader({
                 color: 'rgba(255,255,255,0.88)',
               }}
             >
-              Redo för nästa runda? Starta snabbt, fortsätt en aktiv runda eller
-              följ dina golfvänner.
+              Redo fÃ¶r nÃ¤sta runda? Starta snabbt, fortsÃ¤tt en aktiv runda eller
+              fÃ¶lj dina golfvÃ¤nner.
             </p>
           </div>
 
@@ -509,7 +509,7 @@ function DashboardHeader({
                 boxShadow: '0 10px 24px rgba(15, 23, 42, 0.16)',
               }}
             >
-              {pendingCount} väntar på godkännande
+              {pendingCount} vÃ¤ntar pÃ¥ godkÃ¤nnande
             </div>
           ) : null}
         </div>
@@ -530,7 +530,7 @@ function DashboardHeader({
               border: '1px solid rgba(255,255,255,0.12)',
             }}
           >
-            ⛳ Starta ny runda
+            â›³ Starta ny runda
           </Link>
 
           <div
@@ -568,12 +568,12 @@ function DashboardHeader({
                   border: '1px solid rgba(255,255,255,0.16)',
                 }}
               >
-                👤 Profil & vänner
+                ðŸ‘¤ Profil & vÃ¤nner
               </Link>
 
               {incomingFriendRequestsCount > 0 ? (
                 <span
-                  aria-label={`${incomingFriendRequestsCount} inkommande vänförfrågningar`}
+                  aria-label={`${incomingFriendRequestsCount} inkommande vÃ¤nfÃ¶rfrÃ¥gningar`}
                   style={{
                     position: 'absolute',
                     top: -6,
@@ -633,7 +633,7 @@ function NotificationsSection({
     <div className="card" style={dashboardStyles.sectionCard}>
       <SectionHeader
         title="Notiser"
-        description="Det senaste som hänt i ditt flöde."
+        description="Det senaste som hÃ¤nt i ditt flÃ¶de."
         count={notifications.length}
         countTone="slate"
       />
@@ -663,8 +663,8 @@ function NotificationsSection({
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontWeight: 800, color: '#1f3327' }}>
                   {notification.type === 'like'
-                    ? `👍 ${actorName} gillade ditt event`
-                    : `💬 ${actorName} kommenterade: ${notification.title.replace(
+                    ? `ðŸ‘ ${actorName} gillade ditt event`
+                    : `ðŸ’¬ ${actorName} kommenterade: ${notification.title.replace(
                         'Ny kommentar: ',
                         ''
                       )}`}
@@ -686,7 +686,7 @@ function NotificationsSection({
                   className="button secondary"
                   style={{ minWidth: 120 }}
                 >
-                  ✓ Klart
+                  âœ“ Klart
                 </button>
               </form>
             </div>
@@ -721,10 +721,10 @@ function AdminPendingBanner({
     >
       <div>
         <div style={{ fontWeight: 900, marginBottom: 4, color: '#1f3327' }}>
-          ⏳ Väntande användare
+          â³ VÃ¤ntande anvÃ¤ndare
         </div>
         <div className="muted">
-          {pendingCount} användare väntar på att bli godkända.
+          {pendingCount} anvÃ¤ndare vÃ¤ntar pÃ¥ att bli godkÃ¤nda.
         </div>
       </div>
 
@@ -739,7 +739,7 @@ function AdminPendingBanner({
           background: '#fffef8',
         }}
       >
-        Öppna admin
+        Ã–ppna admin
       </Link>
     </div>
   )
@@ -766,30 +766,30 @@ function DashboardHighlights({
       }}
     >
       <HighlightCard
-        label="🏆 Bästa 9 hål"
-        value={bestRound9Score ?? 'Ingen ännu'}
-        sublabel="Lägsta registrerade score på 9 hål"
+        label="ðŸ† BÃ¤sta 9 hÃ¥l"
+        value={bestRound9Score ?? 'Ingen Ã¤nnu'}
+        sublabel="LÃ¤gsta registrerade score pÃ¥ 9 hÃ¥l"
         tone="green"
       />
 
       <HighlightCard
-        label="🏆 Bästa 18 hål"
-        value={bestRound18Score ?? 'Ingen ännu'}
-        sublabel="Lägsta registrerade score på 18 hål"
+        label="ðŸ† BÃ¤sta 18 hÃ¥l"
+        value={bestRound18Score ?? 'Ingen Ã¤nnu'}
+        sublabel="LÃ¤gsta registrerade score pÃ¥ 18 hÃ¥l"
         tone="blue"
       />
 
       <HighlightCard
-        label="📅 Spelade rundor i år"
+        label="ðŸ“… Spelade rundor i Ã¥r"
         value={roundsThisYearCount}
-        sublabel="Avslutade rundor under innevarande år"
+        sublabel="Avslutade rundor under innevarande Ã¥r"
         tone="blue"
       />
 
       <HighlightCard
-        label="📍 Senaste bana"
+        label="ðŸ“ Senaste bana"
         value={latestCourseName}
-        sublabel="Från din senast avslutade runda"
+        sublabel="FrÃ¥n din senast avslutade runda"
         tone="slate"
       />
     </div>
@@ -932,7 +932,7 @@ function KarstaInsightsSection({
                       {hole.averageToPar != null
                         ? ` (${formatSigned(hole.averageToPar, 2)} mot par)`
                         : ''}
-                      {' � '}
+                      {' · '}
                       {hole.sampleCount} varv
                     </div>
                   </div>
@@ -977,7 +977,7 @@ function KarstaInsightsSection({
                     {hole.averageToPar != null
                       ? `${formatSigned(hole.averageToPar, 2)} mot par`
                       : 'Par saknas'}
-                    {' � '}
+                    {' · '}
                     {hole.sampleCount} varv
                   </div>
                 </div>
@@ -1061,7 +1061,7 @@ function getNotificationActorName(
     return actor.display_name.trim()
   }
 
-  return 'Någon'
+  return 'NÃ¥gon'
 }
 
 function getCommentAuthorName(
@@ -1096,10 +1096,10 @@ function FeedEventCard({
 }) {
   const eventMeta =
     event.event_type === 'birdie'
-      ? { emoji: '🐦', text: 'birdie' }
+      ? { emoji: 'ðŸ¦', text: 'birdie' }
       : event.event_type === 'eagle'
-        ? { emoji: '🦅', text: 'eagle' }
-        : { emoji: '🎯', text: 'hole-in-one' }
+        ? { emoji: 'ðŸ¦…', text: 'eagle' }
+        : { emoji: 'ðŸŽ¯', text: 'hole-in-one' }
 
   const timeLabel = formatFeedEventTime(event.created_at)
 
@@ -1120,7 +1120,7 @@ function FeedEventCard({
       </div>
 
       <div className="muted">
-        Hål {event.hole_number} · {courseName}
+        HÃ¥l {event.hole_number} Â· {courseName}
       </div>
 
       <div className="muted" style={{ fontSize: 13 }}>
@@ -1137,7 +1137,7 @@ function FeedEventCard({
         }}
       >
         <div className="muted" style={{ fontSize: 13 }}>
-          👍 {likesCount}
+          ðŸ‘ {likesCount}
         </div>
 
         {likedByMe ? (
@@ -1159,7 +1159,7 @@ function FeedEventCard({
 
       <div style={{ display: 'grid', gap: 8 }}>
         <div className="muted" style={{ fontSize: 13 }}>
-          💬 {comments.length}
+          ðŸ’¬ {comments.length}
         </div>
 
         {comments.length > 0 && (
@@ -1293,7 +1293,7 @@ function ActiveRoundCard({
           </div>
 
           <div className="muted" style={{ lineHeight: 1.5 }}>
-            {scoring} · Aktuellt hål {round.current_hole} · {role}
+            {scoring} Â· Aktuellt hÃ¥l {round.current_hole} Â· {role}
           </div>
         </div>
 
@@ -1304,7 +1304,7 @@ function ActiveRoundCard({
             color: '#166534',
           }}
         >
-          Pågår
+          PÃ¥gÃ¥r
         </div>
       </div>
 
@@ -1353,7 +1353,7 @@ function ActiveRoundCard({
           }}
         >
           <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-            Hål
+            HÃ¥l
           </div>
           <div style={{ fontWeight: 900, color: '#1f3327' }}>
             {round.current_hole}
@@ -1378,7 +1378,7 @@ function ActiveRoundCard({
             boxSizing: 'border-box',
           }}
         >
-          Fortsätt runda
+          FortsÃ¤tt runda
         </Link>
 
         <Link
@@ -1442,7 +1442,7 @@ function CompletedRoundCard({
           </div>
 
           <div className="muted" style={{ marginTop: 5, lineHeight: 1.45 }}>
-            {scoring} · {role}
+            {scoring} Â· {role}
           </div>
         </div>
 
@@ -1502,15 +1502,15 @@ function ActiveRoundsSection({
     <div className="card" style={dashboardStyles.sectionCard}>
       <SectionHeader
         title="Aktiva rundor"
-        description="Rundor som pågår just nu."
+        description="Rundor som pÃ¥gÃ¥r just nu."
         count={rounds.length}
         countTone="green"
       />
 
       {rounds.length === 0 ? (
         <SectionEmptyState
-          title="Inga aktiva rundor ännu"
-          description="Starta en ny runda för att komma igång."
+          title="Inga aktiva rundor Ã¤nnu"
+          description="Starta en ny runda fÃ¶r att komma igÃ¥ng."
         />
       ) : (
         <div style={{ display: 'grid', gap: 12 }}>
@@ -1539,7 +1539,7 @@ function ActiveRoundsSection({
                   className="button secondary"
                   style={{ minWidth: 190, textAlign: 'center' }}
                 >
-                  Visa färre aktiva
+                  Visa fÃ¤rre aktiva
                 </Link>
               ) : (
                 <Link
@@ -1599,8 +1599,8 @@ function CompletedRoundsSection({
 
       {rounds.length === 0 ? (
         <SectionEmptyState
-          title="Inga avslutade rundor ännu"
-          description="När du avslutar en runda visas den här."
+          title="Inga avslutade rundor Ã¤nnu"
+          description="NÃ¤r du avslutar en runda visas den hÃ¤r."
         />
       ) : (
         <div style={{ display: 'grid', gap: 10 }}>
@@ -1629,7 +1629,7 @@ function CompletedRoundsSection({
                   className="button secondary"
                   style={{ minWidth: 210, textAlign: 'center' }}
                 >
-                  Visa färre avslutade
+                  Visa fÃ¤rre avslutade
                 </Link>
               ) : (
                 <Link
@@ -1992,8 +1992,8 @@ export default async function DashboardPage({
   const latestRound = completedRounds[0] ?? null
 
   const latestCourseName = latestRound
-    ? allCourses.find((c) => c.id === latestRound.course_id)?.name || 'Okänd bana'
-    : 'Ingen ännu'
+    ? allCourses.find((c) => c.id === latestRound.course_id)?.name || 'OkÃ¤nd bana'
+    : 'Ingen Ã¤nnu'
 
 
   const karstaCourse = allCourses.find((course) =>
@@ -2183,8 +2183,8 @@ export default async function DashboardPage({
         <div style={{ display: 'grid', gap: 18 }}>
           <div className="card" style={dashboardStyles.sectionCard}>
             <SectionHeader
-              title="📊 Din statistik"
-              description="Din genomsnittliga score baserat på avslutade rundor."
+              title="ðŸ“Š Din statistik"
+              description="Din genomsnittliga score baserat pÃ¥ avslutade rundor."
               count={completedRounds.length}
               countTone="slate"
             />
@@ -2197,9 +2197,9 @@ export default async function DashboardPage({
               }}
             >
               <HighlightCard
-                label="📊 Snittscore"
+                label="ðŸ“Š Snittscore"
                 value={
-                  averageScore !== null ? Math.round(averageScore).toString() : '—'
+                  averageScore !== null ? Math.round(averageScore).toString() : 'â€”'
                 }
                 sublabel="Genomsnittligt antal slag"
                 tone="purple"
@@ -2209,16 +2209,16 @@ export default async function DashboardPage({
 
           <div className="card" style={dashboardStyles.sectionCard}>
             <SectionHeader
-              title="Vänflöde"
-              description="Senaste höjdpunkterna i spelet."
+              title="VÃ¤nflÃ¶de"
+              description="Senaste hÃ¶jdpunkterna i spelet."
               count={feedEvents.length}
               countTone="slate"
             />
 
             {feedEvents.length === 0 ? (
               <SectionEmptyState
-                title="Inga höjdpunkter ännu"
-                description="Birdies, eagles och hole-in-one dyker upp här."
+                title="Inga hÃ¶jdpunkter Ã¤nnu"
+                description="Birdies, eagles och hole-in-one dyker upp hÃ¤r."
               />
             ) : (
               <div style={{ display: 'grid', gap: 10 }}>
