@@ -2,6 +2,9 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import path from 'node:path'
+import { mkdir, writeFile } from 'node:fs/promises'
+import sharp from 'sharp'
 
 type SearchParams = Promise<{
   message?: string
@@ -36,6 +39,18 @@ type GpsRow = {
   back_lng: number
 }
 
+type LayoutPoint = {
+  x: string | number
+  y: string | number
+}
+
+type LiveCaddieHole = {
+  number: number
+  x: string | number
+  y: string | number
+  lopPoints?: LayoutPoint[]
+}
+
 async function requireAdmin() {
   const supabase = await createClient()
   const {
@@ -59,6 +74,43 @@ function toNumber(value: unknown) {
   const parsed = Number(value)
   if (!Number.isFinite(parsed)) return null
   return parsed
+}
+
+function toCourseImageSlug(name: string) {
+  const source = String(name ?? '').trim().toLowerCase()
+  if (!source) return ''
+
+  const normalized = source
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+  if (normalized.includes('karsta')) return 'karsta'
+  if (normalized.includes('lindesberg')) return 'lindesberg'
+  return normalized
+}
+
+function clamp01(value: number) {
+  if (value < 0) return 0
+  if (value > 1) return 1
+  return value
+}
+
+function parseLiveCaddieCourseJson(html: string) {
+  const match = html.match(/courses\s*=\s*JSON\.parse\('([\s\S]*?)'\);/)
+  if (!match?.[1]) {
+    throw new Error('Could not parse LiveCaddie course JSON from page.')
+  }
+
+  const raw = match[1]
+  const unescaped = raw.replace(/\\\//g, '/').replace(/\\'/g, "'")
+  return JSON.parse(unescaped) as Array<{
+    landscapeImageURL?: string
+    portraitImageURL?: string
+    landscapeHoles?: LiveCaddieHole[]
+    portraitHoles?: LiveCaddieHole[]
+  }>
 }
 
 function parseBulkHoles(text: string) {
@@ -334,6 +386,229 @@ export default async function AdminCourseHolesPage({
     )
   }
 
+  async function generateHoleImages(formData: FormData) {
+    'use server'
+
+    const supabase = await requireAdmin()
+    const courseId = String(formData.get('courseId') ?? '')
+    const liveCaddieCourseId = String(formData.get('liveCaddieCourseId') ?? '').trim()
+
+    if (!courseId || !liveCaddieCourseId) {
+      redirect(
+        `/admin/courses/${courseId}/holes?type=error&message=${encodeURIComponent(
+          'Missing courseId or LiveCaddie id.'
+        )}`
+      )
+    }
+
+    const { data: course } = await supabase
+      .from('courses')
+      .select('id, name')
+      .eq('id', courseId)
+      .single()
+
+    if (!course?.name) {
+      redirect(
+        `/admin/courses/${courseId}/holes?type=error&message=${encodeURIComponent(
+          'Could not find course.'
+        )}`
+      )
+    }
+
+    const slug = toCourseImageSlug(course.name)
+    if (!slug) {
+      redirect(
+        `/admin/courses/${courseId}/holes?type=error&message=${encodeURIComponent(
+          'Could not build image slug from course name.'
+        )}`
+      )
+    }
+
+    let html = ''
+    try {
+      const res = await fetch(
+        `https://player.livecaddie.com/course-info.php?course=${encodeURIComponent(liveCaddieCourseId)}&lang=sv-SE&embedded`,
+        { cache: 'no-store' }
+      )
+      if (!res.ok) throw new Error(`LiveCaddie page failed: ${res.status}`)
+      html = await res.text()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not fetch LiveCaddie page.'
+      redirect(
+        `/admin/courses/${courseId}/holes?type=error&message=${encodeURIComponent(message)}`
+      )
+    }
+
+    let courseJson:
+      | {
+          landscapeImageURL?: string
+          portraitImageURL?: string
+          landscapeHoles?: LiveCaddieHole[]
+          portraitHoles?: LiveCaddieHole[]
+        }
+      | undefined
+
+    try {
+      courseJson = parseLiveCaddieCourseJson(html)[0]
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Could not parse LiveCaddie course payload.'
+      redirect(
+        `/admin/courses/${courseId}/holes?type=error&message=${encodeURIComponent(message)}`
+      )
+    }
+
+    const imageUrl = courseJson?.landscapeImageURL ?? courseJson?.portraitImageURL
+    const holes = (courseJson?.landscapeHoles ?? courseJson?.portraitHoles ?? [])
+      .filter((hole) => Number.isFinite(Number(hole.number)))
+      .sort((a, b) => Number(a.number) - Number(b.number))
+
+    if (!imageUrl || !holes.length) {
+      redirect(
+        `/admin/courses/${courseId}/holes?type=error&message=${encodeURIComponent(
+          'LiveCaddie did not return image URL or hole layout.'
+        )}`
+      )
+    }
+
+    let imageBuffer: Buffer<ArrayBufferLike>
+    try {
+      const imageRes = await fetch(imageUrl, { cache: 'no-store' })
+      if (!imageRes.ok) throw new Error(`Image fetch failed: ${imageRes.status}`)
+      const arr = await imageRes.arrayBuffer()
+      imageBuffer = Buffer.from(arr)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not fetch course base image.'
+      redirect(
+        `/admin/courses/${courseId}/holes?type=error&message=${encodeURIComponent(message)}`
+      )
+    }
+
+    let metadata
+    try {
+      metadata = await sharp(imageBuffer).metadata()
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Could not read base image metadata.'
+      redirect(
+        `/admin/courses/${courseId}/holes?type=error&message=${encodeURIComponent(message)}`
+      )
+    }
+
+    const width = metadata.width ?? 0
+    const height = metadata.height ?? 0
+    if (width <= 0 || height <= 0) {
+      redirect(
+        `/admin/courses/${courseId}/holes?type=error&message=${encodeURIComponent(
+          'Invalid base image dimensions.'
+        )}`
+      )
+    }
+
+    const targetWidth = 1600
+    const targetHeight = 900
+    const targetAspect = targetWidth / targetHeight
+    const outDir = path.join(process.cwd(), 'public', 'course-images', slug)
+
+    try {
+      await mkdir(outDir, { recursive: true })
+      await writeFile(path.join(outDir, 'base.jpg'), imageBuffer)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not write base image.'
+      redirect(
+        `/admin/courses/${courseId}/holes?type=error&message=${encodeURIComponent(message)}`
+      )
+    }
+
+    let generated = 0
+
+    for (const hole of holes) {
+      const holeNumber = Math.floor(Number(hole.number))
+      if (!Number.isFinite(holeNumber) || holeNumber < 1 || holeNumber > 18) continue
+
+      const points = [
+        { x: Number(hole.x), y: Number(hole.y) },
+        ...((hole.lopPoints ?? []).map((p) => ({ x: Number(p.x), y: Number(p.y) })) ?? []),
+      ].filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y))
+
+      if (!points.length) continue
+
+      let minX = Math.min(...points.map((p) => p.x))
+      let maxX = Math.max(...points.map((p) => p.x))
+      let minY = Math.min(...points.map((p) => p.y))
+      let maxY = Math.max(...points.map((p) => p.y))
+
+      minX = clamp01(minX - 0.08)
+      maxX = clamp01(maxX + 0.08)
+      minY = clamp01(minY - 0.12)
+      maxY = clamp01(maxY + 0.12)
+
+      let boxW = maxX - minX
+      let boxH = maxY - minY
+      const cx = (minX + maxX) / 2
+      const cy = (minY + maxY) / 2
+      const aspect = boxH > 0 ? boxW / boxH : targetAspect
+
+      if (aspect > targetAspect) {
+        boxH = Math.min(1, boxW / targetAspect)
+        minY = cy - boxH / 2
+        maxY = cy + boxH / 2
+      } else {
+        boxW = Math.min(1, boxH * targetAspect)
+        minX = cx - boxW / 2
+        maxX = cx + boxW / 2
+      }
+
+      if (minX < 0) {
+        maxX += -minX
+        minX = 0
+      }
+      if (maxX > 1) {
+        minX -= maxX - 1
+        maxX = 1
+      }
+      if (minY < 0) {
+        maxY += -minY
+        minY = 0
+      }
+      if (maxY > 1) {
+        minY -= maxY - 1
+        maxY = 1
+      }
+
+      const left = Math.max(0, Math.floor(minX * width))
+      const top = Math.max(0, Math.floor(minY * height))
+      const cropWidth = Math.max(1, Math.ceil((maxX - minX) * width))
+      const cropHeight = Math.max(1, Math.ceil((maxY - minY) * height))
+
+      try {
+        const holeBuffer = await sharp(imageBuffer)
+          .extract({
+            left,
+            top,
+            width: Math.min(cropWidth, width - left),
+            height: Math.min(cropHeight, height - top),
+          })
+          .resize(targetWidth, targetHeight, { fit: 'fill' })
+          .jpeg({ quality: 88 })
+          .toBuffer()
+
+        await writeFile(path.join(outDir, `${holeNumber}.jpg`), holeBuffer)
+        generated += 1
+      } catch {
+        // Ignore individual hole crop failures and continue.
+      }
+    }
+
+    revalidatePath(`/admin/courses/${courseId}/holes`)
+    revalidatePath('/rounds/new')
+    redirect(
+      `/admin/courses/${courseId}/holes?type=success&message=${encodeURIComponent(
+        `Generated ${generated} hole images in /public/course-images/${slug}`
+      )}`
+    )
+  }
+
   const [{ data: courseData }, { data: holesData }, { data: teesData }, { data: gpsData }] =
     await Promise.all([
       supabase.from('courses').select('id, name').eq('id', id).single(),
@@ -458,6 +733,33 @@ export default async function AdminCourseHolesPage({
             />
             <button type="submit" className="button">
               Spara GPS
+            </button>
+          </form>
+        </div>
+
+        <div className="card" style={{ padding: 16, display: 'grid', gap: 10 }}>
+          <h2 style={{ margin: 0 }}>Generate hole images</h2>
+          <p className="muted" style={{ margin: 0 }}>
+            Fetches base image + hole layout from LiveCaddie and writes 1.jpg to 18.jpg.
+          </p>
+          <form action={generateHoleImages} style={{ display: 'grid', gap: 10 }}>
+            <input type="hidden" name="courseId" value={id} />
+            <input
+              name="liveCaddieCourseId"
+              type="number"
+              step="1"
+              min="1"
+              placeholder="LiveCaddie Course ID, e.g. 549"
+              required
+              style={{
+                minHeight: 44,
+                borderRadius: 12,
+                border: '1px solid #d1d5db',
+                padding: '0 12px',
+              }}
+            />
+            <button type="submit" className="button">
+              Generate images
             </button>
           </form>
         </div>
