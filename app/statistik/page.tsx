@@ -33,6 +33,12 @@ type CourseHoleRow = {
   par: number
 }
 
+type SearchParams = Record<string, string | string[] | undefined>
+
+type PageProps = {
+  searchParams?: SearchParams | Promise<SearchParams>
+}
+
 function normalizeText(value: string) {
   return value
     .normalize('NFKD')
@@ -48,7 +54,42 @@ function formatSigned(value: number) {
   return '0.00'
 }
 
-export default async function StatistikPage() {
+function getFirstParam(value: string | string[] | undefined) {
+  if (Array.isArray(value)) return value[0]
+  return value
+}
+
+function getPeriodStartDate(period: string, now: Date) {
+  if (period === '30d') {
+    const value = new Date(now)
+    value.setDate(value.getDate() - 30)
+    return value
+  }
+
+  if (period === '90d') {
+    const value = new Date(now)
+    value.setDate(value.getDate() - 90)
+    return value
+  }
+
+  if (period === 'year') {
+    return new Date(now.getFullYear(), 0, 1)
+  }
+
+  return null
+}
+
+export default async function StatistikPage({ searchParams }: PageProps) {
+  let resolvedSearchParams: SearchParams = {}
+
+  if (searchParams) {
+    if (typeof (searchParams as Promise<SearchParams>).then === 'function') {
+      resolvedSearchParams = await (searchParams as Promise<SearchParams>)
+    } else {
+      resolvedSearchParams = searchParams as SearchParams
+    }
+  }
+
   const supabase = await createClient()
 
   const {
@@ -169,48 +210,86 @@ export default async function StatistikPage() {
     normalizeText(course.name).includes('karsta')
   )
 
-  const karstaRoundSummaries = karstaCourse
-    ? completedSummaries.filter((item) => item.round.course_id === karstaCourse.id)
-    : []
+  const periodParam = getFirstParam(resolvedSearchParams.period)
+  const selectedPeriod =
+    periodParam === '30d' || periodParam === '90d' || periodParam === 'year' || periodParam === 'all'
+      ? periodParam
+      : 'all'
 
-  const overallAveragePerHole =
-    completedSummaries.length > 0
-      ? completedSummaries.reduce((sum, item) => sum + item.avgPerHole, 0) /
-        completedSummaries.length
+  const courseIdsInData = new Set(completedSummaries.map((item) => item.round.course_id))
+  const courseOptions = courses
+    .filter((course) => courseIdsInData.has(course.id))
+    .sort((a, b) => a.name.localeCompare(b.name, 'sv-SE'))
+
+  const courseParam = getFirstParam(resolvedSearchParams.course)
+  const defaultCourseId = karstaCourse?.id ?? 'all'
+  const selectedCourseId =
+    courseParam === 'all'
+      ? 'all'
+      : courseParam && courseById.has(courseParam)
+      ? courseParam
+      : defaultCourseId
+
+  const periodStartDate = getPeriodStartDate(selectedPeriod, new Date())
+
+  const filteredSummaries = completedSummaries.filter((item) => {
+    if (selectedCourseId !== 'all' && item.round.course_id !== selectedCourseId) {
+      return false
+    }
+
+    if (!periodStartDate) return true
+
+    const playedAt = new Date(item.round.created_at)
+    return Number.isFinite(playedAt.getTime()) && playedAt >= periodStartDate
+  })
+
+  const selectedCourseName =
+    selectedCourseId === 'all'
+      ? 'Alla banor'
+      : (courseById.get(selectedCourseId)?.name ?? 'Vald bana')
+
+  const averagePerHole =
+    filteredSummaries.length > 0
+      ? filteredSummaries.reduce((sum, item) => sum + item.avgPerHole, 0) / filteredSummaries.length
       : null
 
-  const karstaAveragePerHole =
-    karstaRoundSummaries.length > 0
-      ? karstaRoundSummaries.reduce((sum, item) => sum + item.avgPerHole, 0) /
-        karstaRoundSummaries.length
+  const totalHolesPlayed = filteredSummaries.reduce((sum, item) => sum + item.holes, 0)
+
+  const bestRound =
+    filteredSummaries.length > 0
+      ? filteredSummaries.reduce((best, item) =>
+          item.totalStrokes < best.totalStrokes ? item : best
+        )
       : null
 
   const parByHole = new Map<number, number>()
 
-  if (karstaCourse) {
+  if (selectedCourseId !== 'all') {
     for (const hole of courseHoles) {
-      if (hole.course_id !== karstaCourse.id) continue
+      if (hole.course_id !== selectedCourseId) continue
       parByHole.set(hole.hole_number, hole.par)
     }
   }
 
-  const karstaRoundIds = new Set(karstaRoundSummaries.map((item) => item.round.id))
+  const selectedRoundIds = new Set(filteredSummaries.map((item) => item.round.id))
   const holeAgg = new Map<number, { strokes: number; count: number }>()
 
-  for (const score of holeScores) {
-    if (typeof score.strokes !== 'number') continue
-    if (typeof score.hole_number !== 'number') continue
+  if (selectedCourseId !== 'all') {
+    for (const score of holeScores) {
+      if (typeof score.strokes !== 'number') continue
+      if (typeof score.hole_number !== 'number') continue
 
-    const roundId = playerRoundById.get(score.round_player_id)
-    if (!roundId || !karstaRoundIds.has(roundId)) continue
+      const roundId = playerRoundById.get(score.round_player_id)
+      if (!roundId || !selectedRoundIds.has(roundId)) continue
 
-    const current = holeAgg.get(score.hole_number) ?? { strokes: 0, count: 0 }
-    current.strokes += score.strokes
-    current.count += 1
-    holeAgg.set(score.hole_number, current)
+      const current = holeAgg.get(score.hole_number) ?? { strokes: 0, count: 0 }
+      current.strokes += score.strokes
+      current.count += 1
+      holeAgg.set(score.hole_number, current)
+    }
   }
 
-  const hardestKarstaHoles = Array.from(holeAgg.entries())
+  const hardestHoles = Array.from(holeAgg.entries())
     .map(([holeNumber, aggregate]) => {
       const avg = aggregate.strokes / aggregate.count
       const par = parByHole.get(holeNumber)
@@ -232,6 +311,21 @@ export default async function StatistikPage() {
     })
     .slice(0, 5)
 
+  function buildFilterHref(nextCourse: string, nextPeriod: string) {
+    const params = new URLSearchParams()
+    if (nextCourse !== 'all') params.set('course', nextCourse)
+    if (nextPeriod !== 'all') params.set('period', nextPeriod)
+    const query = params.toString()
+    return query ? `/statistik?${query}` : '/statistik'
+  }
+
+  const periodOptions = [
+    { key: '30d', label: '30 dagar' },
+    { key: '90d', label: '90 dagar' },
+    { key: 'year', label: 'I ar' },
+    { key: 'all', label: 'All tid' },
+  ] as const
+
   return (
     <main>
       <div className="container" style={{ display: 'grid', gap: 16 }}>
@@ -250,13 +344,55 @@ export default async function StatistikPage() {
                 Statistik
               </h1>
               <p className="meta" style={{ marginTop: 8 }}>
-                Din personliga speldata med fokus på Kårsta.
+                Filtrera pa bana och period for snabb oversikt.
               </p>
             </div>
 
             <Link href="/dashboard" className="button secondary">
               Till dashboard
             </Link>
+          </div>
+        </div>
+
+        <div className="card" style={{ borderRadius: 20, display: 'grid', gap: 12 }}>
+          <div>
+            <div className="muted" style={{ marginBottom: 8 }}>
+              Bana
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <Link
+                href={buildFilterHref('all', selectedPeriod)}
+                className={`button ${selectedCourseId === 'all' ? '' : 'secondary'}`}
+              >
+                Alla banor
+              </Link>
+              {courseOptions.map((course) => (
+                <Link
+                  key={course.id}
+                  href={buildFilterHref(course.id, selectedPeriod)}
+                  className={`button ${selectedCourseId === course.id ? '' : 'secondary'}`}
+                >
+                  {course.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="muted" style={{ marginBottom: 8 }}>
+              Period
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {periodOptions.map((period) => (
+                <Link
+                  key={period.key}
+                  href={buildFilterHref(selectedCourseId, period.key)}
+                  className={`button ${selectedPeriod === period.key ? '' : 'secondary'}`}
+                >
+                  {period.label}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -270,38 +406,42 @@ export default async function StatistikPage() {
           <div className="card" style={{ borderRadius: 18 }}>
             <div className="muted">Avslutade rundor</div>
             <div style={{ fontSize: 36, fontWeight: 900, marginTop: 8 }}>
-              {completedSummaries.length}
+              {filteredSummaries.length}
             </div>
           </div>
 
           <div className="card" style={{ borderRadius: 18 }}>
-            <div className="muted">Snitt per hål (alla banor)</div>
+            <div className="muted">Snitt per hal ({selectedCourseName})</div>
             <div style={{ fontSize: 36, fontWeight: 900, marginTop: 8 }}>
-              {overallAveragePerHole == null ? '-' : overallAveragePerHole.toFixed(2)}
+              {averagePerHole == null ? '-' : averagePerHole.toFixed(2)}
             </div>
           </div>
 
           <div className="card" style={{ borderRadius: 18 }}>
-            <div className="muted">Snitt per hål (Kårsta)</div>
-            <div style={{ fontSize: 36, fontWeight: 900, marginTop: 8 }}>
-              {karstaAveragePerHole == null ? '-' : karstaAveragePerHole.toFixed(2)}
-            </div>
+            <div className="muted">Registrerade hal</div>
+            <div style={{ fontSize: 36, fontWeight: 900, marginTop: 8 }}>{totalHolesPlayed}</div>
           </div>
         </div>
 
         <div className="card" style={{ borderRadius: 24 }}>
-          <h2 style={{ margin: 0, fontSize: 24 }}>Svaste hal på Kårsta</h2>
+          <h2 style={{ margin: 0, fontSize: 24 }}>
+            Svaraste hal {selectedCourseId === 'all' ? '' : `pa ${selectedCourseName}`}
+          </h2>
           <p className="meta" style={{ marginTop: 8 }}>
-            Baserat på dina sparade scorer.
+            Baserat pa valda filter.
           </p>
 
-          {hardestKarstaHoles.length === 0 ? (
+          {selectedCourseId === 'all' ? (
             <div className="notice" style={{ marginTop: 12 }}>
-              Ingen Kårsta-data än. Spela en avslutad runda på Kårsta så fylls den här.
+              Valj en specifik bana for hal-for-hal statistik.
+            </div>
+          ) : hardestHoles.length === 0 ? (
+            <div className="notice" style={{ marginTop: 12 }}>
+              Ingen data hittades for valt filter.
             </div>
           ) : (
             <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
-              {hardestKarstaHoles.map((hole) => (
+              {hardestHoles.map((hole) => (
                 <div
                   key={`hard-hole-${hole.holeNumber}`}
                   style={{
@@ -314,11 +454,11 @@ export default async function StatistikPage() {
                     flexWrap: 'wrap',
                   }}
                 >
-                  <div style={{ fontWeight: 900 }}>Hål {hole.holeNumber}</div>
+                  <div style={{ fontWeight: 900 }}>Hal {hole.holeNumber}</div>
                   <div className="muted">
                     Snitt {hole.avg.toFixed(2)} slag
                     {hole.avgToPar == null ? '' : ` (${formatSigned(hole.avgToPar)} mot par)`}
-                    {' · '}
+                    {' - '}
                     {hole.count} varv
                   </div>
                 </div>
@@ -328,15 +468,38 @@ export default async function StatistikPage() {
         </div>
 
         <div className="card" style={{ borderRadius: 24 }}>
+          <h2 style={{ margin: 0, fontSize: 24 }}>Basta runda</h2>
+
+          {!bestRound ? (
+            <div className="notice" style={{ marginTop: 12 }}>
+              Ingen avslutad runda hittades for valt filter.
+            </div>
+          ) : (
+            <div style={{ marginTop: 12, border: '1px solid #e5e7eb', borderRadius: 14, padding: 12 }}>
+              <div style={{ fontWeight: 900 }}>
+                {courseById.get(bestRound.round.course_id)?.name ?? 'Okand bana'}
+              </div>
+              <div className="muted" style={{ marginTop: 4 }}>
+                {new Date(bestRound.round.created_at).toLocaleDateString('sv-SE')} -{' '}
+                {bestRound.round.holes_mode ?? bestRound.holes} hal
+              </div>
+              <div style={{ marginTop: 8, fontWeight: 900 }}>
+                {bestRound.totalStrokes} slag ({bestRound.avgPerHole.toFixed(2)} / hal)
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="card" style={{ borderRadius: 24 }}>
           <h2 style={{ margin: 0, fontSize: 24 }}>Senaste rundor</h2>
 
-          {completedSummaries.length === 0 ? (
+          {filteredSummaries.length === 0 ? (
             <div className="notice" style={{ marginTop: 12 }}>
-              Inga avslutade rundor med score hittades.
+              Inga avslutade rundor med score hittades for valt filter.
             </div>
           ) : (
             <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
-              {completedSummaries.slice(0, 12).map((item) => (
+              {filteredSummaries.slice(0, 12).map((item) => (
                 <div
                   key={item.round.id}
                   style={{
@@ -351,15 +514,16 @@ export default async function StatistikPage() {
                 >
                   <div>
                     <div style={{ fontWeight: 900 }}>
-                      {courseById.get(item.round.course_id)?.name ?? 'Okänd bana'}
+                      {courseById.get(item.round.course_id)?.name ?? 'Okand bana'}
                     </div>
                     <div className="muted" style={{ fontSize: 14 }}>
-                      {new Date(item.round.created_at).toLocaleDateString('sv-SE')} · {item.round.holes_mode ?? item.holes} hål
+                      {new Date(item.round.created_at).toLocaleDateString('sv-SE')} -{' '}
+                      {item.round.holes_mode ?? item.holes} hal
                     </div>
                   </div>
 
                   <div style={{ fontWeight: 900 }}>
-                    {item.totalStrokes} slag ({item.avgPerHole.toFixed(2)} / hål)
+                    {item.totalStrokes} slag ({item.avgPerHole.toFixed(2)} / hal)
                   </div>
                 </div>
               ))}
