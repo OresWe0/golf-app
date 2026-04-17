@@ -454,12 +454,46 @@ export async function POST(
       .upsert(scorePayload, { onConflict: 'round_id,round_player_id,hole_number' })
 
     if (saveScoresError) {
-      return fail(requestId, 'save_scores_batch', saveScoresError.message, 400, {
+      console.error('[scores-api] warn_batch_upsert_failed_fallback_to_row_save', {
+        requestId,
         roundId: id,
         userId: user.id,
         holeNumber,
-        rows: scorePayload.length,
+        dbError: saveScoresError.message,
       })
+
+      for (const row of scorePayload) {
+        const { data: updatedRows, error: updateScoreError } = await supabase
+          .from('hole_scores')
+          .update({ strokes: row.strokes })
+          .eq('round_id', row.round_id)
+          .eq('round_player_id', row.round_player_id)
+          .eq('hole_number', row.hole_number)
+          .select('id')
+          .limit(1)
+
+        if (updateScoreError) {
+          return fail(requestId, 'save_scores_row_update', updateScoreError.message, 400, {
+            roundId: id,
+            userId: user.id,
+            holeNumber,
+            roundPlayerId: row.round_player_id,
+          })
+        }
+
+        if (!updatedRows || updatedRows.length === 0) {
+          const { error: insertScoreError } = await supabase.from('hole_scores').insert(row)
+
+          if (insertScoreError) {
+            return fail(requestId, 'save_scores_row_insert', insertScoreError.message, 400, {
+              roundId: id,
+              userId: user.id,
+              holeNumber,
+              roundPlayerId: row.round_player_id,
+            })
+          }
+        }
+      }
     }
 
     const requestedNextHole = holeNumber < endHole ? holeNumber + 1 : endHole
