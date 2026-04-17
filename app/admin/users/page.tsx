@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 
 const ADMIN_EMAIL = 'sigge@dufvander.se'
@@ -31,6 +32,12 @@ export default async function AdminUsersPage() {
   return (
     <main>
       <div className="container">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+          <Link href="/admin/courses" className="button secondary">
+            Banor (admin)
+          </Link>
+        </div>
+
         <div
           style={{
             display: 'grid',
