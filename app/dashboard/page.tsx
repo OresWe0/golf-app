@@ -877,11 +877,11 @@ function FeedEventCard({
   comments: FeedEventCommentRow[]
 }) {
   const eventMeta =
-    event.event_type === 'birdie'
-      ? { emoji: 'Birdie', text: 'birdie' }
-      : event.event_type === 'eagle'
-        ? { emoji: 'Eagle', text: 'eagle' }
-        : { emoji: 'HIO', text: 'hole-in-one' }
+  event.event_type === 'birdie'
+    ? { emoji: '🐦', text: 'gjorde en birdie' }
+    : event.event_type === 'eagle'
+      ? { emoji: '🦅', text: 'gjorde en eagle' }
+      : { emoji: '🎯', text: 'gjorde hole-in-one' }
 
   const timeLabel = formatFeedEventTime(event.created_at)
 
@@ -898,7 +898,7 @@ function FeedEventCard({
       }}
     >
       <div style={{ fontWeight: 900, color: '#1f3327' }}>
-        {eventMeta.emoji} {playerName} gjorde {eventMeta.text}
+        {eventMeta.emoji} {playerName} {eventMeta.text}
       </div>
 
       <div className="muted">Hål {event.hole_number} - {courseName}</div>

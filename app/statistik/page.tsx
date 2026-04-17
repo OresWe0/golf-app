@@ -322,7 +322,7 @@ export default async function StatistikPage({ searchParams }: PageProps) {
   const periodOptions = [
     { key: '30d', label: '30 dagar' },
     { key: '90d', label: '90 dagar' },
-    { key: 'year', label: 'I ar' },
+    { key: 'year', label: 'I år' },
     { key: 'all', label: 'All tid' },
   ] as const
 
@@ -411,7 +411,7 @@ export default async function StatistikPage({ searchParams }: PageProps) {
           </div>
 
           <div className="card" style={{ borderRadius: 18 }}>
-            <div className="muted">Snitt per hal ({selectedCourseName})</div>
+            <div className="muted">Snitt per hål ({selectedCourseName})</div>
             <div style={{ fontSize: 36, fontWeight: 900, marginTop: 8 }}>
               {averagePerHole == null ? '-' : averagePerHole.toFixed(2)}
             </div>
@@ -454,7 +454,7 @@ export default async function StatistikPage({ searchParams }: PageProps) {
                     flexWrap: 'wrap',
                   }}
                 >
-                  <div style={{ fontWeight: 900 }}>Hal {hole.holeNumber}</div>
+                  <div style={{ fontWeight: 900 }}>Hål {hole.holeNumber}</div>
                   <div className="muted">
                     Snitt {hole.avg.toFixed(2)} slag
                     {hole.avgToPar == null ? '' : ` (${formatSigned(hole.avgToPar)} mot par)`}
