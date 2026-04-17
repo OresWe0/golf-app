@@ -1474,12 +1474,9 @@ const dragStartRef = useRef<{ x: number; y: number } | null>(null)
   }, [hole.par])
 
   const safeCourseImageSlug = (courseImageSlug ?? '').trim()
-  const holeImageSrc =
-    activeCourseImageSlug === 'lindesberg'
-      ? '/course-images/lindesberg/base.jpg'
-      : activeCourseImageSlug
-        ? `/course-images/${activeCourseImageSlug}/${previewHoleNumber}.jpg`
-        : ''
+  const holeImageSrc = activeCourseImageSlug
+    ? `/course-images/${activeCourseImageSlug}/${previewHoleNumber}.jpg`
+    : ''
 
   const handleHoleImageError = (value: boolean) => {
     if (!value) {
