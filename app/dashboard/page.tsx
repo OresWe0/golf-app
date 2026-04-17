@@ -32,7 +32,14 @@ type FriendRequestRow = {
 type HoleScore = {
   id: string
   round_player_id: string
+  hole_number?: number | null
   strokes?: number | null
+}
+
+type CourseHoleRow = {
+  course_id: string
+  hole_number: number
+  par: number
 }
 
 type FriendRow = {
@@ -221,6 +228,21 @@ function getPlayerNameForFeedEvent(
   return 'Ok채nd spelare'
 }
   
+function normalizeCourseSearchText(value: string) {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
+function formatSigned(value: number, digits = 1) {
+  const rounded = Number(value.toFixed(digits))
+
+  if (rounded > 0) return `+${rounded.toFixed(digits)}`
+  if (rounded < 0) return rounded.toFixed(digits)
+  return (0).toFixed(digits)
+}
 const dashboardStyles = {
   heroCard: {
     background:
@@ -774,6 +796,199 @@ function DashboardHighlights({
   )
 }
 
+function KarstaInsightsSection({
+  roundsCount,
+  playedHoleCount,
+  averageStrokesPerHole,
+  trendDeltaPerHole,
+  holeInsights,
+}: {
+  roundsCount: number
+  playedHoleCount: number
+  averageStrokesPerHole: number | null
+  trendDeltaPerHole: number | null
+  holeInsights: Array<{
+    holeNumber: number
+    par: number | null
+    averageStrokes: number
+    averageToPar: number | null
+    sampleCount: number
+  }>
+}) {
+  const hardestHoles = [...holeInsights]
+    .sort((a, b) => {
+      const aScore = a.averageToPar ?? a.averageStrokes
+      const bScore = b.averageToPar ?? b.averageStrokes
+
+      if (bScore !== aScore) return bScore - aScore
+      return b.sampleCount - a.sampleCount
+    })
+    .slice(0, 5)
+
+  const trendLabel =
+    trendDeltaPerHole == null
+      ? 'For fa rundor'
+      : trendDeltaPerHole < 0
+        ? `Forbattring ${Math.abs(trendDeltaPerHole).toFixed(2)} slag/hal`
+        : trendDeltaPerHole > 0
+          ? `Lite tyngre ${trendDeltaPerHole.toFixed(2)} slag/hal`
+          : 'Ofandrad trend'
+
+  return (
+    <div className="card" style={dashboardStyles.sectionCard}>
+      <SectionHeader
+        title="Karsta Insights"
+        description="Personlig statistik for din hemmabana."
+        count={roundsCount}
+        countTone="green"
+      />
+
+      {roundsCount === 0 || holeInsights.length === 0 ? (
+        <SectionEmptyState
+          title="Inga Karsta-rundor med data annu"
+          description="Spela och avsluta en runda pa Karsta sa dyker hal-insights upp har."
+        />
+      ) : (
+        <div style={{ display: 'grid', gap: 12 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: 12,
+            }}
+          >
+            <HighlightCard
+              label="Rundor pa Karsta"
+              value={roundsCount}
+              sublabel="Avslutade rundor med registrerad score"
+              tone="green"
+            />
+
+            <HighlightCard
+              label="Snitt per hal"
+              value={
+                averageStrokesPerHole == null
+                  ? '-'
+                  : `${averageStrokesPerHole.toFixed(2)} slag`
+              }
+              sublabel={`${playedHoleCount} registrerade hal totalt`}
+              tone="purple"
+            />
+
+            <HighlightCard
+              label="Trend senaste 5"
+              value={
+                trendDeltaPerHole == null
+                  ? '-'
+                  : `${
+                      trendDeltaPerHole < 0
+                        ? 'Ned'
+                        : trendDeltaPerHole > 0
+                          ? 'Upp'
+                          : 'Plan'
+                    } ${formatSigned(trendDeltaPerHole, 2)}`
+              }
+              sublabel={trendLabel}
+              tone="blue"
+            />
+          </div>
+
+          <div
+            style={{
+              border: '1px solid #e5e7eb',
+              borderRadius: 16,
+              padding: 14,
+              background: '#fbfdfb',
+              display: 'grid',
+              gap: 10,
+            }}
+          >
+            <div style={{ fontWeight: 900, color: '#1f3327' }}>Svaraste hal just nu</div>
+
+            {hardestHoles.length === 0 ? (
+              <div className="muted">Ingen haldata an sa lange.</div>
+            ) : (
+              <div style={{ display: 'grid', gap: 8 }}>
+                {hardestHoles.map((hole) => (
+                  <div
+                    key={`hardest-${hole.holeNumber}`}
+                    style={{
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 12,
+                      padding: 10,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      gap: 10,
+                      flexWrap: 'wrap',
+                      background: '#fff',
+                    }}
+                  >
+                    <div style={{ fontWeight: 800, color: '#1f3327' }}>
+                      Hal {hole.holeNumber}
+                    </div>
+
+                    <div className="muted" style={{ fontSize: 14 }}>
+                      Snitt {hole.averageStrokes.toFixed(2)} slag
+                      {hole.averageToPar != null
+                        ? ` (${formatSigned(hole.averageToPar, 2)} mot par)`
+                        : ''}
+                      {' � '}
+                      {hole.sampleCount} varv
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div
+            style={{
+              border: '1px solid #e5e7eb',
+              borderRadius: 16,
+              padding: 14,
+              background: '#ffffff',
+              display: 'grid',
+              gap: 10,
+            }}
+          >
+            <div style={{ fontWeight: 900, color: '#1f3327' }}>Snittscore per hal</div>
+
+            <div className="karsta-holes-grid">
+              {holeInsights.map((hole) => (
+                <div
+                  key={`karsta-hole-${hole.holeNumber}`}
+                  style={{
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 12,
+                    padding: 10,
+                    background: '#fbfdfb',
+                    display: 'grid',
+                    gap: 6,
+                  }}
+                >
+                  <div style={{ fontWeight: 900, color: '#1f3327' }}>Hal {hole.holeNumber}</div>
+                  <div className="muted" style={{ fontSize: 13 }}>
+                    Par {hole.par ?? '-'}
+                  </div>
+                  <div style={{ fontWeight: 800, color: '#1f3327' }}>
+                    {hole.averageStrokes.toFixed(2)} slag
+                  </div>
+                  <div className="muted" style={{ fontSize: 13 }}>
+                    {hole.averageToPar != null
+                      ? `${formatSigned(hole.averageToPar, 2)} mot par`
+                      : 'Par saknas'}
+                    {' � '}
+                    {hole.sampleCount} varv
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 function SectionHeader({
   title,
   description,
@@ -1460,6 +1675,7 @@ export default async function DashboardPage({
   const [
     { data: courses, error: coursesError },
     { data: rounds, error: roundsError },
+    { data: courseHoles, error: courseHolesError },
     { data: profile, error: profileError },
     { data: memberships, error: membershipsError },
     { data: pendingUsers, error: pendingUsersError },
@@ -1474,6 +1690,7 @@ export default async function DashboardPage({
         'id, title, course_id, status, current_hole, scoring_mode, holes_mode, created_at'
       )
       .order('created_at', { ascending: false }),
+    supabase.from('course_holes').select('course_id, hole_number, par'),
     supabase.from('profiles').select('id, display_name').eq('id', user.id).single(),
     supabase.from('round_members').select('round_id, role').eq('user_id', user.id),
     isAdmin
@@ -1501,6 +1718,7 @@ export default async function DashboardPage({
 
   if (coursesError) console.error('Failed to load courses:', coursesError)
   if (roundsError) console.error('Failed to load rounds:', roundsError)
+  if (courseHolesError) console.error('Failed to load course holes:', courseHolesError)
   if (profileError) console.error('Failed to load profile:', profileError)
   if (membershipsError) {
     console.error('Failed to load memberships:', membershipsError)
@@ -1523,6 +1741,7 @@ export default async function DashboardPage({
 
   const allCourses = (courses as Course[] | null) ?? []
   const allRounds = (rounds as Round[] | null) ?? []
+  const allCourseHoles = (courseHoles as CourseHoleRow[] | null) ?? []
   const userProfile = (profile as Profile | null) ?? null
   const userMemberships = (memberships as Membership[] | null) ?? []
   const pendingCount = pendingUsers?.length ?? 0
@@ -1617,7 +1836,7 @@ export default async function DashboardPage({
     if (roundPlayerIds.length > 0) {
       const { data: holeScoresData, error: holeScoresError } = await supabase
         .from('hole_scores')
-        .select('id, round_player_id, strokes')
+        .select('id, round_player_id, hole_number, strokes')
         .in('round_player_id', roundPlayerIds)
 
       if (holeScoresError) {
@@ -1776,12 +1995,121 @@ export default async function DashboardPage({
     ? allCourses.find((c) => c.id === latestRound.course_id)?.name || 'Ok채nd bana'
     : 'Ingen 채nnu'
 
+
+  const karstaCourse = allCourses.find((course) =>
+    normalizeCourseSearchText(course.name).includes('karsta')
+  )
+
+  const karstaCompletedRounds =
+    karstaCourse == null
+      ? []
+      : completedRounds.filter((round) => round.course_id === karstaCourse.id)
+
+  const karstaParByHole = new Map<number, number>()
+
+  if (karstaCourse) {
+    for (const hole of allCourseHoles) {
+      if (hole.course_id !== karstaCourse.id) continue
+      karstaParByHole.set(hole.hole_number, hole.par)
+    }
+  }
+
+  const holeAccumulator = new Map<number, { totalStrokes: number; count: number }>()
+  const karstaRoundPerformance: Array<{ createdAt: string; avgStrokesPerHole: number }> = []
+
+  for (const round of karstaCompletedRounds) {
+    const player = allRoundPlayers.find(
+      (roundPlayer) => roundPlayer.round_id === round.id && roundPlayer.user_id === user.id
+    )
+
+    if (!player) continue
+
+    const scoreRows = allHoleScores.filter((score) => {
+      return (
+        score.round_player_id === player.id &&
+        typeof score.strokes === 'number' &&
+        typeof score.hole_number === 'number'
+      )
+    })
+
+    if (scoreRows.length === 0) continue
+
+    let roundTotalStrokes = 0
+
+    for (const row of scoreRows) {
+      const holeNumber = Number(row.hole_number)
+      const strokes = Number(row.strokes)
+
+      if (!Number.isFinite(holeNumber) || !Number.isFinite(strokes)) continue
+
+      roundTotalStrokes += strokes
+
+      const existing = holeAccumulator.get(holeNumber) ?? { totalStrokes: 0, count: 0 }
+      existing.totalStrokes += strokes
+      existing.count += 1
+      holeAccumulator.set(holeNumber, existing)
+    }
+
+    if (scoreRows.length > 0) {
+      karstaRoundPerformance.push({
+        createdAt: (round as Round & { created_at?: string }).created_at ?? '',
+        avgStrokesPerHole: roundTotalStrokes / scoreRows.length,
+      })
+    }
+  }
+
+  const holeInsights = Array.from(holeAccumulator.entries())
+    .map(([holeNumber, aggregate]) => {
+      const averageStrokes = aggregate.totalStrokes / aggregate.count
+      const par = karstaParByHole.get(holeNumber) ?? null
+
+      return {
+        holeNumber,
+        par,
+        averageStrokes,
+        averageToPar: par != null ? averageStrokes - par : null,
+        sampleCount: aggregate.count,
+      }
+    })
+    .sort((a, b) => a.holeNumber - b.holeNumber)
+
+  const totalKarstaStrokes = holeInsights.reduce(
+    (sum, item) => sum + item.averageStrokes * item.sampleCount,
+    0
+  )
+  const totalKarstaSamples = holeInsights.reduce((sum, item) => sum + item.sampleCount, 0)
+
+  const karstaAverageStrokesPerHole =
+    totalKarstaSamples > 0 ? totalKarstaStrokes / totalKarstaSamples : null
+
+  const karstaTrendDeltaPerHole = (() => {
+    const validRounds = karstaRoundPerformance
+      .filter((item) => Number.isFinite(item.avgStrokesPerHole))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5)
+
+    if (validRounds.length < 3) return null
+
+    const recentCount = Math.max(2, Math.floor(validRounds.length / 2))
+    const recent = validRounds.slice(0, recentCount)
+    const baseline = validRounds.slice(recentCount)
+
+    if (baseline.length === 0) return null
+
+    const recentAvg = recent.reduce((sum, item) => sum + item.avgStrokesPerHole, 0) / recent.length
+    const baselineAvg =
+      baseline.reduce((sum, item) => sum + item.avgStrokesPerHole, 0) / baseline.length
+
+    return recentAvg - baselineAvg
+  })()
+
   return (
     <main style={{ width: '100%', overflowX: 'hidden' }}>
       <style>{`
         .dashboard-header-actions,
         .dashboard-stats-grid,
         .round-meta-grid,
+        .karsta-holes-grid,
         .round-actions-grid {
           min-width: 0;
         }
@@ -1790,6 +2118,12 @@ export default async function DashboardPage({
           .dashboard-header-actions {
             grid-template-columns: 1fr !important;
           }
+        }
+
+        .karsta-holes-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          gap: 10px;
         }
 
         @media (max-width: 720px) {
@@ -1835,6 +2169,14 @@ export default async function DashboardPage({
             bestRound18Score={bestRound18 ? bestRound18.strokes : null}
             roundsThisYearCount={completedRoundsThisYear.length}
             latestCourseName={latestCourseName}
+          />
+
+          <KarstaInsightsSection
+            roundsCount={karstaCompletedRounds.length}
+            playedHoleCount={totalKarstaSamples}
+            averageStrokesPerHole={karstaAverageStrokesPerHole}
+            trendDeltaPerHole={karstaTrendDeltaPerHole}
+            holeInsights={holeInsights}
           />
         </div>
 
