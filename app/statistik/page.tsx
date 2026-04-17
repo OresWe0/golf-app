@@ -1,4 +1,4 @@
-﻿import Link from 'next/link'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
@@ -250,7 +250,7 @@ export default async function StatistikPage() {
                 Statistik
               </h1>
               <p className="meta" style={{ marginTop: 8 }}>
-                Din personliga speldata med fokus pa Kårsta.
+                Din personliga speldata med fokus på Kårsta.
               </p>
             </div>
 
@@ -290,14 +290,14 @@ export default async function StatistikPage() {
         </div>
 
         <div className="card" style={{ borderRadius: 24 }}>
-          <h2 style={{ margin: 0, fontSize: 24 }}>Svaste hal pa Kårsta</h2>
+          <h2 style={{ margin: 0, fontSize: 24 }}>Svaste hal på Kårsta</h2>
           <p className="meta" style={{ marginTop: 8 }}>
-            Baserat pa dina sparade scorer.
+            Baserat på dina sparade scorer.
           </p>
 
           {hardestKarstaHoles.length === 0 ? (
             <div className="notice" style={{ marginTop: 12 }}>
-              Ingen Kårsta-data an. Spela en avslutad runda pa Kårsta sa fylls den har.
+              Ingen Kårsta-data än. Spela en avslutad runda på Kårsta så fylls den här.
             </div>
           ) : (
             <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
@@ -314,7 +314,7 @@ export default async function StatistikPage() {
                     flexWrap: 'wrap',
                   }}
                 >
-                  <div style={{ fontWeight: 900 }}>Hal {hole.holeNumber}</div>
+                  <div style={{ fontWeight: 900 }}>Hål {hole.holeNumber}</div>
                   <div className="muted">
                     Snitt {hole.avg.toFixed(2)} slag
                     {hole.avgToPar == null ? '' : ` (${formatSigned(hole.avgToPar)} mot par)`}
@@ -351,7 +351,7 @@ export default async function StatistikPage() {
                 >
                   <div>
                     <div style={{ fontWeight: 900 }}>
-                      {courseById.get(item.round.course_id)?.name ?? 'Okand bana'}
+                      {courseById.get(item.round.course_id)?.name ?? 'Okänd bana'}
                     </div>
                     <div className="muted" style={{ fontSize: 14 }}>
                       {new Date(item.round.created_at).toLocaleDateString('sv-SE')} · {item.round.holes_mode ?? item.holes} hål

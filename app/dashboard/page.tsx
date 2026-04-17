@@ -515,7 +515,7 @@ function DashboardHeader({
             className="dashboard-header-actions"
             style={{
               display: 'grid',
-              gridTemplateColumns: isAdmin ? '1fr 1fr auto' : '1fr auto',
+              gridTemplateColumns: isAdmin ? '1fr 1fr 1fr auto' : '1fr 1fr auto',
               gap: 10,
               alignItems: 'stretch',
             }}
@@ -575,6 +575,19 @@ function DashboardHeader({
                 </span>
               ) : null}
             </div>
+
+            <Link
+              href="/statistik"
+              className="button secondary"
+              style={{
+                ...dashboardStyles.softButton,
+                background: 'rgba(255,255,255,0.14)',
+                color: '#ffffff',
+                border: '1px solid rgba(255,255,255,0.16)',
+              }}
+            >
+              Statistik
+            </Link>
 
             <form action={signOut}>
               <button
