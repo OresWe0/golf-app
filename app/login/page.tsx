@@ -365,7 +365,7 @@ function LoginPageContent() {
       }}
     >
       <div
-        className="auth-shell"
+        className={`auth-shell auth-shell--${mode}`}
         style={{
           width: '100%',
           maxWidth: 1120,
@@ -620,16 +620,26 @@ function LoginPageContent() {
 
         @media (max-width: 640px) {
           main {
-            padding: 14px 12px !important;
+            padding: 10px 10px !important;
+            align-items: start !important;
+          }
+
+          .auth-shell {
+            gap: 8px !important;
+          }
+
+          .auth-shell--login .hero-column {
+            display: none !important;
           }
 
           main h1 {
-            font-size: clamp(1.9rem, 9vw, 2.6rem) !important;
-            line-height: 0.96 !important;
+            font-size: clamp(1.7rem, 8vw, 2.2rem) !important;
+            line-height: 0.98 !important;
           }
 
           main h2 {
-            font-size: clamp(1.9rem, 8vw, 2.4rem) !important;
+            font-size: clamp(1.55rem, 6.6vw, 2rem) !important;
+            line-height: 1.02 !important;
           }
 
           .feature-grid {
@@ -637,22 +647,27 @@ function LoginPageContent() {
           }
 
           .hero-column p {
-            margin-top: 10px !important;
-            font-size: 0.98rem !important;
-            line-height: 1.5 !important;
-          }
-
-          .auth-shell {
-            gap: 10px !important;
+            margin-top: 8px !important;
+            font-size: 0.94rem !important;
+            line-height: 1.4 !important;
           }
 
           .auth-column > div {
-            padding: 20px !important;
-            border-radius: 24px !important;
+            padding: 16px !important;
+            border-radius: 20px !important;
           }
 
           .auth-column :global(form.stack) {
-            gap: 12px !important;
+            gap: 10px !important;
+          }
+
+          .auth-column :global(input),
+          .auth-column :global(select) {
+            min-height: 50px !important;
+          }
+
+          .auth-column :global(button) {
+            min-height: 50px !important;
           }
 
           .hero-column > div:last-child {
