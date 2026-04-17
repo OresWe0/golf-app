@@ -341,15 +341,14 @@ export default async function StatistikPage({ searchParams }: PageProps) {
           >
             <div>
               <h1 className="title" style={{ margin: 0 }}>
-                Statistik
-              </h1>
-              <p className="meta" style={{ marginTop: 8 }}>
-                Filtrera pa bana och period for snabb oversikt.
-              </p>
-            </div>
+  📊 Statistik
+</h1>
+<p className="meta" style={{ marginTop: 8 }}>
+  Filtrera på bana och period för en snabb översikt av ditt spel.
+</p>
 
             <Link href="/dashboard" className="button secondary">
-              Till dashboard
+              ← Till startsidan
             </Link>
           </div>
         </div>
@@ -357,7 +356,7 @@ export default async function StatistikPage({ searchParams }: PageProps) {
         <div className="card" style={{ borderRadius: 20, display: 'grid', gap: 12 }}>
           <div>
             <div className="muted" style={{ marginBottom: 8 }}>
-              Bana
+              ⛳ Bana
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               <Link
@@ -380,7 +379,7 @@ export default async function StatistikPage({ searchParams }: PageProps) {
 
           <div>
             <div className="muted" style={{ marginBottom: 8 }}>
-              Period
+             📅 Period
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {periodOptions.map((period) => (
@@ -404,40 +403,40 @@ export default async function StatistikPage({ searchParams }: PageProps) {
           }}
         >
           <div className="card" style={{ borderRadius: 18 }}>
-            <div className="muted">Avslutade rundor</div>
+            <div className="muted">🏌️ Avslutade rundor</div>
             <div style={{ fontSize: 36, fontWeight: 900, marginTop: 8 }}>
               {filteredSummaries.length}
             </div>
           </div>
 
           <div className="card" style={{ borderRadius: 18 }}>
-            <div className="muted">Snitt per hål ({selectedCourseName})</div>
+            <div className="muted">📈 Snitt per hål ({selectedCourseName})</div>
             <div style={{ fontSize: 36, fontWeight: 900, marginTop: 8 }}>
               {averagePerHole == null ? '-' : averagePerHole.toFixed(2)}
             </div>
           </div>
 
           <div className="card" style={{ borderRadius: 18 }}>
-            <div className="muted">Registrerade hal</div>
+            <div className="muted">📍 Registrerade hål</div>
             <div style={{ fontSize: 36, fontWeight: 900, marginTop: 8 }}>{totalHolesPlayed}</div>
           </div>
         </div>
 
         <div className="card" style={{ borderRadius: 24 }}>
           <h2 style={{ margin: 0, fontSize: 24 }}>
-            Svaraste hal {selectedCourseId === 'all' ? '' : `pa ${selectedCourseName}`}
+           🔥 Svåraste hål {selectedCourseId === 'all' ? '' : `på ${selectedCourseName}`}
           </h2>
           <p className="meta" style={{ marginTop: 8 }}>
-            Baserat pa valda filter.
+            Baserat på valda filter.
           </p>
 
           {selectedCourseId === 'all' ? (
             <div className="notice" style={{ marginTop: 12 }}>
-              Valj en specifik bana for hal-for-hal statistik.
+              Välj en specifik bana för hål-för-hål statistik.
             </div>
           ) : hardestHoles.length === 0 ? (
             <div className="notice" style={{ marginTop: 12 }}>
-              Ingen data hittades for valt filter.
+              Ingen data hittades för valt filter.
             </div>
           ) : (
             <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
@@ -454,7 +453,7 @@ export default async function StatistikPage({ searchParams }: PageProps) {
                     flexWrap: 'wrap',
                   }}
                 >
-                  <div style={{ fontWeight: 900 }}>Hål {hole.holeNumber}</div>
+                  <div style={{ fontWeight: 900 }}>📍 Hål {hole.holeNumber}</div>
                   <div className="muted">
                     Snitt {hole.avg.toFixed(2)} slag
                     {hole.avgToPar == null ? '' : ` (${formatSigned(hole.avgToPar)} mot par)`}
@@ -468,34 +467,34 @@ export default async function StatistikPage({ searchParams }: PageProps) {
         </div>
 
         <div className="card" style={{ borderRadius: 24 }}>
-          <h2 style={{ margin: 0, fontSize: 24 }}>Basta runda</h2>
+          <h2 style={{ margin: 0, fontSize: 24 }}>🏆 Bästa runda</h2>
 
           {!bestRound ? (
             <div className="notice" style={{ marginTop: 12 }}>
-              Ingen avslutad runda hittades for valt filter.
+              Ingen avslutad runda hittades för valt filter.
             </div>
           ) : (
             <div style={{ marginTop: 12, border: '1px solid #e5e7eb', borderRadius: 14, padding: 12 }}>
               <div style={{ fontWeight: 900 }}>
-                {courseById.get(bestRound.round.course_id)?.name ?? 'Okand bana'}
+                {courseById.get(bestRound.round.course_id)?.name ?? 'Okänd bana'}
               </div>
               <div className="muted" style={{ marginTop: 4 }}>
                 {new Date(bestRound.round.created_at).toLocaleDateString('sv-SE')} -{' '}
-                {bestRound.round.holes_mode ?? bestRound.holes} hal
+                {bestRound.round.holes_mode ?? bestRound.holes} hål
               </div>
               <div style={{ marginTop: 8, fontWeight: 900 }}>
-                {bestRound.totalStrokes} slag ({bestRound.avgPerHole.toFixed(2)} / hal)
+                🏆 {bestRound.totalStrokes} slag ({bestRound.avgPerHole.toFixed(2)} / hål)
               </div>
             </div>
           )}
         </div>
 
         <div className="card" style={{ borderRadius: 24 }}>
-          <h2 style={{ margin: 0, fontSize: 24 }}>Senaste rundor</h2>
+          <h2 style={{ margin: 0, fontSize: 24 }}>🕘 Senaste rundor</h2>
 
           {filteredSummaries.length === 0 ? (
             <div className="notice" style={{ marginTop: 12 }}>
-              Inga avslutade rundor med score hittades for valt filter.
+              Inga avslutade rundor med score hittades för valt filter.
             </div>
           ) : (
             <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
@@ -514,16 +513,16 @@ export default async function StatistikPage({ searchParams }: PageProps) {
                 >
                   <div>
                     <div style={{ fontWeight: 900 }}>
-                      {courseById.get(item.round.course_id)?.name ?? 'Okand bana'}
+                      {courseById.get(item.round.course_id)?.name ?? 'Okänd bana'}
                     </div>
                     <div className="muted" style={{ fontSize: 14 }}>
                       {new Date(item.round.created_at).toLocaleDateString('sv-SE')} -{' '}
-                      {item.round.holes_mode ?? item.holes} hal
+                      {item.round.holes_mode ?? item.holes} hål
                     </div>
                   </div>
 
                   <div style={{ fontWeight: 900 }}>
-                    {item.totalStrokes} slag ({item.avgPerHole.toFixed(2)} / hal)
+                    {item.totalStrokes} slag ({item.avgPerHole.toFixed(2)} / hål)
                   </div>
                 </div>
               ))}
