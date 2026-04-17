@@ -41,8 +41,8 @@ function fail(
 
 async function runFeedAndPushInBackground(args: {
   requestId: string
-  supabase: Awaited<ReturnType<typeof createClient>>
-  supabaseAdmin: ReturnType<typeof createAdminClient> | null
+  supabase: any
+  supabaseAdmin: any | null
   roundId: string
   holeNumber: number
   courseId: string
@@ -124,13 +124,17 @@ async function runFeedAndPushInBackground(args: {
       const eventType = getFeedEventType(score.strokes, par)
       if (!eventType) continue
 
-      const { data: playerProfile } = supabaseAdmin
-        ? await supabaseAdmin
-            .from('profiles')
-            .select('display_name, email')
-            .eq('id', roundPlayer.user_id)
-            .maybeSingle()
-        : { data: null }
+      let playerProfile: { display_name?: string | null; email?: string | null } | null =
+        null
+
+      if (supabaseAdmin) {
+        const { data } = await supabaseAdmin
+          .from('profiles')
+          .select('display_name, email')
+          .eq('id', roundPlayer.user_id)
+          .maybeSingle()
+        playerProfile = (data as { display_name?: string | null; email?: string | null } | null)
+      }
 
       const playerName =
         playerProfile?.display_name?.trim() || playerProfile?.email?.trim() || 'Okand spelare'
@@ -175,8 +179,10 @@ async function runFeedAndPushInBackground(args: {
 
       const friendEmails =
         friends
-          ?.map((friend) => friend.friend_email?.trim().toLowerCase())
-          .filter((email): email is string => Boolean(email)) ?? []
+          ?.map((friend: { friend_email?: string | null }) =>
+            friend.friend_email?.trim().toLowerCase()
+          )
+          .filter((email: string | undefined): email is string => Boolean(email)) ?? []
 
       if (friendEmails.length === 0 || !supabaseAdmin) continue
 
@@ -196,8 +202,12 @@ async function runFeedAndPushInBackground(args: {
         continue
       }
 
+      const normalizedFriendProfiles =
+        (friendProfiles as Array<{ id: string; push_friend_activity_enabled: boolean | null }>) ??
+        []
+
       const enabledFriendIds =
-        friendProfiles
+        normalizedFriendProfiles
           ?.filter((profile) => profile.push_friend_activity_enabled)
           .map((profile) => profile.id) ?? []
 
@@ -234,7 +244,7 @@ async function runFeedAndPushInBackground(args: {
       }
 
       await Promise.allSettled(
-        (subscriptions ?? []).map((sub) =>
+        (subscriptions ?? []).map((sub: { endpoint: string; p256dh: string; auth: string }) =>
           sendPushNotification(sub, {
             title,
             body: pushBody,
