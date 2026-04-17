@@ -365,6 +365,7 @@ function LoginPageContent() {
       }}
     >
       <div
+        className="auth-shell"
         style={{
           width: '100%',
           maxWidth: 1120,
@@ -376,6 +377,7 @@ function LoginPageContent() {
         }}
       >
         <div
+          className="hero-column"
           style={{
             color: '#ffffff',
             display: 'grid',
@@ -429,6 +431,7 @@ function LoginPageContent() {
           </div>
 
           <div
+            className="feature-grid"
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
@@ -511,6 +514,7 @@ function LoginPageContent() {
         </div>
 
         <div
+          className="auth-column"
           style={{
             width: '100%',
             maxWidth: 560,
@@ -599,26 +603,59 @@ function LoginPageContent() {
 
       <style jsx>{`
         @media (max-width: 900px) {
-          main > div {
+          .auth-shell {
             grid-template-columns: 1fr !important;
-            gap: 20px !important;
+            gap: 14px !important;
+          }
+
+          .auth-column {
+            order: 1;
+          }
+
+          .hero-column {
+            order: 2;
+            gap: 14px !important;
           }
         }
 
         @media (max-width: 640px) {
           main {
-            padding: 20px 14px !important;
+            padding: 14px 12px !important;
           }
 
           main h1 {
-            font-size: clamp(2.3rem, 11vw, 3.4rem) !important;
+            font-size: clamp(1.9rem, 9vw, 2.6rem) !important;
+            line-height: 0.96 !important;
           }
 
           main h2 {
             font-size: clamp(1.9rem, 8vw, 2.4rem) !important;
           }
 
-          main > div > div:first-child > div:last-child {
+          .feature-grid {
+            display: none !important;
+          }
+
+          .hero-column p {
+            margin-top: 10px !important;
+            font-size: 0.98rem !important;
+            line-height: 1.5 !important;
+          }
+
+          .auth-shell {
+            gap: 10px !important;
+          }
+
+          .auth-column > div {
+            padding: 20px !important;
+            border-radius: 24px !important;
+          }
+
+          .auth-column :global(form.stack) {
+            gap: 12px !important;
+          }
+
+          .hero-column > div:last-child {
             grid-template-columns: 1fr !important;
           }
         }
