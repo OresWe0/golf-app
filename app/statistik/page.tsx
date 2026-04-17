@@ -331,27 +331,28 @@ export default async function StatistikPage({ searchParams }: PageProps) {
       <div className="container" style={{ display: 'grid', gap: 16 }}>
         <div className="card" style={{ borderRadius: 24 }}>
           <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              gap: 10,
-              alignItems: 'center',
-              flexWrap: 'wrap',
-            }}
-          >
-            <div>
-              <h1 className="title" style={{ margin: 0 }}>
-  📊 Statistik
-</h1>
-<p className="meta" style={{ marginTop: 8 }}>
-  Filtrera på bana och period för en snabb översikt av ditt spel.
-</p>
+  style={{
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: 10,
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  }}
+>
+  <div>
+    <h1 className="title" style={{ margin: 0 }}>
+      📊 Statistik
+    </h1>
+    <p className="meta" style={{ marginTop: 8 }}>
+      Filtrera på bana och period för en snabb översikt av ditt spel.
+    </p>
+  </div>
 
-            <Link href="/dashboard" className="button secondary">
-              ← Till startsidan
-            </Link>
-          </div>
-        </div>
+  <Link href="/dashboard" className="button secondary">
+    ← Till startsidan
+  </Link>
+</div>
+</div>
 
         <div className="card" style={{ borderRadius: 20, display: 'grid', gap: 12 }}>
           <div>
@@ -522,7 +523,7 @@ export default async function StatistikPage({ searchParams }: PageProps) {
                   </div>
 
                   <div style={{ fontWeight: 900 }}>
-                    {item.totalStrokes} slag ({item.avgPerHole.toFixed(2)} / hål)
+                   ⛳ {item.totalStrokes} slag ({item.avgPerHole.toFixed(2)} / hål)
                   </div>
                 </div>
               ))}
