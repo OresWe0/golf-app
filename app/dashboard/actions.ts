@@ -43,6 +43,7 @@ export async function likeFeedEvent(formData: FormData) {
   }
 
   revalidatePath('/dashboard')
+  revalidatePath(`/feed/${feedEventId}`)
 }
 
 export async function unlikeFeedEvent(formData: FormData) {
@@ -65,6 +66,7 @@ export async function unlikeFeedEvent(formData: FormData) {
     .eq('user_id', user.id)
 
   revalidatePath('/dashboard')
+  revalidatePath(`/feed/${feedEventId}`)
 }
 
 export async function addFeedEventComment(formData: FormData) {
@@ -110,6 +112,7 @@ export async function addFeedEventComment(formData: FormData) {
   }
 
   revalidatePath('/dashboard')
+  revalidatePath(`/feed/${feedEventId}`)
 }
 
 export async function markNotificationAsRead(formData: FormData) {

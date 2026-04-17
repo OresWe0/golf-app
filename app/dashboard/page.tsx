@@ -960,6 +960,10 @@ function FeedEventCard({
             </button>
           </form>
         )}
+
+        <Link href={`/feed/${event.id}`} className="button secondary">
+          Öppna detaljer
+        </Link>
       </div>
 
       <div style={{ display: 'grid', gap: 8 }}>
@@ -1875,7 +1879,7 @@ export default async function DashboardPage({
         </div>
 
         <div style={{ display: 'grid', gap: 18 }}>
-          <div className="card" style={dashboardStyles.sectionCard}>
+          <div id="friend-feed" className="card" style={dashboardStyles.sectionCard}>
             <SectionHeader
               title="📊 Din statistik"
               description="Din genomsnittliga score baserat på avslutade rundor."
