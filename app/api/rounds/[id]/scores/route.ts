@@ -137,7 +137,7 @@ async function runFeedAndPushInBackground(args: {
       }
 
       const playerName =
-        playerProfile?.display_name?.trim() || playerProfile?.email?.trim() || 'Okand spelare'
+        playerProfile?.display_name?.trim() || playerProfile?.email?.trim() || 'Okänd spelare'
 
       const { error: insertFeedEventError } = await supabase.from('feed_events').insert({
         user_id: roundPlayer.user_id,
@@ -230,18 +230,18 @@ async function runFeedAndPushInBackground(args: {
       }
 
       let title = 'Ny aktivitet'
-      let pushBody = `${playerName} gjorde nagot bra!`
+      let pushBody = `${playerName} gjorde något bra!`
 
-      if (eventType === 'birdie') {
-        title = 'Birdie!'
-        pushBody = `${playerName} gjorde birdie pa hal ${holeNumber}`
-      } else if (eventType === 'eagle') {
-        title = 'Eagle!'
-        pushBody = `${playerName} gjorde eagle pa hal ${holeNumber}`
-      } else if (eventType === 'hole_in_one') {
-        title = 'Hole-in-one!'
-        pushBody = `${playerName} gjorde hole-in-one pa hal ${holeNumber}!`
-      }
+     if (eventType === 'birdie') {
+  title = '🐦 Birdie!'
+  pushBody = `${playerName} gjorde en birdie på hål ${holeNumber}`
+} else if (eventType === 'eagle') {
+  title = '🦅 Eagle!'
+  pushBody = `${playerName} gjorde en eagle på hål ${holeNumber}`
+} else if (eventType === 'hole_in_one') {
+  title = '🎯 Hole-in-one!'
+  pushBody = `${playerName} gjorde hole-in-one på hål ${holeNumber}!`
+}
 
       await Promise.allSettled(
         (subscriptions ?? []).map((sub: { endpoint: string; p256dh: string; auth: string }) =>
@@ -298,7 +298,7 @@ export async function POST(
     const rawScoreUpdates: ScoreUpdate[] = Array.isArray(body?.scores) ? body.scores : []
 
     if (!Number.isInteger(holeNumber) || holeNumber < 1) {
-      return fail(requestId, 'validate_body', 'Ogiltigt halnummer.', 400, {
+      return fail(requestId, 'validate_body', 'Ogiltigt hålnummer.', 400, {
         roundId: id,
         userId: user.id,
         holeNumberRaw: body?.holeNumber,
@@ -378,7 +378,7 @@ export async function POST(
         return fail(
           requestId,
           'permission',
-          'Du har inte behorighet att spara score i denna runda.',
+          'Du har inte behörighet att spara score i denna runda.',
           403,
           {
             roundId: id,
@@ -396,7 +396,7 @@ export async function POST(
       return fail(
         requestId,
         'hole_range',
-        'Halet ligger utanfor rundans intervall.',
+        'Halet ligger utanför rundans intervall.',
         400,
         {
           roundId: id,
