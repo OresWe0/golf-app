@@ -872,6 +872,13 @@ function getCommentAuthorName(
     return author.display_name.trim()
   }
 
+  if (author?.email?.trim()) {
+    const localPart = author.email.trim().split('@')[0]
+    if (localPart) {
+      return localPart
+    }
+  }
+
   return 'En spelare'
 }
 
@@ -1549,15 +1556,6 @@ export default async function DashboardPage({
 
   let actorProfiles: Profile[] = []
 
-  if (actorUserIds.length > 0) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, display_name')
-      .in('id', actorUserIds)
-
-    actorProfiles = data ?? []
-  }
-
   const friendEmails = ((friendsData as FriendRow[] | null) ?? [])
     .map((friend) => friend.friend_email)
     .filter((email): email is string => typeof email === 'string')
@@ -1682,6 +1680,31 @@ export default async function DashboardPage({
 
     feedEventComments =
       (feedEventCommentsData as FeedEventCommentRow[] | null) ?? []
+  }
+
+  const feedEventUserIds = feedEvents
+    .map((event) => event.user_id)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0)
+
+  const commentAuthorUserIds = feedEventComments
+    .map((comment) => comment.user_id)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0)
+
+  const profileIdsForFeedAndNotifications = Array.from(
+    new Set([...actorUserIds, ...feedEventUserIds, ...commentAuthorUserIds])
+  )
+
+  if (profileIdsForFeedAndNotifications.length > 0) {
+    const { data: profileData, error: profileDataError } = await supabase
+      .from('profiles')
+      .select('id, display_name, email')
+      .in('id', profileIdsForFeedAndNotifications)
+
+    if (profileDataError) {
+      console.error('Failed to load profiles for feed/notifications:', profileDataError)
+    }
+
+    actorProfiles = (profileData as Profile[] | null) ?? []
   }
 
   const commentsByEventId = new Map<string, FeedEventCommentRow[]>()
