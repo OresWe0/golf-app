@@ -861,14 +861,6 @@ export default async function SummaryPage({
             </Link>
           </div>
 
-          <SummaryExportButton
-            roundTitle={round.title}
-            courseName={course.name}
-            modeLabel={holesLabel}
-            players={exportPlayers}
-            myPlayerId={mySummaryPlayerId}
-          />
-
           {isRoundFinished && (
             <div
               className="card"
@@ -1089,6 +1081,16 @@ export default async function SummaryPage({
             </div>
           </div>
         ) : null}
+
+        <div className="card" style={{ marginBottom: 14, padding: 12 }}>
+          <SummaryExportButton
+            roundTitle={round.title}
+            courseName={course.name}
+            modeLabel={holesLabel}
+            players={exportPlayers}
+            myPlayerId={mySummaryPlayerId}
+          />
+        </div>
 
         <div className="card" style={{ marginBottom: 14 }}>
           <div

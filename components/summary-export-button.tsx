@@ -219,7 +219,10 @@ export default function SummaryExportButton({
   const disabled = players.length === 0 || busyMode !== null
 
   return (
-    <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr 1fr' }}>
+    <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr' }}>
+      <div className="muted" style={{ fontSize: 13 }}>
+        Exportera som bild för delning i chatten.
+      </div>
       <button
         type="button"
         className="button secondary"
@@ -227,7 +230,7 @@ export default function SummaryExportButton({
         disabled={disabled}
         style={{ width: '100%', minHeight: 50, fontWeight: 800 }}
       >
-        {busyMode === 'mine' ? 'Skapar min bild...' : 'Exportera min score'}
+        {busyMode === 'mine' ? 'Skapar min bild...' : 'Min score (PNG)'}
       </button>
 
       <button
@@ -237,7 +240,7 @@ export default function SummaryExportButton({
         disabled={disabled}
         style={{ width: '100%', minHeight: 50, fontWeight: 800 }}
       >
-        {busyMode === 'all' ? 'Skapar alla...' : 'Exportera alla spelare'}
+        {busyMode === 'all' ? 'Skapar alla...' : 'Alla scorekort (PNG)'}
       </button>
     </div>
   )
