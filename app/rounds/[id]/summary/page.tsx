@@ -805,6 +805,7 @@ export default async function SummaryPage({
   const exportPlayers = summary.map((player) => ({
     id: player.id,
     name: player.name ?? 'Spelare',
+    playedRangeText: getPlayedRangeLabel(player),
     scoreText:
       scoringMode === 'stableford'
         ? `${player.points} p`

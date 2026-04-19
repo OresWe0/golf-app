@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 
@@ -14,6 +14,7 @@ type ExportPlayer = {
   id: string
   name: string
   scoreText: string
+  playedRangeText?: string
   scorecards: ExportScorecard[]
 }
 
@@ -97,15 +98,21 @@ function drawPlayerBlock(
   player: ExportPlayer
 ) {
   ctx.fillStyle = 'rgba(255,255,255,0.1)'
-  ctx.fillRect(x, y, width, 62)
+  ctx.fillRect(x, y, width, 84)
   ctx.fillStyle = '#ffffff'
   ctx.font = 'bold 30px Arial'
-  ctx.fillText(player.name, x + 14, y + 39)
+  ctx.fillText(player.name, x + 14, y + 36)
   ctx.font = '22px Arial'
   ctx.fillStyle = '#bbf7d0'
-  ctx.fillText(player.scoreText, x + width - 220, y + 39)
+  ctx.fillText(player.scoreText, x + width - 220, y + 36)
 
-  let sectionY = y + 74
+  if (player.playedRangeText) {
+    ctx.font = '16px Arial'
+    ctx.fillStyle = '#dcfce7'
+    ctx.fillText(player.playedRangeText, x + 14, y + 64)
+  }
+
+  let sectionY = y + 96
   const cardWidth = width
   for (const scorecard of player.scorecards) {
     drawScorecard(ctx, x, sectionY, cardWidth, scorecard)
@@ -245,3 +252,4 @@ export default function SummaryExportButton({
     </div>
   )
 }
+
