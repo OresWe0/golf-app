@@ -161,7 +161,8 @@ async function runFeedAndPushInBackground(args: {
         continue
       }
 
-      const { data: friends, error: friendsError } = await supabase
+      const friendsQueryClient = supabaseAdmin ?? supabase
+      const { data: friends, error: friendsError } = await friendsQueryClient
         .from('friends')
         .select('friend_email')
         .eq('user_id', roundPlayer.user_id)
