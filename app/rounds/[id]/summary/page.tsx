@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import SummaryExportButton from '@/components/summary-export-button'
 import {
   getReceivedStrokesForSelectedHole,
   scoreVsPar,
@@ -690,6 +691,13 @@ export default async function SummaryPage({
     )
 
   const winner = summary[0]
+  const exportRows = summary.map((player) => ({
+    name: player.name,
+    scoreText:
+      round.scoring_mode === 'stableford'
+        ? `${player.points} p`
+        : `${player.strokes} slag`,
+  }))
 
   const selectedPlayer =
     summary.find((player) => player.id === resolvedSearchParams.player) ?? summary[0]
@@ -786,6 +794,21 @@ export default async function SummaryPage({
               Till startsidan 🏠
             </Link>
           </div>
+
+          <SummaryExportButton
+            roundTitle={round.title}
+            courseName={course.name}
+            modeLabel={holesLabel}
+            winnerName={winner?.name ?? 'Okand spelare'}
+            winnerScore={
+              winner
+                ? round.scoring_mode === 'stableford'
+                  ? `${winner.points} p`
+                  : `${winner.strokes} slag`
+                : '-'
+            }
+            rows={exportRows}
+          />
 
           {isRoundFinished && (
             <div
