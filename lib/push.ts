@@ -1,4 +1,4 @@
-function urlBase64ToUint8Array(base64String: string) {
+﻿function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
   const base64 = (base64String + padding)
     .replace(/-/g, '+')
@@ -14,6 +14,9 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray
 }
 
+const SW_VERSION = process.env.NEXT_PUBLIC_SW_VERSION || 'dev'
+const SW_URL = `/sw.js?v=${encodeURIComponent(SW_VERSION)}`
+
 export async function registerPushSubscription() {
   if (!('serviceWorker' in navigator)) {
     throw new Error('Service workers stöds inte i denna webbläsare.')
@@ -23,12 +26,16 @@ export async function registerPushSubscription() {
     throw new Error('Pushnotiser stöds inte i denna webbläsare.')
   }
 
-  const registration = await navigator.serviceWorker.register('/sw.js')
+  const registration = await navigator.serviceWorker.register(SW_URL, {
+    updateViaCache: 'none',
+  })
+
+  await registration.update()
 
   const permission = await Notification.requestPermission()
 
   if (permission !== 'granted') {
-    throw new Error('Notiser tilläts inte.')
+    throw new Error('Notiser tillåts inte.')
   }
 
   const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
@@ -67,7 +74,7 @@ export async function unregisterPushSubscription() {
     throw new Error('Service workers stöds inte i denna webbläsare.')
   }
 
-  const registration = await navigator.serviceWorker.getRegistration('/sw.js')
+  const registration = await navigator.serviceWorker.getRegistration()
   const subscription = await registration?.pushManager.getSubscription()
 
   if (!subscription) {
