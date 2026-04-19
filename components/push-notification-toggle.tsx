@@ -38,11 +38,11 @@ export default function PushNotificationToggle({
           const toggleResult = await setPushFriendActivityEnabled(true)
 
           if (!toggleResult.ok) {
-            throw new Error(toggleResult.error || 'Kunde inte spara installningen.')
+            throw new Error(toggleResult.error || 'Kunde inte spara inställningen.')
           }
 
           setEnabled(true)
-          setMessage('Pushnotiser ar nu aktiverade.')
+          setMessage('Pushnotiser är nu aktiverade.')
         } else {
           const subscription = await unregisterPushSubscription()
 
@@ -57,14 +57,14 @@ export default function PushNotificationToggle({
           const toggleResult = await setPushFriendActivityEnabled(false)
 
           if (!toggleResult.ok) {
-            throw new Error(toggleResult.error || 'Kunde inte spara installningen.')
+            throw new Error(toggleResult.error || 'Kunde inte spara inställningen.')
           }
 
           setEnabled(false)
-          setMessage('Pushnotiser ar nu avstangda.')
+          setMessage('Pushnotiser är nu avstängda.')
         }
       } catch (error) {
-        setMessage(error instanceof Error ? error.message : 'Nagot gick fel.')
+        setMessage(error instanceof Error ? error.message : 'Något gick fel.')
       }
     })
   }
@@ -97,11 +97,10 @@ export default function PushNotificationToggle({
     >
       <div>
         <div style={{ fontWeight: 800, color: '#1f3327' }}>
-          Pushnotiser om vanners aktivitet
+          Push för vänaktivitet
         </div>
         <div className="muted" style={{ marginTop: 4 }}>
-          Fa notiser nar dina vanner ar ute pa banan eller gor birdie, eagle
-          eller hole-in-one.
+          Aktivera pushnotiser och testa att allt fungerar.
         </div>
       </div>
 
@@ -116,7 +115,7 @@ export default function PushNotificationToggle({
           {isPending
             ? 'Sparar...'
             : enabled
-              ? 'Stang av pushnotiser'
+              ? 'Stäng av pushnotiser'
               : 'Aktivera pushnotiser'}
         </button>
 
