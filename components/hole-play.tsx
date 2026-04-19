@@ -17,6 +17,8 @@ type Player = {
   exact_handicap?: number | null
   playing_handicap?: number | null
   tee_key?: 'yellow' | 'red' | string
+  active_from_hole?: number | null
+  active_to_hole?: number | null
 }
 
 type ScoreRow = {
@@ -441,9 +443,13 @@ function HoleHeader({
 function LiveLeaderboard({
   leaderboard,
   players,
+  startHole,
+  endHole,
 }: {
   leaderboard: LeaderboardEntry[]
   players: Player[]
+  startHole: number
+  endHole: number
 }) {
   const topLeaderboard = useMemo(() => {
     return [...leaderboard]
@@ -502,6 +508,9 @@ function LiveLeaderboard({
         {topLeaderboard.map((entry) => {
           const player = players.find((p) => String(p.id) === String(entry.playerId))
           const isLeader = entry.position === 1
+          const activeFrom = player?.active_from_hole ?? startHole
+          const activeTo = player?.active_to_hole ?? endHole
+          const isPartialRound = activeFrom > startHole || activeTo < endHole
 
           return (
             <div
@@ -544,6 +553,26 @@ function LiveLeaderboard({
               >
                 {player?.display_name ?? 'Spelare'}
               </div>
+
+              {isPartialRound ? (
+                <div
+                  style={{
+                    marginTop: 4,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '2px 8px',
+                    borderRadius: 999,
+                    background: 'rgba(187,247,208,0.18)',
+                    border: '1px solid rgba(187,247,208,0.38)',
+                    color: '#bbf7d0',
+                    fontSize: 10,
+                    fontWeight: 800,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Delrunda {activeFrom}-{activeTo}
+                </div>
+              ) : null}
 
               <div
                 style={{
@@ -694,6 +723,8 @@ function PlayerScoreCard({
   isLeader,
   streak,
   quickScores,
+  startHole,
+  endHole,
 }: {
   player: Player
   index: number
@@ -708,6 +739,8 @@ function PlayerScoreCard({
   isLeader: boolean
   streak: number
   quickScores: number[]
+  startHole: number
+  endHole: number
 }) {
   const playerId = String(player.id)
   const selectedScore = selectedValue ? Number(selectedValue) : null
@@ -719,6 +752,9 @@ function PlayerScoreCard({
     selectedHoleIndexes,
     hole.hcp_index
   )
+  const activeFrom = player.active_from_hole ?? startHole
+  const activeTo = player.active_to_hole ?? endHole
+  const isPartialRound = activeFrom > startHole || activeTo < endHole
 
   return (
     <div
@@ -786,6 +822,26 @@ function PlayerScoreCard({
           >
             Erhållna slag: {received}
           </div>
+
+          {isPartialRound ? (
+            <div
+              style={{
+                marginTop: 6,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px',
+                borderRadius: 999,
+                background: 'rgba(191, 219, 254, 0.22)',
+                border: '1px solid rgba(147, 197, 253, 0.55)',
+                color: '#1d4ed8',
+                fontWeight: 800,
+                fontSize: 12,
+              }}
+            >
+              Delrunda: hål {activeFrom}-{activeTo}
+            </div>
+          ) : null}
         </div>
 
         <div
@@ -2170,7 +2226,12 @@ useEffect(() => {
 
         <div style={{ display: 'grid', gap: 12 }}>
           <HoleHeader hole={hole} totalHoles={totalHoles} onOpenHoleImage={openHoleImage} />
-          <LiveLeaderboard leaderboard={leaderboard} players={players} />
+          <LiveLeaderboard
+            leaderboard={leaderboard}
+            players={players}
+            startHole={startHole}
+            endHole={endHole}
+          />
         </div>
 
         <div style={{ display: 'grid', gap: 14 }}>
@@ -2193,6 +2254,8 @@ useEffect(() => {
                 isLeader={leaderIds.has(playerId)}
                 streak={playerStreaks?.[playerId] ?? 0}
                 quickScores={quickScores}
+                startHole={startHole}
+                endHole={endHole}
               />
             )
           })}
