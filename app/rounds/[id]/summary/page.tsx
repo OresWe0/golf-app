@@ -25,6 +25,7 @@ type HoleScoreView = {
 
 type SummaryPlayer = {
   id: string
+  userId: string | null
   name: string
   strokes: number
   vsPar: number
@@ -571,7 +572,7 @@ export default async function SummaryPage({
       .single(),
     supabase
       .from('round_players')
-      .select('id, display_name, exact_handicap, playing_handicap, tee_key')
+      .select('id, user_id, display_name, exact_handicap, playing_handicap, tee_key')
       .eq('round_id', id)
       .order('sort_order'),
     supabase
@@ -676,6 +677,7 @@ export default async function SummaryPage({
 
       return {
         id: player.id,
+        userId: player.user_id ?? null,
         name: player.display_name,
         strokes,
         vsPar,
@@ -691,20 +693,13 @@ export default async function SummaryPage({
     )
 
   const winner = summary[0]
-  const exportRows = summary.map((player) => ({
-    name: player.name,
-    scoreText:
-      round.scoring_mode === 'stableford'
-        ? `${player.points} p`
-        : `${player.strokes} slag`,
-  }))
-
   const selectedPlayer =
     summary.find((player) => player.id === resolvedSearchParams.player) ?? summary[0]
 
   const selectedIndex = summary.findIndex((player) => player.id === selectedPlayer?.id)
 
   const roundTypeLabel = round.scoring_mode === 'stableford' ? 'Poängbogey' : 'Slagspel'
+  const scoringMode = round.scoring_mode
 
   const holesLabel =
     round.holes_mode === 18
@@ -734,65 +729,76 @@ export default async function SummaryPage({
       )
     : []
 
-  const frontPoints =
-    round.scoring_mode === 'stableford' && selectedPlayer
-      ? selectedFrontScores.map((score) =>
-          score.strokes == null
-            ? null
-            : stablefordPoints(
-                score.strokes,
-                score.par,
-                getReceivedStrokesForSelectedHole(
-                  selectedPlayer.playingHandicap ?? 0,
-                  visibleHoleIndexes,
-                  score.hcpIndex
-                )
-              )
-        )
-      : undefined
+  function getPointsForScores(player: SummaryPlayer, scores: HoleScoreView[]) {
+    if (scoringMode !== 'stableford') return undefined
 
-  const backPoints =
-    round.scoring_mode === 'stableford' && selectedPlayer
-      ? selectedBackScores.map((score) =>
-          score.strokes == null
-            ? null
-            : stablefordPoints(
-                score.strokes,
-                score.par,
-                getReceivedStrokesForSelectedHole(
-                  selectedPlayer.playingHandicap ?? 0,
-                  visibleHoleIndexes,
-                  score.hcpIndex
-                )
-              )
-        )
-      : undefined
+    return scores.map((score) =>
+      score.strokes == null
+        ? null
+        : stablefordPoints(
+            score.strokes,
+            score.par,
+            getReceivedStrokesForSelectedHole(
+              player.playingHandicap ?? 0,
+              visibleHoleIndexes,
+              score.hcpIndex
+            )
+          )
+    )
+  }
 
-  const exportScorecards = [
-    {
-      title:
-        isNineHoleRound
-          ? startHole === 1
-            ? 'Framre 9'
-            : 'Bakre 9'
-          : 'Framre 9',
-      holes: selectedFrontScores.map((score) => score.holeNumber),
-      pars: selectedFrontScores.map((score) => score.par),
-      results: selectedFrontScores.map((score) => score.strokes),
-      points: frontPoints,
-    },
-    ...(!isNineHoleRound && selectedBackScores.length > 0
-      ? [
-          {
-            title: 'Bakre 9',
-            holes: selectedBackScores.map((score) => score.holeNumber),
-            pars: selectedBackScores.map((score) => score.par),
-            results: selectedBackScores.map((score) => score.strokes),
-            points: backPoints,
-          },
-        ]
-      : []),
-  ]
+  function getExportScorecards(player: SummaryPlayer) {
+    const frontScores = player.holeScores.filter((score) =>
+      firstHalf.some((hole: HoleLike) => hole.hole_number === score.holeNumber)
+    )
+    const backScores = player.holeScores.filter((score) =>
+      secondHalf.some((hole: HoleLike) => hole.hole_number === score.holeNumber)
+    )
+
+    return [
+      {
+        title:
+          isNineHoleRound
+            ? startHole === 1
+              ? 'Framre 9'
+              : 'Bakre 9'
+            : 'Framre 9',
+        holes: frontScores.map((score) => score.holeNumber),
+        pars: frontScores.map((score) => score.par),
+        results: frontScores.map((score) => score.strokes),
+        points: getPointsForScores(player, frontScores),
+      },
+      ...(!isNineHoleRound && backScores.length > 0
+        ? [
+            {
+              title: 'Bakre 9',
+              holes: backScores.map((score) => score.holeNumber),
+              pars: backScores.map((score) => score.par),
+              results: backScores.map((score) => score.strokes),
+              points: getPointsForScores(player, backScores),
+            },
+          ]
+        : []),
+    ]
+  }
+
+  const exportPlayers = summary.map((player) => ({
+    id: player.id,
+    name: player.name ?? 'Spelare',
+    scoreText:
+      scoringMode === 'stableford'
+        ? `${player.points} p`
+        : `${player.strokes} slag`,
+    scorecards: getExportScorecards(player),
+  }))
+
+  const mySummaryPlayer =
+    summary.find((player) => player.userId === user.id) ??
+    selectedPlayer ??
+    summary[0] ??
+    null
+
+  const mySummaryPlayerId = mySummaryPlayer?.id ?? null
 
   return (
     <main>
@@ -859,16 +865,8 @@ export default async function SummaryPage({
             roundTitle={round.title}
             courseName={course.name}
             modeLabel={holesLabel}
-            winnerName={winner?.name ?? 'Okand spelare'}
-            winnerScore={
-              winner
-                ? round.scoring_mode === 'stableford'
-                  ? `${winner.points} p`
-                  : `${winner.strokes} slag`
-                : '-'
-            }
-            rows={exportRows}
-            scorecards={exportScorecards}
+            players={exportPlayers}
+            myPlayerId={mySummaryPlayerId}
           />
 
           {isRoundFinished && (
