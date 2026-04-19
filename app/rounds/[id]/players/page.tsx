@@ -1,5 +1,6 @@
 ﻿import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -132,7 +133,7 @@ async function addPlayerToRound(args: {
   const { supabase, round } = await requireOwnerRoundContext(args.roundId)
 
   if (round.status === 'completed') {
-    throw new Error('Rundan ar redan avslutad.')
+    throw new Error('Rundan är redan avslutad.')
   }
 
   const startHole = round.start_hole ?? 1
@@ -151,7 +152,7 @@ async function addPlayerToRound(args: {
       .limit(1)
 
     if ((existingByUser ?? []).length > 0) {
-      throw new Error('Spelaren ar redan med i bollen.')
+      throw new Error('Spelaren är redan med i bollen.')
     }
   } else if (normalizedEmail) {
     const { data: existingByEmail } = await supabase
@@ -163,7 +164,7 @@ async function addPlayerToRound(args: {
       .limit(1)
 
     if ((existingByEmail ?? []).length > 0) {
-      throw new Error('Spelaren ar redan med i bollen.')
+      throw new Error('Spelaren är redan med i bollen.')
     }
   }
 
@@ -189,7 +190,7 @@ async function addPlayerToRound(args: {
     ])
 
   if (!course || !tees || !holes) {
-    throw new Error('Kunde inte lasa banans data.')
+    throw new Error('Kunde inte läsa banans data.')
   }
 
   const tee = (tees as TeeRow[]).find((item) => item.tee_key === args.teeKey)
@@ -202,7 +203,7 @@ async function addPlayerToRound(args: {
   )
 
   if (visibleHoles.length === 0) {
-    throw new Error('Kunde inte hitta hal for spelarens startposition.')
+    throw new Error('Kunde inte hitta hål för spelarens startposition.')
   }
 
   const courseHandicap = calculatePlayingHandicap({
@@ -238,7 +239,7 @@ async function addPlayerToRound(args: {
     .single()
 
   if (insertPlayerError || !insertedPlayer) {
-    throw new Error(insertPlayerError?.message || 'Kunde inte lagga till spelaren.')
+    throw new Error(insertPlayerError?.message || 'Kunde inte lägga till spelaren.')
   }
 
   const scoreRows = visibleHoles.map((hole) => ({
@@ -357,7 +358,7 @@ export default async function RoundPlayersPage({
         currentHole <= (target.active_to_hole ?? endHole)
 
       if (!currentlyActive) {
-        throw new Error('Spelaren ar redan borttagen.')
+        throw new Error('Spelaren är redan borttagen.')
       }
 
       const { data: activeNow } = await supabase
@@ -373,12 +374,12 @@ export default async function RoundPlayersPage({
         ).length ?? 0
 
       if (activeNowCount <= 1) {
-        throw new Error('Minst en spelare maste vara kvar i bollen.')
+        throw new Error('Minst en spelare måste vara kvar i bollen.')
       }
 
       const leaveAfterHole = currentHole - 1
       if (leaveAfterHole < (target.active_from_hole ?? startHole)) {
-        throw new Error('Kan inte ta bort spelaren innan den borjat spela.')
+        throw new Error('Kan inte ta bort spelaren innan den börjat spela.')
       }
 
       const { error: updateError } = await supabase
@@ -396,9 +397,10 @@ export default async function RoundPlayersPage({
       revalidatePath(`/rounds/${id}/players`)
 
       redirect(
-        `/rounds/${id}/players?message=Spelaren ar borttagen fran kommande hal&type=success`
+        `/rounds/${id}/players?message=Spelaren är borttagen från kommande hål&type=success`
       )
     } catch (error) {
+      if (isRedirectError(error)) throw error
       const message = error instanceof Error ? error.message : 'Kunde inte ta bort spelaren.'
       redirect(`/rounds/${id}/players?message=${encodeURIComponent(message)}&type=error`)
     }
@@ -427,7 +429,7 @@ export default async function RoundPlayersPage({
         .maybeSingle()
 
       if (!profile) {
-        throw new Error('Ingen registrerad anvandare hittades for e-posten.')
+        throw new Error('Ingen registrerad användare hittades för e-posten.')
       }
 
       const profileRow = profile as ProfileRow
@@ -449,9 +451,10 @@ export default async function RoundPlayersPage({
       revalidatePath(`/rounds/${id}/summary`)
       revalidatePath(`/rounds/${id}/players`)
 
-      redirect(`/rounds/${id}/players?message=Spelaren ar tillagd fran hal ${currentHole}&type=success`)
+      redirect(`/rounds/${id}/players?message=Spelaren är tillagd från hål ${currentHole}&type=success`)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Kunde inte lagga till spelaren.'
+      if (isRedirectError(error)) throw error
+      const message = error instanceof Error ? error.message : 'Kunde inte lägga till spelaren.'
       redirect(`/rounds/${id}/players?message=${encodeURIComponent(message)}&type=error`)
     }
   }
@@ -464,7 +467,7 @@ export default async function RoundPlayersPage({
     const exactHandicap = toNumberOrNull(formData.get('exact_handicap'))
 
     if (!displayName) {
-      redirect(`/rounds/${id}/players?message=Ange namn pa gastspelaren&type=error`)
+      redirect(`/rounds/${id}/players?message=Ange namn på gästspelaren&type=error`)
     }
 
     try {
@@ -479,9 +482,10 @@ export default async function RoundPlayersPage({
       revalidatePath(`/rounds/${id}/summary`)
       revalidatePath(`/rounds/${id}/players`)
 
-      redirect(`/rounds/${id}/players?message=Gastspelare ar tillagd fran hal ${currentHole}&type=success`)
+      redirect(`/rounds/${id}/players?message=Gästspelare är tillagd från hål ${currentHole}&type=success`)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Kunde inte lagga till gastspelare.'
+      if (isRedirectError(error)) throw error
+      const message = error instanceof Error ? error.message : 'Kunde inte lägga till gästspelare.'
       redirect(`/rounds/${id}/players?message=${encodeURIComponent(message)}&type=error`)
     }
   }
@@ -502,7 +506,7 @@ export default async function RoundPlayersPage({
                 {round.title}
               </h1>
               <p className="muted" style={{ margin: 0 }}>
-                Aktuellt hal: {currentHole}. Nya spelare startar pa detta hal. Borttagning galler kommande hal.
+                Aktuellt hål: {currentHole}. Nya spelare startar på detta hål. Borttagning gäller kommande hål.
               </p>
             </div>
 
@@ -530,7 +534,7 @@ export default async function RoundPlayersPage({
         <div className="card" style={{ padding: 20, display: 'grid', gap: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
             <h2 style={{ margin: 0 }}>Aktiva spelare ({activePlayers.length})</h2>
-            <div className="muted">Spelar mellan hal {currentHole} och hal {endHole}</div>
+            <div className="muted">Spelar mellan hål {currentHole} och hål {endHole}</div>
           </div>
 
           <div style={{ display: 'grid', gap: 10 }}>
@@ -557,7 +561,7 @@ export default async function RoundPlayersPage({
                 <form action={removePlayerAction}>
                   <input type="hidden" name="round_player_id" value={player.id} />
                   <button type="submit" className="button secondary">
-                    Ta bort fran kommande hal
+                    Ta bort från kommande hål
                   </button>
                 </form>
               </div>
@@ -566,7 +570,7 @@ export default async function RoundPlayersPage({
         </div>
 
         <div className="card" style={{ padding: 20, display: 'grid', gap: 16 }}>
-          <h2 style={{ margin: 0 }}>Lagga till spelare</h2>
+          <h2 style={{ margin: 0 }}>Lägga till spelare</h2>
 
           <div style={{ display: 'grid', gap: 12 }}>
             <h3 style={{ margin: 0 }}>Registrerad spelare</h3>
@@ -617,13 +621,13 @@ export default async function RoundPlayersPage({
               </div>
 
               <button type="submit" className="button">
-                Lagg till registrerad spelare
+                Lägg till registrerad spelare
               </button>
             </form>
           </div>
 
           <div style={{ display: 'grid', gap: 12 }}>
-            <h3 style={{ margin: 0 }}>Gastspelare</h3>
+            <h3 style={{ margin: 0 }}>Gästspelare</h3>
             <form action={addGuestPlayerAction} style={{ display: 'grid', gap: 10 }}>
               <input
                 name="display_name"
@@ -652,7 +656,7 @@ export default async function RoundPlayersPage({
               </div>
 
               <button type="submit" className="button">
-                Lagg till gastspelare
+                Lägg till gästspelare
               </button>
             </form>
           </div>
@@ -663,7 +667,7 @@ export default async function RoundPlayersPage({
             <h2 style={{ margin: 0 }}>Tidigare spelare ({inactivePlayers.length})</h2>
             {inactivePlayers.map((player) => (
               <div key={player.id} className="muted" style={{ fontSize: 14 }}>
-                {player.display_name} · spelade hal {player.active_from_hole ?? startHole} till{' '}
+                {player.display_name} · spelade hål {player.active_from_hole ?? startHole} till{' '}
                 {player.active_to_hole ?? endHole}
               </div>
             ))}
@@ -673,3 +677,5 @@ export default async function RoundPlayersPage({
     </main>
   )
 }
+
+
