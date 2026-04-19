@@ -421,11 +421,26 @@ export default async function ProfilePage({
           justify-content: flex-end;
         }
 
+        .friend-row-actions .button,
+        .friend-row-actions button {
+          min-height: 44px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+
         .friend-add-form {
           display: grid;
           grid-template-columns: 1fr auto;
           gap: 10px;
           width: 100%;
+        }
+
+        .friend-add-form .button {
+          min-height: 54px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .section-stack {
@@ -567,9 +582,25 @@ export default async function ProfilePage({
           .profile-grid {
             grid-template-columns: 1fr;
           }
+
+          .profile-back-link {
+            width: 100%;
+            min-height: 50px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+          }
         }
 
         @media (max-width: 640px) {
+          .profile-card {
+            padding: 16px !important;
+          }
+
+          .profile-section-card {
+            padding: 16px !important;
+          }
+
           .friend-add-form {
             grid-template-columns: 1fr;
           }
@@ -667,7 +698,7 @@ export default async function ProfilePage({
 
               <Link
                 href="/dashboard"
-                className="button secondary"
+                className="button secondary profile-back-link"
                 style={{
                   minWidth: 150,
                   textAlign: 'center',
