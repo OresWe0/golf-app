@@ -832,7 +832,7 @@ export default async function SummaryPage({
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
               gap: 10,
             }}
           >
@@ -841,7 +841,7 @@ export default async function SummaryPage({
               href={`/rounds/${id}?hole=${returnHole}`}
               style={{
                 width: '100%',
-                minHeight: 50,
+                minHeight: 54,
                 ...TYPE.buttonText,
               }}
             >
@@ -853,7 +853,7 @@ export default async function SummaryPage({
               href="/dashboard"
               style={{
                 width: '100%',
-                minHeight: 50,
+                minHeight: 54,
                 ...TYPE.buttonText,
               }}
             >
@@ -1033,7 +1033,7 @@ export default async function SummaryPage({
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
                 gap: 10,
               }}
             >
@@ -1203,7 +1203,7 @@ export default async function SummaryPage({
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
                     gap: 8,
                   }}
                 >
@@ -1266,7 +1266,7 @@ export default async function SummaryPage({
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
                   gap: 10,
                 }}
               >
@@ -1345,7 +1345,7 @@ export default async function SummaryPage({
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
                     gap: 8,
                   }}
                 >
@@ -1455,7 +1455,7 @@ export default async function SummaryPage({
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: isNineHoleRound ? '1fr 1fr' : '1fr 1fr 1fr',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
                     gap: 12,
                   }}
                 >
