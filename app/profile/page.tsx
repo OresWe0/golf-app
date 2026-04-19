@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
@@ -223,13 +223,13 @@ export default async function ProfilePage({
 
     if (error) {
       console.error('cancelRequest failed:', error)
-      redirect('/profile?message=Kunde inte ta bort fÃ¶rfrÃ¥gan&type=error')
+      redirect('/profile?message=Kunde inte ta bort forfragan&type=error')
     }
 
     revalidatePath('/profile')
     revalidatePath('/dashboard')
 
-    redirect('/profile?message=Vänförfrågan borttagen&type=success')
+    redirect('/profile?message=Vanforfragan borttagen&type=success')
   }
 
   async function declineRequest(formData: FormData) {
@@ -264,13 +264,13 @@ export default async function ProfilePage({
 
     if (error) {
       console.error('declineRequest failed:', error)
-      redirect('/profile?message=Kunde inte avvisa fÃ¶rfrÃ¥gan&type=error')
+      redirect('/profile?message=Kunde inte avvisa forfragan&type=error')
     }
 
     revalidatePath('/profile')
     revalidatePath('/dashboard')
 
-    redirect('/profile?message=Vänförfrågan avvisad&type=success')
+    redirect('/profile?message=Vanforfragan avvisad&type=success')
   }
 
   async function acceptRequest(formData: FormData) {
@@ -323,7 +323,7 @@ export default async function ProfilePage({
       .toLowerCase()
 
     if (!friendEmail) {
-      redirect('/profile?message=Kunde inte ta bort vän&type=error')
+      redirect('/profile?message=Kunde inte ta bort van&type=error')
     }
 
     const { error } = await supabase
@@ -334,13 +334,13 @@ export default async function ProfilePage({
 
     if (error) {
       console.error('removeFriend failed:', error)
-      redirect('/profile?message=Kunde inte ta bort vÃ¤n&type=error')
+      redirect('/profile?message=Kunde inte ta bort van&type=error')
     }
 
     revalidatePath('/profile')
     revalidatePath('/dashboard')
 
-    redirect('/profile?message=Vän borttagen&type=success')
+    redirect('/profile?message=Van borttagen&type=success')
   }
 
   const flashStyles =
@@ -366,8 +366,8 @@ export default async function ProfilePage({
         }
 
   const flashIcon =
-    messageType === 'success' ? '✅' : messageType === 'warning' ? '⚠️' : '❌'
 
+    messageType === 'success' ? 'OK' : messageType === 'warning' ? '!' : 'X'
   return (
     <main style={{ width: '100%', overflowX: 'hidden' }}>
       <style>{`
@@ -667,7 +667,7 @@ export default async function ProfilePage({
                     fontWeight: 900,
                   }}
                 >
-                  👤 Profil
+                  Profil
                 </span>
 
                 <h1
@@ -705,7 +705,7 @@ export default async function ProfilePage({
                   boxSizing: 'border-box',
                 }}
               >
-                ← Till dashboard
+                Till dashboard
               </Link>
             </div>
           </div>
@@ -941,7 +941,7 @@ export default async function ProfilePage({
                               lineHeight: 1.45,
                             }}
                           >
-                            📨 {request.requester_email}
+                            {request.requester_email}
                           </div>
 
                           <div className="friend-row-actions">
@@ -1020,7 +1020,7 @@ export default async function ProfilePage({
                               lineHeight: 1.45,
                             }}
                           >
-                            👤 {friend.friend_email}
+                            {friend.friend_email}
                           </div>
 
                           <div className="friend-row-actions">
@@ -1052,3 +1052,4 @@ export default async function ProfilePage({
     </main>
   )
 }
+
