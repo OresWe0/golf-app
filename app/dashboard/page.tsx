@@ -244,6 +244,10 @@ const dashboardStyles = {
   },
   softButton: {
     width: '100%',
+    minHeight: 52,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     textAlign: 'center' as const,
     boxSizing: 'border-box' as const,
   },
@@ -514,7 +518,9 @@ function DashboardHeader({
             className="dashboard-header-actions"
             style={{
               display: 'grid',
-              gridTemplateColumns: isAdmin ? '1fr 1fr 1fr auto' : '1fr 1fr auto',
+              gridTemplateColumns: isAdmin
+                ? 'repeat(4, minmax(0, 1fr))'
+                : 'repeat(3, minmax(0, 1fr))',
               gap: 10,
               alignItems: 'stretch',
             }}
@@ -594,7 +600,7 @@ function DashboardHeader({
                 className="button secondary"
                 style={{
                   width: '100%',
-                  minWidth: 120,
+                  minHeight: 52,
                   background: 'rgba(255,255,255,0.14)',
                   color: '#ffffff',
                   border: '1px solid rgba(255,255,255,0.16)',
@@ -1726,11 +1732,36 @@ export default async function DashboardPage({
 
         @media (max-width: 820px) {
           .dashboard-header-actions {
+            grid-template-columns: 1fr 1fr !important;
+          }
+
+          .dashboard-header-actions form {
+            grid-column: 1 / -1;
+          }
+        }
+
+        @media (max-width: 560px) {
+          .dashboard-header-actions {
             grid-template-columns: 1fr !important;
+          }
+
+          .dashboard-header-actions form {
+            grid-column: auto;
           }
         }
 
         @media (max-width: 720px) {
+          .round-meta-grid {
+            grid-template-columns: 1fr 1fr !important;
+          }
+
+          .round-meta-grid,
+          .round-actions-grid {
+            gap: 10px !important;
+          }
+        }
+
+        @media (max-width: 520px) {
           .round-meta-grid,
           .round-actions-grid {
             grid-template-columns: 1fr !important;
