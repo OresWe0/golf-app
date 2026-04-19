@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { sendPushNotification } from '@/lib/send-push'
 
 type SavePushSubscriptionInput = {
   endpoint: string
@@ -87,5 +88,48 @@ export async function setPushFriendActivityEnabled(enabled: boolean) {
   }
 
   revalidatePath('/profile')
+  return { ok: true }
+}
+
+type PushSubscriptionRow = {
+  endpoint: string
+  p256dh: string
+  auth: string
+}
+
+export async function sendTestPushNotification() {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { ok: false, error: 'Not authenticated' }
+
+  const { data: subscriptions, error } = await supabase
+    .from('push_subscriptions')
+    .select('endpoint, p256dh, auth')
+    .eq('user_id', user.id)
+
+  if (error) {
+    return { ok: false, error: error.message }
+  }
+
+  const rows = (subscriptions as PushSubscriptionRow[] | null) ?? []
+
+  if (rows.length === 0) {
+    return { ok: false, error: 'Ingen push-subscription hittades. Aktivera pushnotiser först.' }
+  }
+
+  await Promise.allSettled(
+    rows.map((subscription) =>
+      sendPushNotification(subscription, {
+        title: 'Testnotis',
+        body: 'Push fungerar i din golfapp.',
+        url: '/profile',
+      })
+    )
+  )
+
   return { ok: true }
 }

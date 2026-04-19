@@ -9,6 +9,7 @@ import {
   savePushSubscription,
   deletePushSubscription,
   setPushFriendActivityEnabled,
+  sendTestPushNotification,
 } from '@/app/profile/actions'
 
 export default function PushNotificationToggle({
@@ -19,6 +20,7 @@ export default function PushNotificationToggle({
   const [enabled, setEnabled] = useState(initialEnabled)
   const [message, setMessage] = useState('')
   const [isPending, startTransition] = useTransition()
+  const [isTestPending, startTestTransition] = useTransition()
 
   function handleToggle() {
     setMessage('')
@@ -36,11 +38,11 @@ export default function PushNotificationToggle({
           const toggleResult = await setPushFriendActivityEnabled(true)
 
           if (!toggleResult.ok) {
-            throw new Error(toggleResult.error || 'Kunde inte spara inställningen.')
+            throw new Error(toggleResult.error || 'Kunde inte spara installningen.')
           }
 
           setEnabled(true)
-          setMessage('Pushnotiser är nu aktiverade.')
+          setMessage('Pushnotiser ar nu aktiverade.')
         } else {
           const subscription = await unregisterPushSubscription()
 
@@ -55,17 +57,30 @@ export default function PushNotificationToggle({
           const toggleResult = await setPushFriendActivityEnabled(false)
 
           if (!toggleResult.ok) {
-            throw new Error(toggleResult.error || 'Kunde inte spara inställningen.')
+            throw new Error(toggleResult.error || 'Kunde inte spara installningen.')
           }
 
           setEnabled(false)
-          setMessage('Pushnotiser är nu avstängda.')
+          setMessage('Pushnotiser ar nu avstangda.')
         }
       } catch (error) {
-        setMessage(
-          error instanceof Error ? error.message : 'Något gick fel.'
-        )
+        setMessage(error instanceof Error ? error.message : 'Nagot gick fel.')
       }
+    })
+  }
+
+  function handleSendTestPush() {
+    setMessage('')
+
+    startTestTransition(async () => {
+      const result = await sendTestPushNotification()
+
+      if (!result.ok) {
+        setMessage(result.error || 'Kunde inte skicka testnotis.')
+        return
+      }
+
+      setMessage('Testnotis skickad. Kontrollera att den kommer fram.')
     })
   }
 
@@ -82,27 +97,39 @@ export default function PushNotificationToggle({
     >
       <div>
         <div style={{ fontWeight: 800, color: '#1f3327' }}>
-          Pushnotiser om vänners aktivitet
+          Pushnotiser om vanners aktivitet
         </div>
         <div className="muted" style={{ marginTop: 4 }}>
-          Få notiser när dina vänner är ute på banan eller gör birdie, eagle
+          Fa notiser nar dina vanner ar ute pa banan eller gor birdie, eagle
           eller hole-in-one.
         </div>
       </div>
 
-      <button
-        type="button"
-        className="button secondary"
-        onClick={handleToggle}
-        disabled={isPending}
-        style={{ maxWidth: 260 }}
-      >
-        {isPending
-          ? 'Sparar...'
-          : enabled
-            ? 'Stäng av pushnotiser'
-            : 'Aktivera pushnotiser'}
-      </button>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <button
+          type="button"
+          className="button secondary"
+          onClick={handleToggle}
+          disabled={isPending || isTestPending}
+          style={{ maxWidth: 260 }}
+        >
+          {isPending
+            ? 'Sparar...'
+            : enabled
+              ? 'Stang av pushnotiser'
+              : 'Aktivera pushnotiser'}
+        </button>
+
+        <button
+          type="button"
+          className="button secondary"
+          onClick={handleSendTestPush}
+          disabled={!enabled || isPending || isTestPending}
+          style={{ maxWidth: 220 }}
+        >
+          {isTestPending ? 'Skickar test...' : 'Skicka testnotis'}
+        </button>
+      </div>
 
       {message ? (
         <div className="muted" style={{ fontSize: 14 }}>
