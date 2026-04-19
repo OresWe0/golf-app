@@ -34,6 +34,7 @@ type CourseHoleRow = {
 }
 
 type SearchParams = Record<string, string | string[] | undefined>
+const MIN_HOLE_SAMPLES = 2
 
 type PageProps = {
   searchParams?: SearchParams | Promise<SearchParams>
@@ -289,7 +290,7 @@ export default async function StatistikPage({ searchParams }: PageProps) {
     }
   }
 
-  const hardestHoles = Array.from(holeAgg.entries())
+  const holeStats = Array.from(holeAgg.entries())
     .map(([holeNumber, aggregate]) => {
       const avg = aggregate.strokes / aggregate.count
       const par = parByHole.get(holeNumber)
@@ -303,6 +304,10 @@ export default async function StatistikPage({ searchParams }: PageProps) {
         count: aggregate.count,
       }
     })
+
+  const comparableHoleStats = holeStats.filter((hole) => hole.count >= MIN_HOLE_SAMPLES)
+
+  const hardestHoles = [...comparableHoleStats]
     .sort((a, b) => {
       const aScore = a.avgToPar ?? a.avg
       const bScore = b.avgToPar ?? b.avg
@@ -310,6 +315,17 @@ export default async function StatistikPage({ searchParams }: PageProps) {
       return b.count - a.count
     })
     .slice(0, 5)
+
+  const bestHoles = [...comparableHoleStats]
+    .sort((a, b) => {
+      const aScore = a.avgToPar ?? a.avg
+      const bScore = b.avgToPar ?? b.avg
+      if (aScore !== bScore) return aScore - bScore
+      return b.count - a.count
+    })
+    .slice(0, 3)
+
+  const trendRounds = filteredSummaries.slice(0, 5)
 
   function buildFilterHref(nextCourse: string, nextPeriod: string) {
     const params = new URLSearchParams()
@@ -437,7 +453,7 @@ export default async function StatistikPage({ searchParams }: PageProps) {
             </div>
           ) : hardestHoles.length === 0 ? (
             <div className="notice" style={{ marginTop: 12 }}>
-              Ingen data hittades för valt filter.
+              Minst {MIN_HOLE_SAMPLES} varv per hål krävs för att visa statistik.
             </div>
           ) : (
             <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
@@ -455,6 +471,50 @@ export default async function StatistikPage({ searchParams }: PageProps) {
                   }}
                 >
                   <div style={{ fontWeight: 900 }}>📍 Hål {hole.holeNumber}</div>
+                  <div className="muted">
+                    Snitt {hole.avg.toFixed(2)} slag
+                    {hole.avgToPar == null ? '' : ` (${formatSigned(hole.avgToPar)} mot par)`}
+                    {' - '}
+                    {hole.count} varv
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card" style={{ borderRadius: 24 }}>
+          <h2 style={{ margin: 0, fontSize: 24 }}>
+           ✅ Bästa hål {selectedCourseId === 'all' ? '' : `på ${selectedCourseName}`}
+          </h2>
+          <p className="meta" style={{ marginTop: 8 }}>
+            Lägst snitt mot par (minst {MIN_HOLE_SAMPLES} varv).
+          </p>
+
+          {selectedCourseId === 'all' ? (
+            <div className="notice" style={{ marginTop: 12 }}>
+              Välj en specifik bana för hål-för-hål statistik.
+            </div>
+          ) : bestHoles.length === 0 ? (
+            <div className="notice" style={{ marginTop: 12 }}>
+              Minst {MIN_HOLE_SAMPLES} varv per hål krävs för att visa statistik.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+              {bestHoles.map((hole) => (
+                <div
+                  key={`best-hole-${hole.holeNumber}`}
+                  style={{
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 14,
+                    padding: 12,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div style={{ fontWeight: 900 }}>✅ Hål {hole.holeNumber}</div>
                   <div className="muted">
                     Snitt {hole.avg.toFixed(2)} slag
                     {hole.avgToPar == null ? '' : ` (${formatSigned(hole.avgToPar)} mot par)`}
@@ -524,6 +584,47 @@ export default async function StatistikPage({ searchParams }: PageProps) {
 
                   <div style={{ fontWeight: 900 }}>
                    ⛳ {item.totalStrokes} slag ({item.avgPerHole.toFixed(2)} / hål)
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card" style={{ borderRadius: 24 }}>
+          <h2 style={{ margin: 0, fontSize: 24 }}>📉 Trend senaste 5 rundor</h2>
+
+          {trendRounds.length === 0 ? (
+            <div className="notice" style={{ marginTop: 12 }}>
+              Ingen trenddata hittades för valt filter.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+              {trendRounds.map((item, index) => (
+                <div
+                  key={`trend-${item.round.id}`}
+                  style={{
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 14,
+                    padding: 12,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 900 }}>
+                      #{index + 1} {courseById.get(item.round.course_id)?.name ?? 'Okänd bana'}
+                    </div>
+                    <div className="muted" style={{ fontSize: 14 }}>
+                      {new Date(item.round.created_at).toLocaleDateString('sv-SE')} -{' '}
+                      {item.round.holes_mode ?? item.holes} hål
+                    </div>
+                  </div>
+
+                  <div style={{ fontWeight: 900 }}>
+                    {item.avgPerHole.toFixed(2)} slag / hål
                   </div>
                 </div>
               ))}
