@@ -33,7 +33,14 @@ type SummaryPlayer = {
   exactHandicap: number | null
   playingHandicap: number
   teeKey: string
+  activeFromHole: number
+  activeToHole: number
+  activeHoleIndexes: number[]
   holeScores: HoleScoreView[]
+}
+
+function getPlayedRangeLabel(player: Pick<SummaryPlayer, 'activeFromHole' | 'activeToHole'>) {
+  return `Spelat hål ${player.activeFromHole}–${player.activeToHole}`
 }
 
 function getScoreMarker(strokes: number | null, par: number) {
@@ -186,7 +193,6 @@ function ScoreTable({
   title,
   holes,
   scores,
-  roundHoleIndexes,
   selectedPlayer,
   scoringMode,
   totalLabel,
@@ -194,8 +200,7 @@ function ScoreTable({
   title: string
   holes: HoleLike[]
   scores: HoleScoreView[]
-  roundHoleIndexes: number[]
-  selectedPlayer: Pick<SummaryPlayer, 'playingHandicap'>
+  selectedPlayer: Pick<SummaryPlayer, 'playingHandicap' | 'activeHoleIndexes'>
   scoringMode: string
   totalLabel: string
 }) {
@@ -214,7 +219,7 @@ function ScoreTable({
       score.par,
       getReceivedStrokesForSelectedHole(
         selectedPlayer.playingHandicap ?? 0,
-        roundHoleIndexes,
+        selectedPlayer.activeHoleIndexes,
         score.hcpIndex
       )
     )
@@ -572,7 +577,9 @@ export default async function SummaryPage({
       .single(),
     supabase
       .from('round_players')
-      .select('id, user_id, display_name, exact_handicap, playing_handicap, tee_key')
+      .select(
+        'id, user_id, display_name, exact_handicap, playing_handicap, tee_key, active_from_hole, active_to_hole'
+      )
       .eq('round_id', id)
       .order('sort_order'),
     supabase
@@ -630,9 +637,19 @@ export default async function SummaryPage({
 
   const summary: SummaryPlayer[] = players
     .map((player: any) => {
+      const activeFromHole = Number(player.active_from_hole ?? startHole)
+      const activeToHole = Number(player.active_to_hole ?? endHole)
+      const activeHoles = visibleHoles.filter(
+        (hole: HoleLike) =>
+          hole.hole_number >= activeFromHole && hole.hole_number <= activeToHole
+      )
+      const activeHoleIndexes = activeHoles.map((hole: HoleLike) => hole.hcp_index)
+
       const rows = scoreRows.filter(
         (row: any) =>
           row.round_player_id === player.id &&
+          row.hole_number >= activeFromHole &&
+          row.hole_number <= activeToHole &&
           row.hole_number >= startHole &&
           row.hole_number <= endHole
       )
@@ -640,12 +657,12 @@ export default async function SummaryPage({
       const strokes = rows.reduce((sum: number, row: any) => sum + (row.strokes ?? 0), 0)
 
       const vsPar = rows.reduce((sum: number, row: any) => {
-        const hole = visibleHoles.find((item: HoleLike) => item.hole_number === row.hole_number)
+        const hole = activeHoles.find((item: HoleLike) => item.hole_number === row.hole_number)
         return sum + (hole ? (scoreVsPar(row.strokes, hole.par) ?? 0) : 0)
       }, 0)
 
       const points = rows.reduce((sum: number, row: any) => {
-        const hole = visibleHoles.find((item: HoleLike) => item.hole_number === row.hole_number)
+        const hole = activeHoles.find((item: HoleLike) => item.hole_number === row.hole_number)
         if (!hole || row.strokes == null) return sum
 
         return (
@@ -655,7 +672,7 @@ export default async function SummaryPage({
             hole.par,
             getReceivedStrokesForSelectedHole(
               player.playing_handicap ?? 0,
-              visibleHoleIndexes,
+              activeHoleIndexes,
               hole.hcp_index
             )
           )
@@ -685,6 +702,9 @@ export default async function SummaryPage({
         exactHandicap: player.exact_handicap ?? null,
         playingHandicap: player.playing_handicap ?? 0,
         teeKey: player.tee_key ?? 'yellow',
+        activeFromHole,
+        activeToHole,
+        activeHoleIndexes,
         holeScores,
       }
     })
@@ -740,7 +760,7 @@ export default async function SummaryPage({
             score.par,
             getReceivedStrokesForSelectedHole(
               player.playingHandicap ?? 0,
-              visibleHoleIndexes,
+              player.activeHoleIndexes,
               score.hcpIndex
             )
           )
@@ -1029,6 +1049,7 @@ export default async function SummaryPage({
               {winner.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Exakt HCP{' '}
               {winner.exactHandicap ?? '-'} · Spel-HCP {winner.playingHandicap ?? 0}
             </div>
+            <div style={{ marginBottom: 12, ...TYPE.meta }}>{getPlayedRangeLabel(winner)}</div>
 
             <div
               style={{
@@ -1181,6 +1202,7 @@ export default async function SummaryPage({
                     >
                       HCP {player.exactHandicap ?? '-'} · Spel-HCP {player.playingHandicap}
                     </div>
+                    <div style={{ marginTop: 2, ...TYPE.meta }}>{getPlayedRangeLabel(player)}</div>
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
@@ -1341,6 +1363,9 @@ export default async function SummaryPage({
                   {selectedPlayer.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Spel-HCP{' '}
                   {selectedPlayer.playingHandicap ?? 0}
                 </div>
+                <div style={{ marginBottom: 12, ...TYPE.meta }}>
+                  {getPlayedRangeLabel(selectedPlayer)}
+                </div>
 
                 <div
                   style={{
@@ -1422,7 +1447,6 @@ export default async function SummaryPage({
                   }
                   holes={firstHalf}
                   scores={selectedFrontScores}
-                  roundHoleIndexes={visibleHoleIndexes}
                   selectedPlayer={selectedPlayer}
                   scoringMode={round.scoring_mode}
                   totalLabel={isNineHoleRound ? 'Summa' : 'Ut'}
@@ -1433,7 +1457,6 @@ export default async function SummaryPage({
                     title="Bakre 9"
                     holes={secondHalf}
                     scores={selectedBackScores}
-                    roundHoleIndexes={visibleHoleIndexes}
                     selectedPlayer={selectedPlayer}
                     scoringMode={round.scoring_mode}
                     totalLabel="In"
