@@ -268,6 +268,75 @@ async function addPlayerToRound(args: {
   }
 }
 
+async function deactivateActivePlayer(args: {
+  supabase: any
+  roundId: string
+  round: RoundRow
+  roundPlayerId: string
+}) {
+  const { supabase, roundId, round, roundPlayerId } = args
+  const currentHole = getCurrentHole(round)
+  const startHole = round.start_hole ?? 1
+  const endHole = round.end_hole ?? 18
+
+  const { data: target } = await supabase
+    .from('round_players')
+    .select('id, display_name, active_from_hole, active_to_hole')
+    .eq('round_id', roundId)
+    .eq('id', roundPlayerId)
+    .single()
+
+  if (!target) {
+    throw new Error('Spelaren hittades inte.')
+  }
+
+  const currentlyActive =
+    currentHole >= (target.active_from_hole ?? startHole) &&
+    currentHole <= (target.active_to_hole ?? endHole)
+
+  if (!currentlyActive) {
+    throw new Error('Spelaren är redan borttagen.')
+  }
+
+  const { data: activeNow } = await supabase
+    .from('round_players')
+    .select('id, active_from_hole, active_to_hole')
+    .eq('round_id', roundId)
+
+  const activeNowCount =
+    (activeNow ?? []).filter(
+      (player: { active_from_hole?: number | null; active_to_hole?: number | null }) =>
+        currentHole >= (player.active_from_hole ?? startHole) &&
+        currentHole <= (player.active_to_hole ?? endHole)
+    ).length ?? 0
+
+  if (activeNowCount <= 1) {
+    throw new Error('Minst en spelare måste vara kvar i bollen.')
+  }
+
+  const leaveAfterHole = currentHole - 1
+  if (leaveAfterHole < (target.active_from_hole ?? startHole)) {
+    throw new Error('Kan inte ta bort spelaren innan den börjat spela.')
+  }
+
+  const previousActiveTo = target.active_to_hole ?? endHole
+
+  const { error: updateError } = await supabase
+    .from('round_players')
+    .update({ active_to_hole: leaveAfterHole })
+    .eq('round_id', roundId)
+    .eq('id', roundPlayerId)
+
+  if (updateError) {
+    throw new Error(updateError.message)
+  }
+
+  return {
+    displayName: String(target.display_name ?? 'Spelare'),
+    previousActiveTo,
+  }
+}
+
 export default async function RoundPlayersPage({
   params,
   searchParams,
@@ -338,59 +407,12 @@ export default async function RoundPlayersPage({
 
     try {
       const { supabase, round } = await requireOwnerRoundContext(id)
-      const currentHole = getCurrentHole(round)
-      const startHole = round.start_hole ?? 1
-      const endHole = round.end_hole ?? 18
-
-      const { data: target } = await supabase
-        .from('round_players')
-        .select('id, display_name, active_from_hole, active_to_hole')
-        .eq('round_id', id)
-        .eq('id', roundPlayerId)
-        .single()
-
-      if (!target) {
-        throw new Error('Spelaren hittades inte.')
-      }
-
-      const currentlyActive =
-        currentHole >= (target.active_from_hole ?? startHole) &&
-        currentHole <= (target.active_to_hole ?? endHole)
-
-      if (!currentlyActive) {
-        throw new Error('Spelaren är redan borttagen.')
-      }
-
-      const { data: activeNow } = await supabase
-        .from('round_players')
-        .select('id, active_from_hole, active_to_hole')
-        .eq('round_id', id)
-
-      const activeNowCount =
-        (activeNow ?? []).filter(
-          (player) =>
-            currentHole >= (player.active_from_hole ?? startHole) &&
-            currentHole <= (player.active_to_hole ?? endHole)
-        ).length ?? 0
-
-      if (activeNowCount <= 1) {
-        throw new Error('Minst en spelare måste vara kvar i bollen.')
-      }
-
-      const leaveAfterHole = currentHole - 1
-      if (leaveAfterHole < (target.active_from_hole ?? startHole)) {
-        throw new Error('Kan inte ta bort spelaren innan den börjat spela.')
-      }
-
-      const { error: updateError } = await supabase
-        .from('round_players')
-        .update({ active_to_hole: leaveAfterHole })
-        .eq('round_id', id)
-        .eq('id', roundPlayerId)
-
-      if (updateError) {
-        throw new Error(updateError.message)
-      }
+      await deactivateActivePlayer({
+        supabase,
+        roundId: id,
+        round,
+        roundPlayerId,
+      })
 
       revalidatePath(`/rounds/${id}`)
       revalidatePath(`/rounds/${id}/summary`)
@@ -402,6 +424,136 @@ export default async function RoundPlayersPage({
     } catch (error) {
       if (isRedirectError(error)) throw error
       const message = error instanceof Error ? error.message : 'Kunde inte ta bort spelaren.'
+      redirect(`/rounds/${id}/players?message=${encodeURIComponent(message)}&type=error`)
+    }
+  }
+
+  async function replaceWithRegisteredAction(formData: FormData) {
+    'use server'
+
+    const outgoingRoundPlayerId = String(formData.get('outgoing_round_player_id') ?? '').trim()
+    const incomingEmail = String(formData.get('incoming_email') ?? '')
+      .trim()
+      .toLowerCase()
+    const teeKey = normalizeTeeKey(formData.get('tee_key'))
+    const handicapOverride = toNumberOrNull(formData.get('exact_handicap'))
+
+    if (!outgoingRoundPlayerId || !incomingEmail) {
+      redirect(`/rounds/${id}/players?message=Välj utgående spelare och e-post&type=error`)
+    }
+
+    try {
+      const { supabase, round } = await requireOwnerRoundContext(id)
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, email, display_name, handicap_index')
+        .eq('email', incomingEmail)
+        .maybeSingle()
+
+      if (!profile) {
+        throw new Error('Ingen registrerad användare hittades för e-posten.')
+      }
+
+      const profileRow = profile as ProfileRow
+      const displayName =
+        profileRow.display_name?.trim() ||
+        String(profileRow.email ?? '').split('@')[0] ||
+        'Spelare'
+
+      const removed = await deactivateActivePlayer({
+        supabase,
+        roundId: id,
+        round,
+        roundPlayerId: outgoingRoundPlayerId,
+      })
+
+      try {
+        await addPlayerToRound({
+          roundId: id,
+          displayName,
+          exactHandicap: handicapOverride ?? profileRow.handicap_index ?? null,
+          teeKey,
+          userId: profileRow.id,
+          invitedEmail: profileRow.email,
+        })
+      } catch (addError) {
+        await supabase
+          .from('round_players')
+          .update({ active_to_hole: removed.previousActiveTo })
+          .eq('round_id', id)
+          .eq('id', outgoingRoundPlayerId)
+
+        throw addError
+      }
+
+      revalidatePath(`/rounds/${id}`)
+      revalidatePath(`/rounds/${id}/summary`)
+      revalidatePath(`/rounds/${id}/players`)
+
+      redirect(
+        `/rounds/${id}/players?message=${encodeURIComponent(
+          `${removed.displayName} ersattes av ${displayName} från hål ${currentHole}.`
+        )}&type=success`
+      )
+    } catch (error) {
+      if (isRedirectError(error)) throw error
+      const message = error instanceof Error ? error.message : 'Kunde inte ersätta spelaren.'
+      redirect(`/rounds/${id}/players?message=${encodeURIComponent(message)}&type=error`)
+    }
+  }
+
+  async function replaceWithGuestAction(formData: FormData) {
+    'use server'
+
+    const outgoingRoundPlayerId = String(formData.get('outgoing_round_player_id') ?? '').trim()
+    const incomingGuestName = String(formData.get('incoming_guest_name') ?? '').trim()
+    const teeKey = normalizeTeeKey(formData.get('tee_key'))
+    const exactHandicap = toNumberOrNull(formData.get('exact_handicap'))
+
+    if (!outgoingRoundPlayerId || !incomingGuestName) {
+      redirect(`/rounds/${id}/players?message=Välj utgående spelare och gästnamn&type=error`)
+    }
+
+    try {
+      const { supabase, round } = await requireOwnerRoundContext(id)
+
+      const removed = await deactivateActivePlayer({
+        supabase,
+        roundId: id,
+        round,
+        roundPlayerId: outgoingRoundPlayerId,
+      })
+
+      try {
+        await addPlayerToRound({
+          roundId: id,
+          displayName: incomingGuestName,
+          exactHandicap,
+          teeKey,
+        })
+      } catch (addError) {
+        await supabase
+          .from('round_players')
+          .update({ active_to_hole: removed.previousActiveTo })
+          .eq('round_id', id)
+          .eq('id', outgoingRoundPlayerId)
+
+        throw addError
+      }
+
+      revalidatePath(`/rounds/${id}`)
+      revalidatePath(`/rounds/${id}/summary`)
+      revalidatePath(`/rounds/${id}/players`)
+
+      redirect(
+        `/rounds/${id}/players?message=${encodeURIComponent(
+          `${removed.displayName} ersattes av ${incomingGuestName} från hål ${currentHole}.`
+        )}&type=success`
+      )
+    } catch (error) {
+      if (isRedirectError(error)) throw error
+      const message = error instanceof Error ? error.message : 'Kunde inte ersätta spelaren.'
       redirect(`/rounds/${id}/players?message=${encodeURIComponent(message)}&type=error`)
     }
   }
@@ -662,6 +814,122 @@ export default async function RoundPlayersPage({
           </div>
         </div>
 
+        <div className="card" style={{ padding: 20, display: 'grid', gap: 16 }}>
+          <h2 style={{ margin: 0 }}>Ersätt spelare (1 tryck)</h2>
+          <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+            Byt ut en aktiv spelare och lägg in en ny från aktuellt hål i samma submit.
+          </p>
+
+          <div style={{ display: 'grid', gap: 12 }}>
+            <h3 style={{ margin: 0 }}>Ersätt med registrerad spelare</h3>
+            <form action={replaceWithRegisteredAction} style={{ display: 'grid', gap: 10 }}>
+              <select
+                name="outgoing_round_player_id"
+                required
+                style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
+              >
+                <option value="">Välj spelare som går av</option>
+                {activePlayers.map((player) => (
+                  <option key={player.id} value={player.id}>
+                    {player.display_name}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                name="incoming_email"
+                type="email"
+                placeholder="epost@domain.se"
+                list="friend-emails"
+                required
+                style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
+              />
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: 10,
+                }}
+              >
+                <select
+                  name="tee_key"
+                  defaultValue="yellow"
+                  style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
+                >
+                  <option value="yellow">Yellow tee</option>
+                  <option value="red">Red tee</option>
+                </select>
+
+                <input
+                  name="exact_handicap"
+                  type="text"
+                  placeholder="HCP (valfritt)"
+                  style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
+                />
+              </div>
+
+              <button type="submit" className="button">
+                Ersätt med registrerad spelare
+              </button>
+            </form>
+          </div>
+
+          <div style={{ display: 'grid', gap: 12 }}>
+            <h3 style={{ margin: 0 }}>Ersätt med gästspelare</h3>
+            <form action={replaceWithGuestAction} style={{ display: 'grid', gap: 10 }}>
+              <select
+                name="outgoing_round_player_id"
+                required
+                style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
+              >
+                <option value="">Välj spelare som går av</option>
+                {activePlayers.map((player) => (
+                  <option key={player.id} value={player.id}>
+                    {player.display_name}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                name="incoming_guest_name"
+                type="text"
+                placeholder="Namn på gäst"
+                required
+                style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
+              />
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: 10,
+                }}
+              >
+                <select
+                  name="tee_key"
+                  defaultValue="yellow"
+                  style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
+                >
+                  <option value="yellow">Yellow tee</option>
+                  <option value="red">Red tee</option>
+                </select>
+
+                <input
+                  name="exact_handicap"
+                  type="text"
+                  placeholder="HCP (valfritt)"
+                  style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
+                />
+              </div>
+
+              <button type="submit" className="button">
+                Ersätt med gästspelare
+              </button>
+            </form>
+          </div>
+        </div>
+
         {inactivePlayers.length > 0 ? (
           <div className="card" style={{ padding: 20, display: 'grid', gap: 10 }}>
             <h2 style={{ margin: 0 }}>Tidigare spelare ({inactivePlayers.length})</h2>
@@ -677,5 +945,6 @@ export default async function RoundPlayersPage({
     </main>
   )
 }
+
 
 
