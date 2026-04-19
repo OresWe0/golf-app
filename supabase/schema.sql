@@ -1,4 +1,4 @@
-create extension if not exists pgcrypto;
+﻿create extension if not exists pgcrypto;
 
 create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -44,6 +44,8 @@ create table if not exists course_tees (
 alter table profiles add column if not exists handicap_index numeric(4,1);
 alter table profiles add column if not exists default_tee text default 'yellow';
 
+
+
 create table if not exists rounds (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
@@ -74,7 +76,9 @@ create table if not exists round_players (
   exact_handicap numeric(4,1),
   tee_key text,
   playing_handicap int,
-  sort_order int not null default 1
+  sort_order int not null default 1,
+  active_from_hole int,
+  active_to_hole int
 );
 
 create table if not exists hole_scores (
@@ -85,6 +89,22 @@ create table if not exists hole_scores (
   strokes int,
   unique(round_player_id, hole_number)
 );
+
+alter table if exists round_players add column if not exists active_from_hole int;
+alter table if exists round_players add column if not exists active_to_hole int;
+update round_players rp
+set
+  active_from_hole = coalesce(rp.active_from_hole, r.start_hole, 1),
+  active_to_hole = coalesce(rp.active_to_hole, r.end_hole, 18)
+from rounds r
+where r.id = rp.round_id;
+
+alter table if exists round_players alter column active_from_hole set not null;
+alter table if exists round_players alter column active_to_hole set not null;
+alter table if exists round_players
+  drop constraint if exists round_players_active_hole_range;
+alter table if exists round_players add constraint round_players_active_hole_range
+  check (active_from_hole >= 1 and active_to_hole >= active_from_hole);
 
 create or replace function public.user_can_access_round(target_round_id uuid)
 returns boolean
@@ -187,3 +207,4 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+

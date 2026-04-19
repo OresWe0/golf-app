@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { HolePlay } from '@/components/hole-play'
@@ -27,6 +27,8 @@ type LeaderboardEntry = {
 type RoundPlayer = {
   id: string
   playing_handicap?: number | null
+  active_from_hole?: number | null
+  active_to_hole?: number | null
 }
 
 type HoleScoreRow = {
@@ -93,6 +95,17 @@ function getVisibleHoles(holes: HoleLike[], startHole: number, endHole: number) 
   return holes.filter(
     (item) => item.hole_number >= startHole && item.hole_number <= endHole
   )
+}
+
+function isPlayerActiveOnHole(
+  player: RoundPlayer,
+  holeNumber: number,
+  startHole: number,
+  endHole: number
+) {
+  const activeFrom = player.active_from_hole ?? startHole
+  const activeTo = player.active_to_hole ?? endHole
+  return holeNumber >= activeFrom && holeNumber <= activeTo
 }
 
 function buildLeaderboard(params: {
@@ -319,6 +332,9 @@ function RoundHero({
             >
               🏆 Leaderboard
             </Link>
+            <Link className="button secondary" href={`/rounds/${roundId}/players`}>
+              Hantera spelare
+            </Link>
           </div>
         </div>
       </div>
@@ -386,7 +402,7 @@ export default async function RoundPage({
   ] = await Promise.all([
     supabase
       .from('round_players')
-      .select('id, display_name, exact_handicap, playing_handicap, tee_key')
+      .select('id, display_name, exact_handicap, playing_handicap, tee_key, active_from_hole, active_to_hole')
       .eq('round_id', id)
       .order('sort_order'),
     supabase.from('courses').select('id, name').eq('id', round.course_id).single(),
@@ -446,12 +462,18 @@ export default async function RoundPage({
     redirect(`/rounds/${id}?hole=${round.current_hole ?? startHole}`)
   }
 
+  const activePlayersForHole = players.filter((player) =>
+    isPlayerActiveOnHole(player, currentHole.hole_number, startHole, endHole)
+  )
+  const playersForHole = activePlayersForHole.length > 0 ? activePlayersForHole : players
+  const activePlayerIds = new Set(playersForHole.map((player) => player.id))
+
   const currentHoleScores = scoreRows.filter(
-    (row) => row.hole_number === currentHole.hole_number
+    (row) => row.hole_number === currentHole.hole_number && activePlayerIds.has(row.round_player_id)
   )
 
   const leaderboard = buildLeaderboard({
-    players,
+    players: playersForHole,
     scoreRows,
     visibleHoles,
     selectedHoleIndexes,
@@ -483,7 +505,7 @@ export default async function RoundPage({
           startHole={startHole}
           endHole={endHole}
           hole={currentHole}
-          players={players}
+          players={playersForHole}
           scores={currentHoleScores}
           leaderboard={leaderboard}
           selectedHoleIndexes={selectedHoleIndexes}
@@ -494,3 +516,4 @@ export default async function RoundPage({
     </main>
   )
 }
+

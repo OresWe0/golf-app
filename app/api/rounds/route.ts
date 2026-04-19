@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { sendPushNotification } from '@/lib/send-push'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
@@ -223,6 +223,8 @@ export async function POST(request: Request) {
         tee_key: teeKey,
         playing_handicap: playingHandicap,
         sort_order: player.sortOrder ?? index + 1,
+        active_from_hole: startHole,
+        active_to_hole: endHole,
       }
     })
   } catch (error) {
@@ -372,3 +374,4 @@ if (friendsError) {
     endHole,
   })
 }
+

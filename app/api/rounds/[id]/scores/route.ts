@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { sendPushNotification } from '@/lib/send-push'
@@ -47,7 +47,16 @@ async function runFeedAndPushInBackground(args: {
   holeNumber: number
   courseId: string
   scoreUpdates: ScoreUpdate[]
-  roundPlayerById: Map<string, { id: string; user_id: string | null }>
+  roundPlayerById: Map<
+    string,
+    {
+      id: string
+      user_id: string | null
+      display_name: string | null
+      active_from_hole: number | null
+      active_to_hole: number | null
+    }
+  >
   actorUserId: string
 }) {
   const {
@@ -413,7 +422,7 @@ export async function POST(
 
     const { data: roundPlayers, error: roundPlayersError } = await supabase
       .from('round_players')
-      .select('id, user_id')
+      .select('id, user_id, display_name, active_from_hole, active_to_hole')
       .eq('round_id', id)
       .in('id', roundPlayerIds)
 
@@ -442,6 +451,38 @@ export async function POST(
     }
 
     const roundPlayerById = new Map(roundPlayers.map((player) => [player.id, player] as const))
+
+    for (const score of scoreUpdates) {
+      const player = roundPlayerById.get(score.roundPlayerId)
+      if (!player) {
+        return fail(requestId, 'round_players_validate', 'Spelare saknas i rundan.', 400, {
+          roundId: id,
+          userId: user.id,
+          holeNumber,
+          roundPlayerId: score.roundPlayerId,
+        })
+      }
+
+      const activeFrom = player.active_from_hole ?? startHole
+      const activeTo = player.active_to_hole ?? endHole
+
+      if (holeNumber < activeFrom || holeNumber > activeTo) {
+        return fail(
+          requestId,
+          'round_players_active_range',
+          `${player.display_name ?? 'Spelare'} ar inte aktiv pa detta hal.`,
+          400,
+          {
+            roundId: id,
+            userId: user.id,
+            holeNumber,
+            roundPlayerId: score.roundPlayerId,
+            activeFrom,
+            activeTo,
+          }
+        )
+      }
+    }
 
     const scorePayload = scoreUpdates.map((score) => ({
       round_id: id,
@@ -548,3 +589,5 @@ export async function POST(
     return fail(requestId, 'unhandled_exception', message, 500, { roundId: id })
   }
 }
+
+
