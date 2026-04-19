@@ -396,6 +396,30 @@ export default async function RoundPlayersPage({
 
   const friends = (friendsRaw as FriendRow[] | null) ?? []
   const friendProfiles = (friendProfilesRaw as FriendProfileRow[] | null) ?? []
+  const friendSuggestions = Array.from(
+    new Map(
+      friends
+        .map((friend) => {
+          const email = String(friend.friend_email ?? '')
+            .trim()
+            .toLowerCase()
+          if (!email) return null
+
+          const profile = friendProfiles.find(
+            (item) => String(item.email ?? '').trim().toLowerCase() === email
+          )
+
+          return [
+            email,
+            {
+              email,
+              label: friend.friend_name || profile?.display_name || email,
+            },
+          ] as const
+        })
+        .filter(Boolean) as Array<readonly [string, { email: string; label: string }]>
+    ).values()
+  )
 
   async function removePlayerAction(formData: FormData) {
     'use server'
@@ -712,9 +736,18 @@ export default async function RoundPlayersPage({
 
                 <form action={removePlayerAction}>
                   <input type="hidden" name="round_player_id" value={player.id} />
-                  <button type="submit" className="button secondary">
-                    Ta bort från kommande hål
-                  </button>
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    <button type="submit" className="button secondary">
+                      Ta bort från kommande hål
+                    </button>
+                    <a
+                      href="#replace-player"
+                      className="button secondary"
+                      style={{ textAlign: 'center', minHeight: 44 }}
+                    >
+                      Ersätt spelare
+                    </a>
+                  </div>
                 </form>
               </div>
             ))}
@@ -727,32 +760,22 @@ export default async function RoundPlayersPage({
           <div style={{ display: 'grid', gap: 12 }}>
             <h3 style={{ margin: 0 }}>Registrerad spelare</h3>
             <form action={addRegisteredPlayerAction} style={{ display: 'grid', gap: 10 }}>
-              <input
+              <select
                 name="email"
-                type="email"
-                placeholder="epost@domain.se"
-                list="friend-emails"
                 required
+                defaultValue=""
                 style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
-              />
-
-              <datalist id="friend-emails">
-                {friends.map((friend) => {
-                  const email = String(friend.friend_email ?? '').trim().toLowerCase()
-                  if (!email) return null
-
-                  const profile = friendProfiles.find(
-                    (item) => String(item.email ?? '').trim().toLowerCase() === email
-                  )
-
-                  const label = friend.friend_name || profile?.display_name || email
-                  return (
-                    <option key={email} value={email}>
-                      {label}
-                    </option>
-                  )
-                })}
-              </datalist>
+              >
+                <option value="">Välj från vänlista</option>
+                {friendSuggestions.map((friend) => (
+                  <option key={friend.email} value={friend.email}>
+                    {friend.label} · {friend.email}
+                  </option>
+                ))}
+              </select>
+              <div className="muted" style={{ fontSize: 13 }}>
+                Saknas vän i listan? Lägg till vännen i Profil först.
+              </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
                 <select
@@ -815,6 +838,7 @@ export default async function RoundPlayersPage({
         </div>
 
         <div className="card" style={{ padding: 20, display: 'grid', gap: 16 }}>
+          <div id="replace-player" style={{ position: 'relative', top: -80 }} />
           <h2 style={{ margin: 0 }}>Ersätt spelare (1 tryck)</h2>
           <p className="muted" style={{ margin: 0, fontSize: 14 }}>
             Byt ut en aktiv spelare och lägg in en ny från aktuellt hål i samma submit.
@@ -836,14 +860,19 @@ export default async function RoundPlayersPage({
                 ))}
               </select>
 
-              <input
+              <select
                 name="incoming_email"
-                type="email"
-                placeholder="epost@domain.se"
-                list="friend-emails"
                 required
+                defaultValue=""
                 style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
-              />
+              >
+                <option value="">Välj ny spelare från vänlista</option>
+                {friendSuggestions.map((friend) => (
+                  <option key={`replace-${friend.email}`} value={friend.email}>
+                    {friend.label} · {friend.email}
+                  </option>
+                ))}
+              </select>
 
               <div
                 style={{
