@@ -111,9 +111,9 @@ function sumPar(holes: Array<{ par: number }>) {
 }
 
 function getMedal(index: number) {
-  if (index === 0) return 'ðŸ¥‡'
-  if (index === 1) return 'ðŸ¥ˆ'
-  if (index === 2) return 'ðŸ¥‰'
+  if (index === 0) return '🥇'
+  if (index === 1) return '🥈'
+  if (index === 2) return '🥉'
   return `${index + 1}.`
 }
 
@@ -273,7 +273,7 @@ function ScoreTable({
             whiteSpace: 'nowrap',
           }}
         >
-          â† Dra i sidled â†’
+          ← Dra i sidled →
         </div>
       </div>
 
@@ -312,7 +312,7 @@ function ScoreTable({
                     color: '#1f3327',
                   }}
                 >
-                  HÃ¥l
+                  Hål
                 </th>
                 {scores.map((score) => (
                   <th
@@ -382,7 +382,7 @@ function ScoreTable({
                     background: '#fafafa',
                   }}
                 >
-                  â€”
+                  —
                 </td>
               </tr>
 
@@ -489,7 +489,7 @@ function ScoreTable({
                       fontSize: 15,
                     }}
                   >
-                    PoÃ¤ng
+                    Poäng
                   </td>
                   {pointsPerHole.map((points, index) => (
                     <td
@@ -698,22 +698,22 @@ export default async function SummaryPage({
 
   const selectedIndex = summary.findIndex((player) => player.id === selectedPlayer?.id)
 
-  const roundTypeLabel = round.scoring_mode === 'stableford' ? 'PoÃ¤ngbogey' : 'Slagspel'
+  const roundTypeLabel = round.scoring_mode === 'stableford' ? 'Poängbogey' : 'Slagspel'
   const scoringMode = round.scoring_mode
 
   const holesLabel =
     round.holes_mode === 18
-      ? '18 hÃ¥l'
+      ? '18 hål'
       : startHole === 1
-        ? '9 hÃ¥l Â· FrÃ¤mre 9'
-        : '9 hÃ¥l Â· Bakre 9'
+        ? '9 hål · Främre 9'
+        : '9 hål · Bakre 9'
 
   const scorecardModeLabel =
     round.holes_mode === 18
-      ? '18 hÃ¥l'
+      ? '18 hål'
       : startHole === 1
-        ? '9 hÃ¥l Â· FrÃ¤mre'
-        : '9 hÃ¥l Â· Bakre'
+        ? '9 hål · Främre'
+        : '9 hål · Bakre'
 
   const totalPar = sumPar(visibleHoles)
 
@@ -857,7 +857,7 @@ export default async function SummaryPage({
                 ...TYPE.buttonText,
               }}
             >
-              Till startsidan ðŸ 
+              Till startsidan 🏠
             </Link>
           </div>
 
@@ -885,7 +885,7 @@ export default async function SummaryPage({
                   ...TYPE.labelStrong,
                 }}
               >
-                âœ… Rundan Ã¤r avslutad
+                ✅ Rundan är avslutad
               </div>
 
               <div
@@ -909,7 +909,7 @@ export default async function SummaryPage({
                     flexShrink: 0,
                   }}
                 >
-                  â›³
+                  ⛳
                 </div>
 
                 <div style={{ minWidth: 0 }}>
@@ -930,7 +930,7 @@ export default async function SummaryPage({
                       color: '#475569',
                     }}
                   >
-                    Din runda Ã¤r klar i appen. NÃ¤sta steg Ã¤r att registrera den i Min Golf.
+                    Din runda är klar i appen. Nästa steg är att registrera den i Min Golf.
                   </p>
                 </div>
               </div>
@@ -950,7 +950,7 @@ export default async function SummaryPage({
                   ...TYPE.buttonText,
                 }}
               >
-                Till Min Golf â€“ registrera runda â†—
+                Till Min Golf – registrera runda ↗
               </a>
             </div>
           )}
@@ -987,7 +987,7 @@ export default async function SummaryPage({
                   ...TYPE.labelStrong,
                 }}
               >
-                ðŸ† Vinnare
+                🏆 Vinnare
               </div>
 
               <div
@@ -1005,7 +1005,7 @@ export default async function SummaryPage({
                 }}
               >
                 <span>{roundTypeLabel}</span>
-                <span style={{ opacity: 0.5 }}>â€¢</span>
+                <span style={{ opacity: 0.5 }}>•</span>
                 <span>{scorecardModeLabel}</span>
               </div>
             </div>
@@ -1026,8 +1026,8 @@ export default async function SummaryPage({
                 ...TYPE.meta,
               }}
             >
-              {winner.teeKey === 'red' ? 'RÃ¶d tee' : 'Gul tee'} Â· Exakt HCP{' '}
-              {winner.exactHandicap ?? '-'} Â· Spel-HCP {winner.playingHandicap ?? 0}
+              {winner.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Exakt HCP{' '}
+              {winner.exactHandicap ?? '-'} · Spel-HCP {winner.playingHandicap ?? 0}
             </div>
 
             <div
@@ -1127,7 +1127,7 @@ export default async function SummaryPage({
               }}
             >
               <span>{roundTypeLabel}</span>
-              <span style={{ opacity: 0.5 }}>â€¢</span>
+              <span style={{ opacity: 0.5 }}>•</span>
               <span>{scorecardModeLabel}</span>
             </div>
           </div>
@@ -1179,7 +1179,7 @@ export default async function SummaryPage({
                         ...TYPE.meta,
                       }}
                     >
-                      HCP {player.exactHandicap ?? '-'} Â· Spel-HCP {player.playingHandicap}
+                      HCP {player.exactHandicap ?? '-'} · Spel-HCP {player.playingHandicap}
                     </div>
                   </div>
 
@@ -1241,7 +1241,7 @@ export default async function SummaryPage({
                       padding: 10,
                     }}
                   >
-                    <div style={TYPE.label}>PoÃ¤ng</div>
+                    <div style={TYPE.label}>Poäng</div>
                     <div style={{ marginTop: 4, ...TYPE.statValueMd }}>{player.points}</div>
                   </div>
                 </div>
@@ -1338,7 +1338,7 @@ export default async function SummaryPage({
                     ...TYPE.meta,
                   }}
                 >
-                  {selectedPlayer.teeKey === 'red' ? 'RÃ¶d tee' : 'Gul tee'} Â· Spel-HCP{' '}
+                  {selectedPlayer.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Spel-HCP{' '}
                   {selectedPlayer.playingHandicap ?? 0}
                 </div>
 
@@ -1416,9 +1416,9 @@ export default async function SummaryPage({
                   title={
                     isNineHoleRound
                       ? startHole === 1
-                        ? 'FrÃ¤mre 9'
+                        ? 'Främre 9'
                         : 'Bakre 9'
-                      : 'FrÃ¤mre 9'
+                      : 'Främre 9'
                   }
                   holes={firstHalf}
                   scores={selectedFrontScores}
@@ -1449,7 +1449,7 @@ export default async function SummaryPage({
                     color: '#1f3327',
                   }}
                 >
-                  {isNineHoleRound ? 'Summa 9 hÃ¥l' : 'Total'}
+                  {isNineHoleRound ? 'Summa 9 hål' : 'Total'}
                 </h3>
 
                 <div
@@ -1467,7 +1467,7 @@ export default async function SummaryPage({
                       padding: 14,
                     }}
                   >
-                    <div style={TYPE.label}>{isNineHoleRound ? 'Par (9 hÃ¥l)' : 'Total par'}</div>
+                    <div style={TYPE.label}>{isNineHoleRound ? 'Par (9 hål)' : 'Total par'}</div>
                     <div style={{ marginTop: 6, ...TYPE.statValueLg }}>{totalPar}</div>
                   </div>
 
@@ -1480,7 +1480,7 @@ export default async function SummaryPage({
                     }}
                   >
                     <div style={TYPE.label}>
-                      {isNineHoleRound ? 'Resultat (9 hÃ¥l)' : 'Resultat'}
+                      {isNineHoleRound ? 'Resultat (9 hål)' : 'Resultat'}
                     </div>
                     <div style={{ marginTop: 6, ...TYPE.statValueLg }}>
                       {selectedPlayer.strokes}
