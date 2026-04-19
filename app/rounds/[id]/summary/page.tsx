@@ -184,6 +184,7 @@ function ScoreTable({
   title,
   holes,
   scores,
+  roundHoleIndexes,
   selectedPlayer,
   scoringMode,
   totalLabel,
@@ -191,6 +192,7 @@ function ScoreTable({
   title: string
   holes: HoleLike[]
   scores: HoleScoreView[]
+  roundHoleIndexes: number[]
   selectedPlayer: Pick<SummaryPlayer, 'playingHandicap'>
   scoringMode: string
   totalLabel: string
@@ -202,8 +204,6 @@ function ScoreTable({
     return sum + score.strokes
   }, 0)
 
-  const selectedHoleIndexes = holes.map((hole) => hole.hcp_index)
-
   const pointsPerHole: Array<number | null> = scores.map((score) => {
     if (score.strokes == null) return null
 
@@ -212,7 +212,7 @@ function ScoreTable({
       score.par,
       getReceivedStrokesForSelectedHole(
         selectedPlayer.playingHandicap ?? 0,
-        selectedHoleIndexes,
+        roundHoleIndexes,
         score.hcpIndex
       )
     )
@@ -1332,6 +1332,7 @@ export default async function SummaryPage({
                   }
                   holes={firstHalf}
                   scores={selectedFrontScores}
+                  roundHoleIndexes={visibleHoleIndexes}
                   selectedPlayer={selectedPlayer}
                   scoringMode={round.scoring_mode}
                   totalLabel={isNineHoleRound ? 'Summa' : 'Ut'}
@@ -1342,6 +1343,7 @@ export default async function SummaryPage({
                     title="Bakre 9"
                     holes={secondHalf}
                     scores={selectedBackScores}
+                    roundHoleIndexes={visibleHoleIndexes}
                     selectedPlayer={selectedPlayer}
                     scoringMode={round.scoring_mode}
                     totalLabel="In"
