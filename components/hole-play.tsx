@@ -350,7 +350,7 @@ function StatusToast({ saveState }: { saveState: SaveState }) {
           animation: 'savedToastIn 0.18s ease',
         }}
       >
-        {isSaved ? 'Score sparad âœ…' : 'Kunde inte spara âŒ'}
+        {isSaved ? 'Score sparad ✅' : 'Kunde inte spara ❌'}
       </div>
     </div>
   )
@@ -386,7 +386,7 @@ function HoleHeader({
               textTransform: 'uppercase',
             }}
           >
-            HÃ¥lstatus
+            Hålstatus
           </div>
 
           <div
@@ -398,7 +398,7 @@ function HoleHeader({
               color: '#0f172a',
             }}
           >
-            HÃ¥l {hole.hole_number} / {totalHoles}
+            Hål {hole.hole_number} / {totalHoles}
           </div>
 
           <div
@@ -410,7 +410,7 @@ function HoleHeader({
               lineHeight: 1.35,
             }}
           >
-            Par {hole.par} Â· Index {hole.hcp_index}
+            Par {hole.par} · Index {hole.hcp_index}
           </div>
         </div>
 
@@ -431,7 +431,7 @@ function HoleHeader({
             minWidth: 110,
           }}
         >
-          â›³ Se banan
+          ⛳ Se banan
         </button>
       </div>
     </div>
@@ -529,7 +529,7 @@ function LiveLeaderboard({
                   gap: 4,
                 }}
               >
-                {isLeader ? 'ðŸ‘‘' : null} #{entry.position}
+                {isLeader ? '🔑' : null} #{entry.position}
               </div>
 
               <div
@@ -557,7 +557,7 @@ function LiveLeaderboard({
                 }}
               >
                 {entry.totalPoints != null
-                  ? `${entry.totalPoints} p Â· ${formatToPar(entry.totalToPar)}`
+                  ? `${entry.totalPoints} p · ${formatToPar(entry.totalToPar)}`
                   : entry.scoreText ?? '-'}
               </div>
 
@@ -769,10 +769,10 @@ function PlayerScoreCard({
               lineHeight: 1.35,
             }}
           >
-            <span>HÃ¥l {hole.hole_number}</span>
-            <span style={{ opacity: 0.45 }}>â€¢</span>
+            <span>Hål {hole.hole_number}</span>
+            <span style={{ opacity: 0.45 }}>•</span>
             <span>{leaderboardMeta?.totalPoints ?? '-'} p</span>
-            <span style={{ opacity: 0.45 }}>â€¢</span>
+            <span style={{ opacity: 0.45 }}>•</span>
             <span>Till par {formatToPar(leaderboardMeta?.totalToPar)}</span>
           </div>
 
@@ -784,7 +784,7 @@ function PlayerScoreCard({
               fontSize: 15,
             }}
           >
-            ErhÃ¥llna slag: {received}
+            Erhållna slag: {received}
           </div>
         </div>
 
@@ -807,7 +807,7 @@ function PlayerScoreCard({
                 animation: 'badgeFloat 2s ease-in-out infinite',
               }}
             >
-              ðŸ‘‘ Leder nu
+              🔑 Leder nu
             </div>
           ) : null}
 
@@ -820,7 +820,7 @@ function PlayerScoreCard({
                 boxShadow: '0 10px 22px rgba(249, 115, 22, 0.20)',
               }}
             >
-              ðŸ”¥ Hot streak
+              🔥 Hot streak
             </div>
           ) : null}
 
@@ -844,7 +844,7 @@ function PlayerScoreCard({
               color: '#1f3327',
             }}
           >
-            {player.tee_key === 'red' ? 'RÃ¶d tee' : 'Gul tee'}
+            {player.tee_key === 'red' ? 'Röd tee' : 'Gul tee'}
           </div>
         </div>
       </div>
@@ -907,7 +907,7 @@ function PlayerScoreCard({
               color: selectedScore == null ? '#64748b' : '#ffffff',
             }}
           >
-            {selectedScore == null ? 'VÃ¤lj antal slag' : getLabel(selectedScore, hole.par)}
+            {selectedScore == null ? 'Välj antal slag' : getLabel(selectedScore, hole.par)}
           </div>
 
           {selectedScore != null ? (
@@ -918,7 +918,7 @@ function PlayerScoreCard({
                 color: 'rgba(255,255,255,0.9)',
               }}
             >
-              Klar fÃ¶r nÃ¤sta hÃ¥l
+              Klar för nästa hål
             </div>
           ) : null}
         </div>
@@ -945,7 +945,7 @@ function PlayerScoreCard({
           }}
           disabled={!canInteract}
         >
-          <span style={{ fontSize: 18, lineHeight: 1 }}>â†º</span>
+          <span style={{ fontSize: 18, lineHeight: 1 }}>↺</span>
           <span style={{ fontSize: 13 }}>Rensa</span>
         </button>
       </div>
@@ -1029,7 +1029,7 @@ function HoleImageModal({
           }}
         >
           <div>
-            <div style={{ fontWeight: 900, fontSize: 18 }}>HÃ¥l {previewHoleNumber}</div>
+            <div style={{ fontWeight: 900, fontSize: 18 }}>Hål {previewHoleNumber}</div>
 
             {distanceStatus === 'loading' && (
               <div
@@ -1040,7 +1040,7 @@ function HoleImageModal({
                   color: '#cbd5e1',
                 }}
               >
-                HÃ¤mtar avstÃ¥nd...
+                Hämtar avstånd...
               </div>
             )}
 
@@ -1107,7 +1107,7 @@ function HoleImageModal({
                   color: '#fca5a5',
                 }}
               >
-                {distanceErrorMessage ?? 'Kunde inte hÃ¤mta GPS-avstÃ¥nd'}
+                {distanceErrorMessage ?? 'Kunde inte hämta GPS-avstånd'}
               </div>
             )}
           </div>
@@ -1125,7 +1125,7 @@ function HoleImageModal({
               cursor: 'pointer',
             }}
           >
-            StÃ¤ng
+            Stäng
           </button>
         </div>
 
@@ -1156,12 +1156,12 @@ function HoleImageModal({
   >
     {!holeImageSrc || holeImageError ? (
       <div style={{ color: '#fff', padding: 24, textAlign: 'center' }}>
-        Ingen hÃ¥lbild hittades fÃ¶r hÃ¥l {previewHoleNumber}.
+        Ingen hålbild hittades för hål {previewHoleNumber}.
       </div>
     ) : (
       <img
         src={holeImageSrc}
-        alt={`HÃ¥l ${previewHoleNumber}`}
+        alt={`Hål ${previewHoleNumber}`}
         onError={() => setHoleImageError(true)}
         draggable={false}
         style={{
@@ -1199,7 +1199,7 @@ function HoleImageModal({
               cursor: previewHoleNumber <= startHole ? 'not-allowed' : 'pointer',
             }}
           >
-            â† FÃ¶regÃ¥ende
+            ← Föregående
           </button>
 
           <button
@@ -1219,7 +1219,7 @@ function HoleImageModal({
               cursor: previewHoleNumber >= endHole ? 'not-allowed' : 'pointer',
             }}
           >
-            NÃ¤sta â†’
+            Nästa →
           </button>
         </div>
       </div>
@@ -1270,10 +1270,10 @@ function FinishRoundModal({
           animation: 'modalIn 0.2s ease',
         }}
       >
-        <div style={{ fontSize: 24, fontWeight: 900 }}>ðŸŽ‰ Rundan Ã¤r klar!</div>
+        <div style={{ fontSize: 24, fontWeight: 900 }}>🎉 Rundan är klar!</div>
 
         <div style={{ color: '#475569', fontSize: 15, lineHeight: 1.55 }}>
-          Vill du avsluta rundan och gÃ¥ vidare till leaderboard och scorekort?
+          Vill du avsluta rundan och gå vidare till leaderboard och scorekort?
         </div>
 
         <div className="hp-finish-actions">
@@ -1309,7 +1309,7 @@ function FinishRoundModal({
               boxShadow: '0 12px 26px rgba(22, 101, 52, 0.22)',
             }}
           >
-            {loading ? 'Avslutar...' : 'BekrÃ¤fta'}
+            {loading ? 'Avslutar...' : 'Bekräfta'}
           </button>
         </div>
       </div>
@@ -1667,7 +1667,7 @@ const handleMapTouchEnd: TouchEventHandler<HTMLDivElement> = () => {
     if (!holeGps) {
       resetDistanceState()
       setDistanceStatus('error')
-      setDistanceErrorMessage('GPS-data saknas fÃ¶r det hÃ¤r hÃ¥let')
+      setDistanceErrorMessage('GPS-data saknas för det här hålet')
       return
     }
 
@@ -1923,13 +1923,13 @@ const previewNextHole = () => {
 }, [hole.hole_number, scores])
 
 useEffect(() => {
-  // fÃ¶rsta render â†’ gÃ¶r inget
+  // första render → gör inget
   if (prevHoleRef.current === null) {
     prevHoleRef.current = hole.hole_number
     return
   }
 
-  // bara scrolla om hÃ¥let faktiskt Ã¤ndras
+  // bara scrolla om hålet faktiskt ändras
   if (prevHoleRef.current !== hole.hole_number) {
     const timer = setTimeout(() => {
       firstPlayerCardRef.current?.scrollIntoView({
@@ -1965,7 +1965,7 @@ useEffect(() => {
 
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
       setDistanceStatus('error')
-      setDistanceErrorMessage('Din enhet stÃ¶djer inte GPS')
+      setDistanceErrorMessage('Din enhet stödjer inte GPS')
       return
     }
 
@@ -1985,7 +1985,7 @@ useEffect(() => {
         setDistanceStatus('error')
 
         if (error.code === error.PERMISSION_DENIED) {
-          setDistanceErrorMessage('PlatsÃ¥tkomst nekades')
+          setDistanceErrorMessage('Platsåtkomst nekades')
           return
         }
 
@@ -1995,11 +1995,11 @@ useEffect(() => {
         }
 
         if (error.code === error.TIMEOUT) {
-          setDistanceErrorMessage('GPS tog fÃ¶r lÃ¥ng tid')
+          setDistanceErrorMessage('GPS tog för lång tid')
           return
         }
 
-        setDistanceErrorMessage('Kunde inte hÃ¤mta GPS-avstÃ¥nd')
+        setDistanceErrorMessage('Kunde inte hämta GPS-avstånd')
       },
       {
         enableHighAccuracy: true,
