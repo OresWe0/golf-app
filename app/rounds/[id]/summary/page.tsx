@@ -734,6 +734,66 @@ export default async function SummaryPage({
       )
     : []
 
+  const frontPoints =
+    round.scoring_mode === 'stableford' && selectedPlayer
+      ? selectedFrontScores.map((score) =>
+          score.strokes == null
+            ? null
+            : stablefordPoints(
+                score.strokes,
+                score.par,
+                getReceivedStrokesForSelectedHole(
+                  selectedPlayer.playingHandicap ?? 0,
+                  visibleHoleIndexes,
+                  score.hcpIndex
+                )
+              )
+        )
+      : undefined
+
+  const backPoints =
+    round.scoring_mode === 'stableford' && selectedPlayer
+      ? selectedBackScores.map((score) =>
+          score.strokes == null
+            ? null
+            : stablefordPoints(
+                score.strokes,
+                score.par,
+                getReceivedStrokesForSelectedHole(
+                  selectedPlayer.playingHandicap ?? 0,
+                  visibleHoleIndexes,
+                  score.hcpIndex
+                )
+              )
+        )
+      : undefined
+
+  const exportScorecards = [
+    {
+      title:
+        isNineHoleRound
+          ? startHole === 1
+            ? 'Framre 9'
+            : 'Bakre 9'
+          : 'Framre 9',
+      holes: selectedFrontScores.map((score) => score.holeNumber),
+      pars: selectedFrontScores.map((score) => score.par),
+      results: selectedFrontScores.map((score) => score.strokes),
+      points: frontPoints,
+    },
+    ...(!isNineHoleRound && selectedBackScores.length > 0
+      ? [
+          {
+            title: 'Bakre 9',
+            holes: selectedBackScores.map((score) => score.holeNumber),
+            pars: selectedBackScores.map((score) => score.par),
+            results: selectedBackScores.map((score) => score.strokes),
+            points: backPoints,
+          },
+        ]
+      : []),
+  ]
+
   return (
     <main>
       <div className="container">
@@ -808,6 +868,7 @@ export default async function SummaryPage({
                 : '-'
             }
             rows={exportRows}
+            scorecards={exportScorecards}
           />
 
           {isRoundFinished && (
