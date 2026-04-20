@@ -174,6 +174,21 @@ function formatFeedEventTime(value: string) {
   })
 }
 
+function formatRoundDate(value?: string | null) {
+  if (!value) return ''
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  return date.toLocaleDateString('sv-SE', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
 function getCourseNameForFeedEvent(
   event: FeedEvent,
   rounds: Round[],
@@ -1114,11 +1129,12 @@ function CompletedRoundCard({
   round,
   membershipRole,
 }: {
-  round: Round
+  round: Round & { created_at?: string | null }
   membershipRole?: Membership['role']
 }) {
   const role = getRoleLabel(membershipRole)
   const scoring = getScoringLabel(round.scoring_mode)
+  const roundDate = formatRoundDate(round.created_at)
 
   return (
     <div
@@ -1157,6 +1173,11 @@ function CompletedRoundCard({
           <div className="muted" style={{ marginTop: 5, lineHeight: 1.45 }}>
             {scoring} · {role}
           </div>
+          {roundDate ? (
+            <div className="muted" style={{ marginTop: 2, fontSize: 13 }}>
+              Datum: {roundDate}
+            </div>
+          ) : null}
         </div>
 
         <div
