@@ -20,6 +20,8 @@ export async function sendRoundCheer(formData: FormData) {
   }
 
   const roundId = String(formData.get('round_id') ?? '').trim()
+  const rawMessage = String(formData.get('message') ?? '').trim()
+  const message = rawMessage.slice(0, 140)
   if (!roundId) {
     redirect('/dashboard')
   }
@@ -101,6 +103,8 @@ export async function sendRoundCheer(formData: FormData) {
     String(actorProfile?.email ?? '').trim() ||
     'En van'
 
+  const cheerText = message || 'Heja! Ni spelar grymt.'
+
   const recipientIds = Array.from(
     new Set(
       (roundMembers ?? [])
@@ -113,17 +117,24 @@ export async function sendRoundCheer(formData: FormData) {
     const rows = recipientIds.map((recipientId) => ({
       user_id: recipientId,
       actor_user_id: user.id,
-      type: 'cheer',
-      title: `${actorName} skickade ett hejarop i ${round.title}`,
+      type: 'comment',
+      title: `Hejarop: "${cheerText}"`,
       feed_event_id: null,
     }))
 
-    await supabase.from('notifications').insert(rows)
+    const { error: notificationInsertError } = await supabase
+      .from('notifications')
+      .insert(rows)
+
+    if (notificationInsertError) {
+      redirect(
+        `/rounds/${roundId}/live?message=Kunde+inte+skicka+hejarop&type=error`
+      )
+    }
   }
 
   revalidatePath('/dashboard')
   revalidatePath(`/rounds/${roundId}/live`)
 
-  redirect(`/rounds/${roundId}/live?message=Hejarop+skickat&type=success`)
+  redirect(`/rounds/${roundId}/live?message=Hejarop+skickat!&type=success`)
 }
-

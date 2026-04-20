@@ -220,6 +220,9 @@ export default async function RoundLivePage({
 }) {
   const { id } = await params
   const resolvedSearchParams = searchParams ? await searchParams : {}
+  const flashMessage = resolvedSearchParams.message
+    ? decodeURIComponent(String(resolvedSearchParams.message).replace(/\+/g, ' '))
+    : ''
   const supabase = await createClient()
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -430,7 +433,7 @@ export default async function RoundLivePage({
             </div>
           </div>
 
-          {resolvedSearchParams.message ? (
+          {flashMessage ? (
             <div
               style={{
                 borderRadius: 12,
@@ -444,12 +447,19 @@ export default async function RoundLivePage({
                 fontWeight: 700,
               }}
             >
-              {resolvedSearchParams.message}
+              {flashMessage}
             </div>
           ) : null}
 
           <form action={sendRoundCheer} style={{ display: 'grid', gap: 8 }}>
             <input type="hidden" name="round_id" value={round.id} />
+            <input
+              name="message"
+              type="text"
+              maxLength={140}
+              placeholder="Skriv hejarop, t.ex. Lycka till eller Snart kommer birdien!"
+              style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
+            />
             <button type="submit" className="button">
               Skicka hejarop
             </button>
