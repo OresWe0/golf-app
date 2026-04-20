@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import LiveAutoRefresh from '@/components/live-auto-refresh'
 import { sendRoundCheer } from './actions'
@@ -51,6 +52,10 @@ type ScoreRow = {
 type OwnerProfileRow = {
   email: string | null
   display_name: string | null
+}
+
+type MembershipRow = {
+  id: string
 }
 
 type LeaderRow = {
@@ -216,6 +221,17 @@ export default async function RoundLivePage({
   const { id } = await params
   const resolvedSearchParams = searchParams ? await searchParams : {}
   const supabase = await createClient()
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseAdmin =
+    supabaseUrl && serviceRoleKey
+      ? createAdminClient(supabaseUrl, serviceRoleKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        })
+      : null
 
   const {
     data: { user },
@@ -225,13 +241,27 @@ export default async function RoundLivePage({
     redirect('/login')
   }
 
-  const { data: roundRaw } = await supabase
+  const { data: roundFromUserClient } = await supabase
     .from('rounds')
     .select(
       'id, title, owner_id, course_id, status, scoring_mode, holes_mode, current_hole, start_hole, end_hole'
     )
     .eq('id', id)
     .maybeSingle()
+
+  let roundRaw = roundFromUserClient
+
+  if (!roundRaw && supabaseAdmin) {
+    const { data: roundFromAdminClient } = await supabaseAdmin
+      .from('rounds')
+      .select(
+        'id, title, owner_id, course_id, status, scoring_mode, holes_mode, current_hole, start_hole, end_hole'
+      )
+      .eq('id', id)
+      .maybeSingle()
+
+    roundRaw = roundFromAdminClient
+  }
 
   if (!roundRaw) {
     notFound()
@@ -255,11 +285,17 @@ export default async function RoundLivePage({
       .eq('round_id', round.id)
       .eq('user_id', user.id)
       .maybeSingle(),
-    supabase
-      .from('profiles')
-      .select('email, display_name')
-      .eq('id', round.owner_id)
-      .maybeSingle(),
+    supabaseAdmin
+      ? supabaseAdmin
+          .from('profiles')
+          .select('email, display_name')
+          .eq('id', round.owner_id)
+          .maybeSingle()
+      : supabase
+          .from('profiles')
+          .select('email, display_name')
+          .eq('id', round.owner_id)
+          .maybeSingle(),
   ])
 
   const ownerProfile = (ownerProfileRaw as OwnerProfileRow | null) ?? null
@@ -270,7 +306,9 @@ export default async function RoundLivePage({
   let isFriendOfOwner = false
 
   if (!viewerIsOwner && !membership && viewerEmail) {
-    const { data: directFriend } = await supabase
+    const friendReadClient = supabaseAdmin ?? supabase
+
+    const { data: directFriend } = await friendReadClient
       .from('friends')
       .select('id')
       .eq('user_id', round.owner_id)
@@ -280,7 +318,7 @@ export default async function RoundLivePage({
     if (directFriend) {
       isFriendOfOwner = true
     } else if (ownerEmail) {
-      const { data: reverseFriend } = await supabase
+      const { data: reverseFriend } = await friendReadClient
         .from('friends')
         .select('id')
         .eq('user_id', user.id)
@@ -295,24 +333,31 @@ export default async function RoundLivePage({
     notFound()
   }
 
+  const isFriendViewer = !viewerIsOwner && !membership && isFriendOfOwner
+  const dataReadClient = isFriendViewer && supabaseAdmin ? supabaseAdmin : supabase
+
   const [{ data: courseRaw }, { data: holesRaw }, { data: playersRaw }, { data: scoresRaw }] =
     await Promise.all([
-      supabase.from('courses').select('name').eq('id', round.course_id).maybeSingle(),
-      supabase
+      dataReadClient
+        .from('courses')
+        .select('name')
+        .eq('id', round.course_id)
+        .maybeSingle(),
+      dataReadClient
         .from('course_holes')
         .select('hole_number, par, hcp_index')
         .eq('course_id', round.course_id)
         .gte('hole_number', startHole)
         .lte('hole_number', endHole)
         .order('hole_number'),
-      supabase
+      dataReadClient
         .from('round_players')
         .select(
           'id, user_id, display_name, playing_handicap, active_from_hole, active_to_hole, sort_order'
         )
         .eq('round_id', round.id)
         .order('sort_order'),
-      supabase
+      dataReadClient
         .from('hole_scores')
         .select('round_player_id, hole_number, strokes')
         .eq('round_id', round.id),
