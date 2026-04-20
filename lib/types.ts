@@ -1,4 +1,4 @@
-export type Course = {
+﻿export type Course = {
   id: string
   name: string
 }
@@ -9,6 +9,7 @@ export type Profile = {
   display_name?: string | null
   handicap_index?: number | null
   default_tee?: string | null
+  avatar_url?: string | null
   push_friend_activity_enabled?: boolean | null
 }
 

@@ -43,6 +43,7 @@ create table if not exists course_tees (
 
 alter table profiles add column if not exists handicap_index numeric(4,1);
 alter table profiles add column if not exists default_tee text default 'yellow';
+alter table profiles add column if not exists avatar_url text;
 
 
 
@@ -207,4 +208,5 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
 

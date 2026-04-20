@@ -6,6 +6,7 @@ import { updateProfile } from '@/app/login/actions'
 import { sendFriendRequestEmail } from '@/lib/email'
 import type { Profile } from '@/lib/types'
 import PushNotificationToggle from '@/components/push-notification-toggle'
+import { uploadAvatar, removeAvatar } from './actions'
 
 type SearchParams = Promise<{
   message?: string
@@ -748,6 +749,85 @@ export default async function ProfilePage({
                   </p>
                 </div>
 
+                <div className="sub-card" style={{ marginTop: 4 }}>
+                  <h3 className="sub-card-title">Profilbild</h3>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                    <div
+                      style={{
+                        width: 72,
+                        height: 72,
+                        borderRadius: '50%',
+                        border: '1px solid #d1d5db',
+                        overflow: 'hidden',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#f3f4f6',
+                        color: '#1f3327',
+                        fontWeight: 900,
+                        fontSize: 28,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {currentProfile?.avatar_url ? (
+                        <img
+                          src={currentProfile.avatar_url}
+                          alt="Profilbild"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        (currentProfile?.display_name?.trim() || user.email?.trim() || 'S')
+                          .charAt(0)
+                      )}
+                    </div>
+
+                    <div className="muted" style={{ fontSize: 14 }}>
+                      Ladda upp JPG, PNG eller WEBP (max 5 MB).
+                    </div>
+                  </div>
+
+                  <form action={uploadAvatar} style={{ display: 'grid', gap: 10 }}>
+                    <input
+                      name="avatar"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      required
+                      style={{
+                        width: '100%',
+                        minHeight: 54,
+                        padding: '10px 12px',
+                        borderRadius: 14,
+                        border: '1px solid #d1d5db',
+                        fontSize: 15,
+                        boxSizing: 'border-box',
+                        background: '#fff',
+                      }}
+                    />
+
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <button
+                        type="submit"
+                        className="button secondary"
+                        style={{ minHeight: 46, fontWeight: 800 }}
+                      >
+                        Spara profilbild
+                      </button>
+
+                      {currentProfile?.avatar_url ? (
+                        <button
+                          type="submit"
+                          formAction={removeAvatar}
+                          formNoValidate
+                          className="button secondary"
+                          style={{ minHeight: 46, fontWeight: 800 }}
+                        >
+                          Ta bort bild
+                        </button>
+                      ) : null}
+                    </div>
+                  </form>
+                </div>
                 <form className="profile-form-grid" action={updateProfile}>
                   <div style={{ display: 'grid', gap: 8 }}>
                     <label
@@ -1052,4 +1132,6 @@ export default async function ProfilePage({
     </main>
   )
 }
+
+
 
