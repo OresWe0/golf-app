@@ -6,6 +6,7 @@ import {
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { signOut } from '@/app/login/actions'
 import InstallAppPrompt from '@/components/install-app-prompt'
 import type { Course, Profile, Round } from '@/lib/types'
@@ -1850,9 +1851,51 @@ export default async function DashboardPage({
     (round) => round.status === 'finished' || round.status === 'completed'
   )
   const friendUserIdSet = new Set(friendUserIds)
-  const friendActiveRounds = activeRounds.filter(
+  const friendActiveRoundsFromVisibleRounds = activeRounds.filter(
     (round) => round.owner_id !== user.id && friendUserIdSet.has(round.owner_id)
   )
+
+  let friendActiveRounds: RoundWithCreatedAt[] = friendActiveRoundsFromVisibleRounds
+
+  if (friendUserIds.length > 0) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.warn(
+        'Missing SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_URL. Falling back to visible rounds only.'
+      )
+    } else {
+      const supabaseAdmin = createAdminClient(supabaseUrl, serviceRoleKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      })
+
+      const { data: friendActiveRoundsData, error: friendActiveRoundsError } =
+        await supabaseAdmin
+          .from('rounds')
+          .select(
+            'id, owner_id, title, course_id, status, current_hole, scoring_mode, holes_mode, created_at'
+          )
+          .eq('status', 'active')
+          .in('owner_id', friendUserIds)
+          .order('created_at', { ascending: false })
+
+      if (friendActiveRoundsError) {
+        console.error(
+          'Failed to load friend active rounds via admin client:',
+          friendActiveRoundsError
+        )
+      } else {
+        friendActiveRounds =
+          (friendActiveRoundsData as RoundWithCreatedAt[] | null)?.filter(
+            (round) => round.owner_id !== user.id
+          ) ?? friendActiveRoundsFromVisibleRounds
+      }
+    }
+  }
 
   const currentYear = new Date().getFullYear()
 
