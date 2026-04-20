@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import AddRegisteredPlayerForm from '@/components/add-registered-player-form'
 import {
   calculatePlayingHandicap,
   getPlayingHandicapForSelectedHoles,
@@ -452,6 +453,13 @@ export default async function RoundPlayersPage({
   const preselectedOutgoingPlayerName =
     activePlayers.find((player) => player.id === preselectedOutgoingId)?.display_name ?? null
   const hasPreselectedOutgoing = preselectedOutgoingId.length > 0
+  const redCount =
+    activePlayers.filter((player) => normalizeTeeKey(player.tee_key) === 'red').length ||
+    players.filter((player) => normalizeTeeKey(player.tee_key) === 'red').length
+  const yellowCount =
+    activePlayers.filter((player) => normalizeTeeKey(player.tee_key) === 'yellow').length ||
+    players.filter((player) => normalizeTeeKey(player.tee_key) === 'yellow').length
+  const defaultTeeKey: TeeKey = redCount > yellowCount ? 'red' : 'yellow'
 
   async function removePlayerAction(formData: FormData) {
     'use server'
@@ -797,49 +805,11 @@ export default async function RoundPlayersPage({
 
           <div style={{ display: 'grid', gap: 12 }}>
             <h3 style={{ margin: 0 }}>Registrerad spelare</h3>
-            <form action={addRegisteredPlayerAction} style={{ display: 'grid', gap: 10 }}>
-              <select
-                name="email"
-                required
-                defaultValue=""
-                style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
-              >
-                <option value="">Välj från vänlista</option>
-                {friendSuggestions.map((friend) => (
-                  <option
-                    key={friend.email}
-                    value={`${friend.email}|${friend.handicapIndex ?? ''}`}
-                  >
-                    {friend.label} · {friend.email} · HCP {friend.handicapIndex ?? '-'}
-                  </option>
-                ))}
-              </select>
-              <div className="muted" style={{ fontSize: 13 }}>
-                Saknas vän i listan? Lägg till vännen i Profil först.
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
-                <select
-                  name="tee_key"
-                  defaultValue="yellow"
-                  style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
-                >
-                  <option value="yellow">Yellow tee</option>
-                  <option value="red">Red tee</option>
-                </select>
-
-                <input
-                  name="exact_handicap"
-                  type="text"
-                  placeholder="HCP (valfritt)"
-                  style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
-                />
-              </div>
-
-              <button type="submit" className="button">
-                Lägg till registrerad spelare
-              </button>
-            </form>
+            <AddRegisteredPlayerForm
+              action={addRegisteredPlayerAction}
+              friendSuggestions={friendSuggestions}
+              defaultTeeKey={defaultTeeKey}
+            />
           </div>
 
           <div style={{ display: 'grid', gap: 12 }}>
@@ -856,7 +826,7 @@ export default async function RoundPlayersPage({
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
                 <select
                   name="tee_key"
-                  defaultValue="yellow"
+                  defaultValue={defaultTeeKey}
                   style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
                 >
                   <option value="yellow">Yellow tee</option>
@@ -970,7 +940,7 @@ export default async function RoundPlayersPage({
               >
                 <select
                   name="tee_key"
-                  defaultValue="yellow"
+                  defaultValue={defaultTeeKey}
                   style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
                 >
                   <option value="yellow">Yellow tee</option>
