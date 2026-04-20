@@ -64,6 +64,7 @@ type FriendRow = {
 type FriendProfileRow = {
   email: string | null
   display_name: string | null
+  handicap_index: number | null
 }
 
 function toNumberOrNull(value: FormDataEntryValue | null) {
@@ -72,6 +73,19 @@ function toNumberOrNull(value: FormDataEntryValue | null) {
   const parsed = Number(raw)
   if (!Number.isFinite(parsed)) return null
   return parsed
+}
+
+function parseEmailAndHandicap(rawValue: FormDataEntryValue | null) {
+  const raw = String(rawValue ?? '').trim()
+  if (!raw) {
+    return { email: '', handicapFromSelect: null as number | null }
+  }
+
+  const [emailPart, handicapPart] = raw.split('|')
+  const email = String(emailPart ?? '').trim().toLowerCase()
+  const handicapFromSelect = toNumberOrNull(handicapPart ?? null)
+
+  return { email, handicapFromSelect }
 }
 
 function getCurrentHole(round: RoundRow) {
@@ -382,7 +396,10 @@ export default async function RoundPlayersPage({
           return { data: [] as FriendProfileRow[] }
         }
 
-        return supabase.from('profiles').select('email, display_name').in('email', emails)
+        return supabase
+          .from('profiles')
+          .select('email, display_name, handicap_index')
+          .in('email', emails)
       })(),
     ])
 
@@ -414,10 +431,16 @@ export default async function RoundPlayersPage({
             {
               email,
               label: friend.friend_name || profile?.display_name || email,
+              handicapIndex: profile?.handicap_index ?? null,
             },
           ] as const
         })
-        .filter(Boolean) as Array<readonly [string, { email: string; label: string }]>
+        .filter(Boolean) as Array<
+          readonly [
+            string,
+            { email: string; label: string; handicapIndex: number | null }
+          ]
+        >
     ).values()
   )
   const preselectedOutgoingIdRaw = String(resolvedSearchParams.outgoing ?? '').trim()
@@ -463,10 +486,14 @@ export default async function RoundPlayersPage({
   async function replaceWithRegisteredAction(formData: FormData) {
     'use server'
 
-    const outgoingRoundPlayerId = String(formData.get('outgoing_round_player_id') ?? '').trim()
-    const incomingEmail = String(formData.get('incoming_email') ?? '')
-      .trim()
-      .toLowerCase()
+    const outgoingRoundPlayerId = String(
+      formData.get('outgoing_round_player_id') ??
+        formData.get('preselected_outgoing_round_player_id') ??
+        ''
+    ).trim()
+    const { email: incomingEmail, handicapFromSelect } = parseEmailAndHandicap(
+      formData.get('incoming_email')
+    )
     const teeKey = normalizeTeeKey(formData.get('tee_key'))
     const handicapOverride = toNumberOrNull(formData.get('exact_handicap'))
 
@@ -504,7 +531,7 @@ export default async function RoundPlayersPage({
         await addPlayerToRound({
           roundId: id,
           displayName,
-          exactHandicap: handicapOverride ?? profileRow.handicap_index ?? null,
+          exactHandicap: handicapOverride ?? handicapFromSelect ?? profileRow.handicap_index ?? null,
           teeKey,
           userId: profileRow.id,
           invitedEmail: profileRow.email,
@@ -538,7 +565,11 @@ export default async function RoundPlayersPage({
   async function replaceWithGuestAction(formData: FormData) {
     'use server'
 
-    const outgoingRoundPlayerId = String(formData.get('outgoing_round_player_id') ?? '').trim()
+    const outgoingRoundPlayerId = String(
+      formData.get('outgoing_round_player_id') ??
+        formData.get('preselected_outgoing_round_player_id') ??
+        ''
+    ).trim()
     const incomingGuestName = String(formData.get('incoming_guest_name') ?? '').trim()
     const teeKey = normalizeTeeKey(formData.get('tee_key'))
     const exactHandicap = toNumberOrNull(formData.get('exact_handicap'))
@@ -593,9 +624,7 @@ export default async function RoundPlayersPage({
   async function addRegisteredPlayerAction(formData: FormData) {
     'use server'
 
-    const email = String(formData.get('email') ?? '')
-      .trim()
-      .toLowerCase()
+    const { email, handicapFromSelect } = parseEmailAndHandicap(formData.get('email'))
     const teeKey = normalizeTeeKey(formData.get('tee_key'))
     const handicapOverride = toNumberOrNull(formData.get('exact_handicap'))
 
@@ -625,7 +654,7 @@ export default async function RoundPlayersPage({
       await addPlayerToRound({
         roundId: id,
         displayName,
-        exactHandicap: handicapOverride ?? profileRow.handicap_index ?? null,
+        exactHandicap: handicapOverride ?? handicapFromSelect ?? profileRow.handicap_index ?? null,
         teeKey,
         userId: profileRow.id,
         invitedEmail: profileRow.email,
@@ -776,7 +805,10 @@ export default async function RoundPlayersPage({
               >
                 <option value="">Välj från vänlista</option>
                 {friendSuggestions.map((friend) => (
-                  <option key={friend.email} value={friend.email}>
+                  <option
+                    key={friend.email}
+                    value={`${friend.email}|${friend.handicapIndex ?? ''}`}
+                  >
                     {friend.label} · {friend.email}
                   </option>
                 ))}
@@ -875,7 +907,6 @@ export default async function RoundPlayersPage({
             <form action={replaceWithRegisteredAction} style={{ display: 'grid', gap: 10 }}>
               <select
                 name="outgoing_round_player_id"
-                required
                 defaultValue={preselectedOutgoingId}
                 style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
               >
@@ -886,6 +917,11 @@ export default async function RoundPlayersPage({
                   </option>
                 ))}
               </select>
+              <input
+                type="hidden"
+                name="preselected_outgoing_round_player_id"
+                value={preselectedOutgoingId}
+              />
 
               <select
                 name="incoming_email"
@@ -895,7 +931,10 @@ export default async function RoundPlayersPage({
               >
                 <option value="">Välj ny spelare från vänlista</option>
                 {friendSuggestions.map((friend) => (
-                  <option key={`replace-${friend.email}`} value={friend.email}>
+                  <option
+                    key={`replace-${friend.email}`}
+                    value={`${friend.email}|${friend.handicapIndex ?? ''}`}
+                  >
                     {friend.label} · {friend.email}
                   </option>
                 ))}
@@ -936,7 +975,6 @@ export default async function RoundPlayersPage({
             <form action={replaceWithGuestAction} style={{ display: 'grid', gap: 10 }}>
               <select
                 name="outgoing_round_player_id"
-                required
                 defaultValue={preselectedOutgoingId}
                 style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
               >
@@ -947,6 +985,11 @@ export default async function RoundPlayersPage({
                   </option>
                 ))}
               </select>
+              <input
+                type="hidden"
+                name="preselected_outgoing_round_player_id"
+                value={preselectedOutgoingId}
+              />
 
               <input
                 name="incoming_guest_name"
