@@ -94,6 +94,10 @@ type NotificationRow = {
   created_at: string
 }
 
+type RoundWithCreatedAt = Round & {
+  created_at?: string | null
+}
+
 function getSingleParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value
 }
@@ -192,6 +196,23 @@ function formatRoundDate(value?: string | null) {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
+  })
+}
+
+function formatRoundDateWithTime(value?: string | null) {
+  if (!value) return ''
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  return date.toLocaleString('sv-SE', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   })
 }
 
@@ -988,11 +1009,12 @@ function ActiveRoundCard({
   round,
   membershipRole,
 }: {
-  round: Round
+  round: RoundWithCreatedAt
   membershipRole?: Membership['role']
 }) {
   const role = getRoleLabel(membershipRole)
   const scoring = getScoringLabel(round.scoring_mode)
+  const startedAt = formatRoundDateWithTime(round.created_at)
   const href = getRoundHref(round)
 
   return (
@@ -1107,6 +1129,15 @@ function ActiveRoundCard({
           gap: 10,
         }}
       >
+        {startedAt ? (
+          <div
+            className="muted"
+            style={{ gridColumn: '1 / -1', fontSize: 13, marginTop: -2 }}
+          >
+            Startad: {startedAt}
+          </div>
+        ) : null}
+
         <Link
           className="button secondary"
           href={href}
@@ -1139,12 +1170,12 @@ function CompletedRoundCard({
   round,
   membershipRole,
 }: {
-  round: Round & { created_at?: string | null }
+  round: RoundWithCreatedAt
   membershipRole?: Membership['role']
 }) {
   const role = getRoleLabel(membershipRole)
   const scoring = getScoringLabel(round.scoring_mode)
-  const roundDate = formatRoundDate(round.created_at)
+  const roundDate = formatRoundDateWithTime(round.created_at)
 
   return (
     <div
@@ -1185,7 +1216,7 @@ function CompletedRoundCard({
           </div>
           {roundDate ? (
             <div className="muted" style={{ marginTop: 2, fontSize: 13 }}>
-              Datum: {roundDate}
+              Avslutad: {roundDate}
             </div>
           ) : null}
         </div>
@@ -1222,7 +1253,7 @@ function ActiveRoundsSection({
   showAll,
   showAllCompleted,
 }: {
-  rounds: Round[]
+  rounds: RoundWithCreatedAt[]
   membershipByRoundId: Map<string, Membership['role']>
   showAll: boolean
   showAllCompleted: boolean
@@ -1309,7 +1340,7 @@ function CompletedRoundsSection({
   showAll,
   showAllActive,
 }: {
-  rounds: Round[]
+  rounds: RoundWithCreatedAt[]
   membershipByRoundId: Map<string, Membership['role']>
   showAll: boolean
   showAllActive: boolean
@@ -1398,7 +1429,7 @@ function FriendActiveRoundsSection({
   coursesById,
   friendNameById,
 }: {
-  rounds: Round[]
+  rounds: RoundWithCreatedAt[]
   coursesById: Map<string, string>
   friendNameById: Map<string, string>
 }) {
@@ -1470,6 +1501,12 @@ function FriendActiveRoundsSection({
                     Live
                   </div>
                 </div>
+
+                {formatRoundDateWithTime(round.created_at) ? (
+                  <div className="muted" style={{ fontSize: 13 }}>
+                    Startad: {formatRoundDateWithTime(round.created_at)}
+                  </div>
+                ) : null}
 
                 <Link
                   href={`/rounds/${round.id}/live`}
