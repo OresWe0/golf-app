@@ -38,6 +38,12 @@ type FriendRow = {
   friend_email: string | null
 }
 
+type FriendProfileLite = {
+  id: string
+  email: string | null
+  display_name: string | null
+}
+
 type RoundPlayer = {
   id: string
   round_id: string
@@ -1387,6 +1393,100 @@ function CompletedRoundsSection({
   )
 }
 
+function FriendActiveRoundsSection({
+  rounds,
+  coursesById,
+  friendNameById,
+}: {
+  rounds: Round[]
+  coursesById: Map<string, string>
+  friendNameById: Map<string, string>
+}) {
+  return (
+    <div className="card" style={dashboardStyles.sectionCard}>
+      <SectionHeader
+        title="Vänners aktiva rundor"
+        description="Följ vännernas spel live direkt när de är ute på banan."
+        count={rounds.length}
+        countTone="slate"
+      />
+
+      {rounds.length === 0 ? (
+        <SectionEmptyState
+          title="Inga vänrundor live just nu"
+          description="När en vän startar en runda dyker den upp här."
+        />
+      ) : (
+        <div style={{ display: 'grid', gap: 10 }}>
+          {rounds.map((round) => {
+            const ownerName = friendNameById.get(round.owner_id) ?? 'Din vän'
+            const courseName = coursesById.get(round.course_id) ?? 'Okänd bana'
+
+            return (
+              <div
+                key={round.id}
+                style={{
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 18,
+                  background: 'linear-gradient(180deg, #ffffff 0%, #fafbfc 100%)',
+                  padding: 14,
+                  display: 'grid',
+                  gap: 10,
+                  boxShadow: '0 12px 28px rgba(15, 23, 42, 0.04)',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                    alignItems: 'flex-start',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 900,
+                        lineHeight: 1.1,
+                        color: '#1f3327',
+                      }}
+                    >
+                      {round.title}
+                    </div>
+                    <div className="muted" style={{ marginTop: 6 }}>
+                      {ownerName} · {courseName} · Hål {round.current_hole ?? 1}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      ...dashboardStyles.pill,
+                      background: '#ecfdf3',
+                      color: '#166534',
+                    }}
+                  >
+                    Live
+                  </div>
+                </div>
+
+                <Link
+                  href={`/rounds/${round.id}/live`}
+                  className="button secondary"
+                  style={{ width: '100%', textAlign: 'center', boxSizing: 'border-box' }}
+                >
+                  Följ live
+                </Link>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -1424,7 +1524,7 @@ export default async function DashboardPage({
     supabase
       .from('rounds')
       .select(
-        'id, title, course_id, status, current_hole, scoring_mode, holes_mode, created_at'
+        'id, owner_id, title, course_id, status, current_hole, scoring_mode, holes_mode, created_at'
       )
       .order('created_at', { ascending: false }),
     supabase.from('profiles').select('id, display_name').eq('id', user.id).single(),
@@ -1499,21 +1599,30 @@ export default async function DashboardPage({
     )
 
   let friendUserIds: string[] = []
+  let friendProfiles: FriendProfileLite[] = []
 
   if (friendEmails.length > 0) {
-    const { data: friendProfiles, error: friendProfilesError } = await supabase
+    const { data: friendProfilesData, error: friendProfilesError } = await supabase
       .from('profiles')
-      .select('id, email')
+      .select('id, email, display_name')
       .in('email', friendEmails)
 
     if (friendProfilesError) {
       console.error('Failed to load friend profiles:', friendProfilesError)
     }
 
-    friendUserIds = (friendProfiles ?? []).map((profile) => profile.id)
+    friendProfiles = (friendProfilesData as FriendProfileLite[] | null) ?? []
+    friendUserIds = friendProfiles.map((profile) => profile.id)
   }
 
   const visibleUserIds = Array.from(new Set([user.id, ...friendUserIds]))
+  const friendNameById = new Map(
+    friendProfiles.map((profile) => [
+      profile.id,
+      profile.display_name?.trim() || profile.email?.trim() || 'Din vän',
+    ])
+  )
+  const coursesById = new Map(allCourses.map((course) => [course.id, course.name]))
 
   const { data: feedEventsData, error: feedEventsError } = await supabase
     .from('feed_events')
@@ -1667,6 +1776,10 @@ export default async function DashboardPage({
 
   const completedRounds = allRounds.filter(
     (round) => round.status === 'finished' || round.status === 'completed'
+  )
+  const friendUserIdSet = new Set(friendUserIds)
+  const friendActiveRounds = activeRounds.filter(
+    (round) => round.owner_id !== user.id && friendUserIdSet.has(round.owner_id)
   )
 
   const currentYear = new Date().getFullYear()
@@ -1899,6 +2012,12 @@ export default async function DashboardPage({
               </div>
             )}
           </div>
+
+          <FriendActiveRoundsSection
+            rounds={friendActiveRounds}
+            coursesById={coursesById}
+            friendNameById={friendNameById}
+          />
 
           <ActiveRoundsSection
             rounds={activeRounds}
