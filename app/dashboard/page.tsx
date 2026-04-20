@@ -38,6 +38,10 @@ type FriendRow = {
   friend_email: string | null
 }
 
+type ReverseFriendRow = {
+  user_id: string | null
+}
+
 type FriendProfileLite = {
   id: string
   email: string | null
@@ -1555,6 +1559,7 @@ export default async function DashboardPage({
     { data: pendingUsers, error: pendingUsersError },
     { data: incomingFriendRequests, error: incomingFriendRequestsError },
     { data: friendsData, error: friendsError },
+    { data: reverseFriendsData, error: reverseFriendsError },
     { data: notificationsData, error: notificationsError },
   ] = await Promise.all([
     supabase.from('courses').select('id, name').order('name'),
@@ -1578,6 +1583,10 @@ export default async function DashboardPage({
       .from('friends')
       .select('friend_email')
       .eq('user_id', user.id),
+    supabase
+      .from('friends')
+      .select('user_id')
+      .eq('friend_email', currentUserEmail),
     supabase
       .from('notifications')
       .select(
@@ -1606,6 +1615,9 @@ export default async function DashboardPage({
   }
   if (friendsError) {
     console.error('Failed to load friends:', friendsError)
+  }
+  if (reverseFriendsError) {
+    console.error('Failed to load reverse friends:', reverseFriendsError)
   }
   if (notificationsError) {
     console.error('Failed to load notifications:', notificationsError)
@@ -1651,6 +1663,29 @@ export default async function DashboardPage({
     friendProfiles = (friendProfilesData as FriendProfileLite[] | null) ?? []
     friendUserIds = friendProfiles.map((profile) => profile.id)
   }
+
+  const reverseFriendUserIds = ((reverseFriendsData as ReverseFriendRow[] | null) ?? [])
+    .map((row) => String(row.user_id ?? '').trim())
+    .filter((id) => id.length > 0)
+
+  const allFriendUserIds = Array.from(
+    new Set([...friendUserIds, ...reverseFriendUserIds])
+  )
+
+  if (allFriendUserIds.length > 0) {
+    const { data: friendProfilesById, error: friendProfilesByIdError } = await supabase
+      .from('profiles')
+      .select('id, email, display_name')
+      .in('id', allFriendUserIds)
+
+    if (friendProfilesByIdError) {
+      console.error('Failed to load friend profiles by id:', friendProfilesByIdError)
+    } else {
+      friendProfiles = (friendProfilesById as FriendProfileLite[] | null) ?? friendProfiles
+    }
+  }
+
+  friendUserIds = allFriendUserIds
 
   const visibleUserIds = Array.from(new Set([user.id, ...friendUserIds]))
   const friendNameById = new Map(
