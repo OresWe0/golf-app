@@ -4,6 +4,7 @@ import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import AddRegisteredPlayerForm from '@/components/add-registered-player-form'
+import ReplaceRegisteredPlayerForm from '@/components/replace-registered-player-form'
 import {
   calculatePlayingHandicap,
   getPlayingHandicapForSelectedHoles,
@@ -875,90 +876,17 @@ export default async function RoundPlayersPage({
 
           <div style={{ display: 'grid', gap: 12 }}>
             <h3 style={{ margin: 0 }}>Ersätt med registrerad spelare</h3>
-            <form action={replaceWithRegisteredAction} style={{ display: 'grid', gap: 10 }}>
-              {hasPreselectedOutgoing ? (
-                <div
-                  style={{
-                    borderRadius: 10,
-                    border: '1px solid #d1d5db',
-                    padding: 10,
-                    background: '#f8fafc',
-                    fontWeight: 700,
-                    color: '#0f172a',
-                  }}
-                >
-                  Ersätter: {preselectedOutgoingPlayerName}
-                </div>
-              ) : (
-                <select
-                  name="outgoing_round_player_id"
-                  required
-                  defaultValue=""
-                  style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
-                >
-                  <option value="">Välj spelare som går av</option>
-                  {activePlayers.map((player) => (
-                    <option key={player.id} value={player.id}>
-                      {player.display_name}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {hasPreselectedOutgoing ? (
-                <input type="hidden" name="outgoing_round_player_id" value={preselectedOutgoingId} />
-              ) : null}
-              <input
-                type="hidden"
-                name="preselected_outgoing_round_player_id"
-                value={preselectedOutgoingId}
-              />
-
-              <select
-                name="incoming_email"
-                required
-                defaultValue=""
-                autoFocus={hasPreselectedOutgoing}
-                style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
-              >
-                <option value="">Välj ny spelare från vänlista</option>
-                {friendSuggestions.map((friend) => (
-                  <option
-                    key={`replace-${friend.email}`}
-                    value={`${friend.email}|${friend.handicapIndex ?? ''}`}
-                  >
-                    {friend.label} · {friend.email} · HCP {friend.handicapIndex ?? '-'}
-                  </option>
-                ))}
-              </select>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                  gap: 10,
-                }}
-              >
-                <select
-                  name="tee_key"
-                  defaultValue={defaultTeeKey}
-                  style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
-                >
-                  <option value="yellow">Yellow tee</option>
-                  <option value="red">Red tee</option>
-                </select>
-
-                <input
-                  name="exact_handicap"
-                  type="text"
-                  placeholder="HCP (valfritt)"
-                  style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
-                />
-              </div>
-
-              <button type="submit" className="button">
-                Ersätt med registrerad spelare
-              </button>
-            </form>
+            <ReplaceRegisteredPlayerForm
+              action={replaceWithRegisteredAction}
+              friendSuggestions={friendSuggestions}
+              activePlayers={activePlayers.map((player) => ({
+                id: player.id,
+                name: player.display_name,
+              }))}
+              preselectedOutgoingId={preselectedOutgoingId}
+              preselectedOutgoingPlayerName={preselectedOutgoingPlayerName}
+              defaultTeeKey={defaultTeeKey}
+            />
           </div>
 
           <div style={{ display: 'grid', gap: 12 }}>

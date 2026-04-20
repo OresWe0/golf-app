@@ -1,38 +1,49 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import type { FriendSuggestion, TeeKey } from '@/components/add-registered-player-form'
 
-export type TeeKey = 'yellow' | 'red'
-
-export type FriendSuggestion = {
-  email: string
-  label: string
-  handicapIndex: number | null
+type ActivePlayerOption = {
+  id: string
+  name: string
 }
 
 type Props = {
   action: (formData: FormData) => void | Promise<void>
   friendSuggestions: FriendSuggestion[]
+  activePlayers: ActivePlayerOption[]
+  preselectedOutgoingId: string
+  preselectedOutgoingPlayerName: string | null
   defaultTeeKey: TeeKey
 }
 
-const RECENT_STORAGE_KEY = 'golf.recent_friend_emails'
+const RECENT_STORAGE_KEY = 'golf.recent_replace_friend_emails'
 
-export default function AddRegisteredPlayerForm({
+export default function ReplaceRegisteredPlayerForm({
   action,
   friendSuggestions,
+  activePlayers,
+  preselectedOutgoingId,
+  preselectedOutgoingPlayerName,
   defaultTeeKey,
 }: Props) {
+  const [selectedOutgoingId, setSelectedOutgoingId] = useState(preselectedOutgoingId)
   const [selectedEmail, setSelectedEmail] = useState('')
   const [exactHandicap, setExactHandicap] = useState('')
   const [recentEmails, setRecentEmails] = useState<string[]>([])
   const [teeKey, setTeeKey] = useState<TeeKey>(defaultTeeKey)
+
+  const hasPreselectedOutgoing = preselectedOutgoingId.length > 0
 
   const byEmail = useMemo(() => {
     return new Map(friendSuggestions.map((friend) => [friend.email, friend]))
   }, [friendSuggestions])
 
   const selectedFriend = selectedEmail ? byEmail.get(selectedEmail) ?? null : null
+
+  useEffect(() => {
+    setSelectedOutgoingId(preselectedOutgoingId)
+  }, [preselectedOutgoingId])
 
   useEffect(() => {
     try {
@@ -73,6 +84,45 @@ export default function AddRegisteredPlayerForm({
 
   return (
     <form action={action} style={{ display: 'grid', gap: 10 }}>
+      {hasPreselectedOutgoing ? (
+        <>
+          <div
+            style={{
+              borderRadius: 10,
+              border: '1px solid #d1d5db',
+              padding: 10,
+              background: '#f8fafc',
+              fontWeight: 700,
+              color: '#0f172a',
+            }}
+          >
+            {`Ers\u00e4tter: ${preselectedOutgoingPlayerName ?? ''}`}
+          </div>
+          <input type="hidden" name="outgoing_round_player_id" value={preselectedOutgoingId} />
+        </>
+      ) : (
+        <select
+          name="outgoing_round_player_id"
+          required
+          value={selectedOutgoingId}
+          onChange={(event) => setSelectedOutgoingId(event.target.value)}
+          style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
+        >
+          <option value="">{'V\u00e4lj spelare som g\u00e5r av'}</option>
+          {activePlayers.map((player) => (
+            <option key={player.id} value={player.id}>
+              {player.name}
+            </option>
+          ))}
+        </select>
+      )}
+
+      <input
+        type="hidden"
+        name="preselected_outgoing_round_player_id"
+        value={preselectedOutgoingId}
+      />
+
       {recentEmails.length > 0 ? (
         <div style={{ display: 'grid', gap: 8 }}>
           <div className="muted" style={{ fontSize: 13, fontWeight: 700 }}>
@@ -99,15 +149,16 @@ export default function AddRegisteredPlayerForm({
       ) : null}
 
       <select
-        name="email"
+        name="incoming_email"
         required
         value={selectedEmail}
         onChange={(event) => handleSelectEmail(event.target.value)}
+        autoFocus={hasPreselectedOutgoing}
         style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
       >
-        <option value="">{'V\u00e4lj fr\u00e5n v\u00e4nlista'}</option>
+        <option value="">{'V\u00e4lj ny spelare fr\u00e5n v\u00e4nlista'}</option>
         {friendSuggestions.map((friend) => (
-          <option key={friend.email} value={friend.email}>
+          <option key={`replace-${friend.email}`} value={`${friend.email}|${friend.handicapIndex ?? ''}`}>
             {`${friend.label} \u00b7 ${friend.email} \u00b7 HCP ${friend.handicapIndex ?? '-'}`}
           </option>
         ))}
@@ -116,7 +167,7 @@ export default function AddRegisteredPlayerForm({
       <div className="muted" style={{ fontSize: 13 }}>
         {selectedFriend
           ? `F\u00f6rifyllt HCP fr\u00e5n ${selectedFriend.label}: ${selectedFriend.handicapIndex ?? '-'}`
-          : 'Saknas v\u00e4n i listan? L\u00e4gg till v\u00e4nnen i Profil f\u00f6rst.'}
+          : 'V\u00e4lj ny spelare fr\u00e5n v\u00e4nlista.'}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
@@ -141,7 +192,7 @@ export default function AddRegisteredPlayerForm({
       </div>
 
       <button type="submit" className="button">
-        {'L\u00e4gg till registrerad spelare'}
+        {'Ers\u00e4tt med registrerad spelare'}
       </button>
     </form>
   )
