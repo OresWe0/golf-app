@@ -451,6 +451,7 @@ export default async function RoundPlayersPage({
     : ''
   const preselectedOutgoingPlayerName =
     activePlayers.find((player) => player.id === preselectedOutgoingId)?.display_name ?? null
+  const hasPreselectedOutgoing = preselectedOutgoingId.length > 0
 
   async function removePlayerAction(formData: FormData) {
     'use server'
@@ -809,7 +810,7 @@ export default async function RoundPlayersPage({
                     key={friend.email}
                     value={`${friend.email}|${friend.handicapIndex ?? ''}`}
                   >
-                    {friend.label} · {friend.email}
+                    {friend.label} · {friend.email} · HCP {friend.handicapIndex ?? '-'}
                   </option>
                 ))}
               </select>
@@ -905,18 +906,37 @@ export default async function RoundPlayersPage({
           <div style={{ display: 'grid', gap: 12 }}>
             <h3 style={{ margin: 0 }}>Ersätt med registrerad spelare</h3>
             <form action={replaceWithRegisteredAction} style={{ display: 'grid', gap: 10 }}>
-              <select
-                name="outgoing_round_player_id"
-                defaultValue={preselectedOutgoingId}
-                style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
-              >
-                <option value="">Välj spelare som går av</option>
-                {activePlayers.map((player) => (
-                  <option key={player.id} value={player.id}>
-                    {player.display_name}
-                  </option>
-                ))}
-              </select>
+              {hasPreselectedOutgoing ? (
+                <div
+                  style={{
+                    borderRadius: 10,
+                    border: '1px solid #d1d5db',
+                    padding: 10,
+                    background: '#f8fafc',
+                    fontWeight: 700,
+                    color: '#0f172a',
+                  }}
+                >
+                  Ersätter: {preselectedOutgoingPlayerName}
+                </div>
+              ) : (
+                <select
+                  name="outgoing_round_player_id"
+                  required
+                  defaultValue=""
+                  style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
+                >
+                  <option value="">Välj spelare som går av</option>
+                  {activePlayers.map((player) => (
+                    <option key={player.id} value={player.id}>
+                      {player.display_name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {hasPreselectedOutgoing ? (
+                <input type="hidden" name="outgoing_round_player_id" value={preselectedOutgoingId} />
+              ) : null}
               <input
                 type="hidden"
                 name="preselected_outgoing_round_player_id"
@@ -927,6 +947,7 @@ export default async function RoundPlayersPage({
                 name="incoming_email"
                 required
                 defaultValue=""
+                autoFocus={hasPreselectedOutgoing}
                 style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
               >
                 <option value="">Välj ny spelare från vänlista</option>
@@ -935,7 +956,7 @@ export default async function RoundPlayersPage({
                     key={`replace-${friend.email}`}
                     value={`${friend.email}|${friend.handicapIndex ?? ''}`}
                   >
-                    {friend.label} · {friend.email}
+                    {friend.label} · {friend.email} · HCP {friend.handicapIndex ?? '-'}
                   </option>
                 ))}
               </select>
@@ -973,18 +994,37 @@ export default async function RoundPlayersPage({
           <div style={{ display: 'grid', gap: 12 }}>
             <h3 style={{ margin: 0 }}>Ersätt med gästspelare</h3>
             <form action={replaceWithGuestAction} style={{ display: 'grid', gap: 10 }}>
-              <select
-                name="outgoing_round_player_id"
-                defaultValue={preselectedOutgoingId}
-                style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
-              >
-                <option value="">Välj spelare som går av</option>
-                {activePlayers.map((player) => (
-                  <option key={player.id} value={player.id}>
-                    {player.display_name}
-                  </option>
-                ))}
-              </select>
+              {hasPreselectedOutgoing ? (
+                <div
+                  style={{
+                    borderRadius: 10,
+                    border: '1px solid #d1d5db',
+                    padding: 10,
+                    background: '#f8fafc',
+                    fontWeight: 700,
+                    color: '#0f172a',
+                  }}
+                >
+                  Ersätter: {preselectedOutgoingPlayerName}
+                </div>
+              ) : (
+                <select
+                  name="outgoing_round_player_id"
+                  required
+                  defaultValue=""
+                  style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
+                >
+                  <option value="">Välj spelare som går av</option>
+                  {activePlayers.map((player) => (
+                    <option key={player.id} value={player.id}>
+                      {player.display_name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {hasPreselectedOutgoing ? (
+                <input type="hidden" name="outgoing_round_player_id" value={preselectedOutgoingId} />
+              ) : null}
               <input
                 type="hidden"
                 name="preselected_outgoing_round_player_id"
