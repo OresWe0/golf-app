@@ -941,6 +941,10 @@ function FeedEventCard({
           Likes {likesCount}
         </div>
 
+        <Link href={`/rounds/${event.round_id}/live`} className="button secondary">
+          Följ live
+        </Link>
+
         {likedByMe ? (
           <form action={unlikeFeedEvent}>
             <input type="hidden" name="feedEventId" value={event.id} />

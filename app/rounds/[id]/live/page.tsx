@@ -1,0 +1,467 @@
+import Link from 'next/link'
+import { notFound, redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import {
+  getReceivedStrokesForSelectedHole,
+  scoreVsPar,
+  stablefordPoints,
+} from '@/lib/scoring'
+
+type RoundRow = {
+  id: string
+  title: string
+  owner_id: string
+  course_id: string
+  status: string
+  scoring_mode: 'stableford' | 'strokeplay'
+  holes_mode: number | null
+  current_hole: number | null
+  start_hole: number | null
+  end_hole: number | null
+}
+
+type CourseRow = {
+  name: string
+}
+
+type HoleRow = {
+  hole_number: number
+  par: number
+  hcp_index: number
+}
+
+type PlayerRow = {
+  id: string
+  user_id: string | null
+  display_name: string | null
+  playing_handicap: number | null
+  active_from_hole: number | null
+  active_to_hole: number | null
+  sort_order: number | null
+}
+
+type ScoreRow = {
+  round_player_id: string
+  hole_number: number
+  strokes: number | null
+}
+
+type OwnerProfileRow = {
+  email: string | null
+  display_name: string | null
+}
+
+type LeaderRow = {
+  playerId: string
+  name: string
+  holesPlayed: number
+  totalStrokes: number
+  totalPoints: number
+  totalToPar: number
+  position: number
+}
+
+function formatVsPar(value: number) {
+  if (value > 0) return `+${value}`
+  return `${value}`
+}
+
+function getScoringLabel(mode: RoundRow['scoring_mode']) {
+  return mode === 'stableford' ? 'Poängbogey' : 'Slagspel'
+}
+
+function getModeLabel(round: RoundRow, startHole: number) {
+  if (round.holes_mode === 18) return '18 hål'
+  return startHole === 1 ? '9 hål · Främre 9' : '9 hål · Bakre 9'
+}
+
+function getNowLabel() {
+  return new Date().toLocaleTimeString('sv-SE', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+}
+
+function buildLeaderboard(args: {
+  players: PlayerRow[]
+  holes: HoleRow[]
+  scores: ScoreRow[]
+  scoringMode: RoundRow['scoring_mode']
+  currentHole: number
+  startHole: number
+  endHole: number
+}): LeaderRow[] {
+  const {
+    players,
+    holes,
+    scores,
+    scoringMode,
+    currentHole,
+    startHole,
+    endHole,
+  } = args
+
+  const leaderboardBase = players.map((player) => {
+    const activeFrom = Math.max(player.active_from_hole ?? startHole, startHole)
+    const activeTo = Math.min(player.active_to_hole ?? endHole, endHole)
+    const holeWindowEnd = Math.min(currentHole, activeTo)
+    const activeHoleIndexes = holes
+      .filter((hole) => hole.hole_number >= activeFrom && hole.hole_number <= activeTo)
+      .map((hole) => hole.hcp_index)
+
+    const visibleScores = scores.filter((row) => {
+      return (
+        row.round_player_id === player.id &&
+        row.hole_number >= activeFrom &&
+        row.hole_number <= holeWindowEnd &&
+        typeof row.strokes === 'number'
+      )
+    })
+
+    const totalStrokes = visibleScores.reduce((sum, row) => sum + (row.strokes ?? 0), 0)
+    const totalToPar = visibleScores.reduce((sum, row) => {
+      const hole = holes.find((item) => item.hole_number === row.hole_number)
+      if (!hole) return sum
+      return sum + (scoreVsPar(row.strokes, hole.par) ?? 0)
+    }, 0)
+
+    const totalPoints = visibleScores.reduce((sum, row) => {
+      const hole = holes.find((item) => item.hole_number === row.hole_number)
+      if (!hole || row.strokes == null) return sum
+      return (
+        sum +
+        stablefordPoints(
+          row.strokes,
+          hole.par,
+          getReceivedStrokesForSelectedHole(
+            player.playing_handicap ?? 0,
+            activeHoleIndexes,
+            hole.hcp_index
+          )
+        )
+      )
+    }, 0)
+
+    return {
+      playerId: player.id,
+      name: player.display_name?.trim() || 'Spelare',
+      holesPlayed: visibleScores.length,
+      totalStrokes,
+      totalToPar,
+      totalPoints,
+      sortOrder: player.sort_order ?? 9999,
+    }
+  })
+
+  const sorted = [...leaderboardBase].sort((a, b) => {
+    if (scoringMode === 'stableford') {
+      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints
+      if (a.totalStrokes !== b.totalStrokes) return a.totalStrokes - b.totalStrokes
+      if (a.holesPlayed !== b.holesPlayed) return b.holesPlayed - a.holesPlayed
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder
+      return a.name.localeCompare(b.name, 'sv')
+    }
+
+    if (a.totalStrokes !== b.totalStrokes) return a.totalStrokes - b.totalStrokes
+    if (a.totalToPar !== b.totalToPar) return a.totalToPar - b.totalToPar
+    if (a.holesPlayed !== b.holesPlayed) return b.holesPlayed - a.holesPlayed
+    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder
+    return a.name.localeCompare(b.name, 'sv')
+  })
+
+  let lastPosition = 0
+  const withPositions: LeaderRow[] = []
+
+  for (let index = 0; index < sorted.length; index++) {
+    const current = sorted[index]
+    const previous = sorted[index - 1]
+
+    const sameAsPrevious =
+      !!previous &&
+      (scoringMode === 'stableford'
+        ? previous.totalPoints === current.totalPoints &&
+          previous.totalStrokes === current.totalStrokes &&
+          previous.holesPlayed === current.holesPlayed
+        : previous.totalStrokes === current.totalStrokes &&
+          previous.totalToPar === current.totalToPar &&
+          previous.holesPlayed === current.holesPlayed)
+
+    const position = sameAsPrevious ? lastPosition : index + 1
+    lastPosition = position
+
+    withPositions.push({
+      playerId: current.playerId,
+      name: current.name,
+      holesPlayed: current.holesPlayed,
+      totalStrokes: current.totalStrokes,
+      totalPoints: current.totalPoints,
+      totalToPar: current.totalToPar,
+      position,
+    })
+  }
+
+  return withPositions
+}
+
+export default async function RoundLivePage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  const { data: roundRaw } = await supabase
+    .from('rounds')
+    .select(
+      'id, title, owner_id, course_id, status, scoring_mode, holes_mode, current_hole, start_hole, end_hole'
+    )
+    .eq('id', id)
+    .maybeSingle()
+
+  if (!roundRaw) {
+    notFound()
+  }
+
+  const round = roundRaw as RoundRow
+  const startHole = round.start_hole ?? 1
+  const endHole = round.end_hole ?? 18
+  const currentHole = Math.min(
+    Math.max(round.current_hole ?? startHole, startHole),
+    endHole
+  )
+
+  const viewerEmail = String(user.email ?? '').trim().toLowerCase()
+  const viewerIsOwner = round.owner_id === user.id
+
+  const [{ data: membership }, { data: ownerProfileRaw }] = await Promise.all([
+    supabase
+      .from('round_members')
+      .select('id')
+      .eq('round_id', round.id)
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('profiles')
+      .select('email, display_name')
+      .eq('id', round.owner_id)
+      .maybeSingle(),
+  ])
+
+  const ownerProfile = (ownerProfileRaw as OwnerProfileRow | null) ?? null
+  const ownerEmail = String(ownerProfile?.email ?? '')
+    .trim()
+    .toLowerCase()
+
+  let isFriendOfOwner = false
+
+  if (!viewerIsOwner && !membership && viewerEmail) {
+    const { data: directFriend } = await supabase
+      .from('friends')
+      .select('id')
+      .eq('user_id', round.owner_id)
+      .eq('friend_email', viewerEmail)
+      .maybeSingle()
+
+    if (directFriend) {
+      isFriendOfOwner = true
+    } else if (ownerEmail) {
+      const { data: reverseFriend } = await supabase
+        .from('friends')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('friend_email', ownerEmail)
+        .maybeSingle()
+
+      isFriendOfOwner = Boolean(reverseFriend)
+    }
+  }
+
+  if (!viewerIsOwner && !membership && !isFriendOfOwner) {
+    notFound()
+  }
+
+  const [{ data: courseRaw }, { data: holesRaw }, { data: playersRaw }, { data: scoresRaw }] =
+    await Promise.all([
+      supabase.from('courses').select('name').eq('id', round.course_id).maybeSingle(),
+      supabase
+        .from('course_holes')
+        .select('hole_number, par, hcp_index')
+        .eq('course_id', round.course_id)
+        .gte('hole_number', startHole)
+        .lte('hole_number', endHole)
+        .order('hole_number'),
+      supabase
+        .from('round_players')
+        .select(
+          'id, user_id, display_name, playing_handicap, active_from_hole, active_to_hole, sort_order'
+        )
+        .eq('round_id', round.id)
+        .order('sort_order'),
+      supabase
+        .from('hole_scores')
+        .select('round_player_id, hole_number, strokes')
+        .eq('round_id', round.id),
+    ])
+
+  const course = (courseRaw as CourseRow | null) ?? null
+  const holes = (holesRaw as HoleRow[] | null) ?? []
+  const players = (playersRaw as PlayerRow[] | null) ?? []
+  const scores = (scoresRaw as ScoreRow[] | null) ?? []
+
+  if (!course || holes.length === 0 || players.length === 0) {
+    notFound()
+  }
+
+  const leaderboard = buildLeaderboard({
+    players,
+    holes,
+    scores,
+    scoringMode: round.scoring_mode,
+    currentHole,
+    startHole,
+    endHole,
+  })
+
+  const ownerName = ownerProfile?.display_name?.trim() || ownerEmail || 'vän'
+  const currentHolePar = holes.find((hole) => hole.hole_number === currentHole)?.par ?? null
+
+  return (
+    <main>
+      <div className="container" style={{ display: 'grid', gap: 16 }}>
+        <div className="card" style={{ padding: 20, display: 'grid', gap: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ display: 'grid', gap: 6 }}>
+              <div className="badge">Publik livevy</div>
+              <h1 className="title" style={{ margin: 0 }}>
+                {round.title}
+              </h1>
+              <div className="muted">
+                {course.name} · {getScoringLabel(round.scoring_mode)} · {getModeLabel(round, startHole)}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gap: 8, justifyItems: 'end' }}>
+              <Link className="button secondary" href={`/rounds/${round.id}/live`}>
+                Uppdatera live
+              </Link>
+              <div className="muted" style={{ fontSize: 13 }}>
+                Senast uppdaterad {getNowLabel()}
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              border: '1px solid #dbe7dd',
+              background: '#f8fbf9',
+              borderRadius: 14,
+              padding: 12,
+              display: 'grid',
+              gap: 4,
+            }}
+          >
+            <div style={{ fontWeight: 800, color: '#1f3327' }}>
+              Följ {ownerName}s runda live
+            </div>
+            <div className="muted" style={{ fontSize: 14 }}>
+              Aktuellt hål: {currentHole}
+              {currentHolePar ? ` · Par ${currentHolePar}` : ''} · Status: {round.status}
+            </div>
+          </div>
+        </div>
+
+        <div className="card" style={{ padding: 20, display: 'grid', gap: 12 }}>
+          <h2 style={{ margin: 0 }}>Leaderboard just nu</h2>
+          <div style={{ display: 'grid', gap: 10 }}>
+            {leaderboard.map((entry) => (
+              <div
+                key={entry.playerId}
+                style={{
+                  border: '1px solid #dbe7dd',
+                  borderRadius: 14,
+                  padding: 12,
+                  display: 'grid',
+                  gap: 8,
+                  background:
+                    entry.position === 1
+                      ? 'linear-gradient(180deg, #ecfdf3 0%, #f7fffb 100%)'
+                      : '#fff',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ fontWeight: 900, color: '#1f3327' }}>
+                    #{entry.position} {entry.name}
+                  </div>
+                  <div className="muted" style={{ fontSize: 13 }}>
+                    Registrerade hål: {entry.holesPlayed}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 12,
+                      padding: 10,
+                      background: '#fff',
+                    }}
+                  >
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      Slag
+                    </div>
+                    <div style={{ fontWeight: 900, fontSize: 24 }}>{entry.totalStrokes}</div>
+                  </div>
+
+                  <div
+                    style={{
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 12,
+                      padding: 10,
+                      background: '#fff',
+                    }}
+                  >
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      Till par
+                    </div>
+                    <div style={{ fontWeight: 900, fontSize: 24 }}>{formatVsPar(entry.totalToPar)}</div>
+                  </div>
+
+                  <div
+                    style={{
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 12,
+                      padding: 10,
+                      background: '#f0f6ff',
+                    }}
+                  >
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      Poäng
+                    </div>
+                    <div style={{ fontWeight: 900, fontSize: 24 }}>{entry.totalPoints}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </main>
+  )
+}
+
