@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import LiveAutoRefresh from '@/components/live-auto-refresh'
+import { sendRoundCheer } from './actions'
 import {
   getReceivedStrokesForSelectedHole,
   scoreVsPar,
@@ -206,10 +208,13 @@ function buildLeaderboard(args: {
 
 export default async function RoundLivePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams?: Promise<{ message?: string; type?: string }>
 }) {
   const { id } = await params
+  const resolvedSearchParams = searchParams ? await searchParams : {}
   const supabase = await createClient()
 
   const {
@@ -351,6 +356,7 @@ export default async function RoundLivePage({
             </div>
 
             <div style={{ display: 'grid', gap: 8, justifyItems: 'end' }}>
+              <LiveAutoRefresh intervalMs={15000} />
               <Link className="button secondary" href={`/rounds/${round.id}/live`}>
                 Uppdatera live
               </Link>
@@ -378,6 +384,34 @@ export default async function RoundLivePage({
               {currentHolePar ? ` · Par ${currentHolePar}` : ''} · Status: {round.status}
             </div>
           </div>
+
+          {resolvedSearchParams.message ? (
+            <div
+              style={{
+                borderRadius: 12,
+                padding: '10px 12px',
+                border: `1px solid ${
+                  resolvedSearchParams.type === 'success' ? '#86efac' : '#fecaca'
+                }`,
+                background:
+                  resolvedSearchParams.type === 'success' ? '#f0fdf4' : '#fef2f2',
+                color: resolvedSearchParams.type === 'success' ? '#166534' : '#991b1b',
+                fontWeight: 700,
+              }}
+            >
+              {resolvedSearchParams.message}
+            </div>
+          ) : null}
+
+          <form action={sendRoundCheer} style={{ display: 'grid', gap: 8 }}>
+            <input type="hidden" name="round_id" value={round.id} />
+            <button type="submit" className="button">
+              Skicka hejarop
+            </button>
+            <div className="muted" style={{ fontSize: 13 }}>
+              Skickar en notis till spelarna i den här rundan.
+            </div>
+          </form>
         </div>
 
         <div className="card" style={{ padding: 20, display: 'grid', gap: 12 }}>
@@ -464,4 +498,3 @@ export default async function RoundLivePage({
     </main>
   )
 }
-

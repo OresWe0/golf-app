@@ -1274,7 +1274,7 @@ function ActiveRoundsSection({
   })
 
   return (
-    <div className="card" style={dashboardStyles.sectionCard}>
+    <div className="card dashboard-mobile-card" style={dashboardStyles.sectionCard}>
       <SectionHeader
         title="Aktiva rundor"
         description="Rundor som pågår just nu."
@@ -1364,7 +1364,7 @@ function CompletedRoundsSection({
   })
 
   return (
-    <div className="card" style={dashboardStyles.sectionCard}>
+    <div className="card dashboard-mobile-card" style={dashboardStyles.sectionCard}>
       <SectionHeader
         title="Avslutade rundor"
         description="Tidigare spelade rundor och sammanfattningar."
@@ -1434,7 +1434,7 @@ function FriendActiveRoundsSection({
   friendNameById: Map<string, string>
 }) {
   return (
-    <div className="card" style={dashboardStyles.sectionCard}>
+    <div className="card dashboard-mobile-card" style={dashboardStyles.sectionCard}>
       <SectionHeader
         title="Vänners aktiva rundor"
         description="Följ vännernas spel live direkt när de är ute på banan."
@@ -1942,6 +1942,22 @@ export default async function DashboardPage({
             grid-template-columns: 1fr !important;
           }
         }
+
+        @media (max-width: 720px) {
+          .dashboard-lower-stack {
+            gap: 12px !important;
+          }
+
+          .dashboard-mobile-card {
+            border-radius: 18px !important;
+          }
+
+          .dashboard-mobile-card .button.secondary {
+            min-height: 46px;
+            padding-top: 10px;
+            padding-bottom: 10px;
+          }
+        }
       `}</style>
 
       <div
@@ -1982,7 +1998,7 @@ export default async function DashboardPage({
           />
         </div>
 
-        <div style={{ display: 'grid', gap: 18 }}>
+        <div className="dashboard-lower-stack" style={{ display: 'grid', gap: 18 }}>
           <div id="friend-feed" className="card" style={dashboardStyles.sectionCard}>
             <SectionHeader
               title="📊 Din statistik"
@@ -2009,7 +2025,13 @@ export default async function DashboardPage({
             </div>
           </div>
 
-          <div className="card" style={dashboardStyles.sectionCard}>
+          <FriendActiveRoundsSection
+            rounds={friendActiveRounds}
+            coursesById={coursesById}
+            friendNameById={friendNameById}
+          />
+
+          <div className="card dashboard-mobile-card" style={dashboardStyles.sectionCard}>
             <SectionHeader
               title="Vänflöde"
               description="Senaste höjdpunkterna i spelet."
@@ -2049,12 +2071,6 @@ export default async function DashboardPage({
               </div>
             )}
           </div>
-
-          <FriendActiveRoundsSection
-            rounds={friendActiveRounds}
-            coursesById={coursesById}
-            friendNameById={friendNameById}
-          />
 
           <ActiveRoundsSection
             rounds={activeRounds}
