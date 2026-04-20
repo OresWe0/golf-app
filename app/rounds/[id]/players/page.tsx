@@ -342,7 +342,7 @@ export default async function RoundPlayersPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ message?: string; type?: string }>
+  searchParams: Promise<{ message?: string; type?: string; outgoing?: string }>
 }) {
   const { id } = await params
   const resolvedSearchParams = await searchParams
@@ -420,6 +420,14 @@ export default async function RoundPlayersPage({
         .filter(Boolean) as Array<readonly [string, { email: string; label: string }]>
     ).values()
   )
+  const preselectedOutgoingIdRaw = String(resolvedSearchParams.outgoing ?? '').trim()
+  const preselectedOutgoingId = activePlayers.some(
+    (player) => player.id === preselectedOutgoingIdRaw
+  )
+    ? preselectedOutgoingIdRaw
+    : ''
+  const preselectedOutgoingPlayerName =
+    activePlayers.find((player) => player.id === preselectedOutgoingId)?.display_name ?? null
 
   async function removePlayerAction(formData: FormData) {
     'use server'
@@ -740,13 +748,13 @@ export default async function RoundPlayersPage({
                     <button type="submit" className="button secondary">
                       Ta bort från kommande hål
                     </button>
-                    <a
-                      href="#replace-player"
+                    <Link
+                      href={`/rounds/${id}/players?outgoing=${player.id}#replace-player`}
                       className="button secondary"
                       style={{ textAlign: 'center', minHeight: 44 }}
                     >
                       Ersätt spelare
-                    </a>
+                    </Link>
                   </div>
                 </form>
               </div>
@@ -843,6 +851,24 @@ export default async function RoundPlayersPage({
           <p className="muted" style={{ margin: 0, fontSize: 14 }}>
             Byt ut en aktiv spelare och lägg in en ny från aktuellt hål i samma submit.
           </p>
+          {preselectedOutgoingPlayerName ? (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 12px',
+                borderRadius: 999,
+                background: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                color: '#1d4ed8',
+                fontWeight: 700,
+                fontSize: 13,
+              }}
+            >
+              Förvalt att ersätta: {preselectedOutgoingPlayerName}
+            </div>
+          ) : null}
 
           <div style={{ display: 'grid', gap: 12 }}>
             <h3 style={{ margin: 0 }}>Ersätt med registrerad spelare</h3>
@@ -850,6 +876,7 @@ export default async function RoundPlayersPage({
               <select
                 name="outgoing_round_player_id"
                 required
+                defaultValue={preselectedOutgoingId}
                 style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
               >
                 <option value="">Välj spelare som går av</option>
@@ -910,6 +937,7 @@ export default async function RoundPlayersPage({
               <select
                 name="outgoing_round_player_id"
                 required
+                defaultValue={preselectedOutgoingId}
                 style={{ borderRadius: 10, border: '1px solid #d1d5db', padding: 10 }}
               >
                 <option value="">Välj spelare som går av</option>
