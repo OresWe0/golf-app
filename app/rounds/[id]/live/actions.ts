@@ -1,11 +1,17 @@
-'use server'
+﻿'use server'
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 
 type OwnerProfileRow = {
   email: string | null
+}
+
+type RoundRow = {
+  id: string
+  owner_id: string
 }
 
 export async function sendRoundCheer(formData: FormData) {
@@ -22,20 +28,46 @@ export async function sendRoundCheer(formData: FormData) {
   const roundId = String(formData.get('round_id') ?? '').trim()
   const rawMessage = String(formData.get('message') ?? '').trim()
   const message = rawMessage.slice(0, 140)
+
   if (!roundId) {
     redirect('/dashboard')
   }
 
-  const { data: round } = await supabase
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseAdmin =
+    supabaseUrl && serviceRoleKey
+      ? createAdminClient(supabaseUrl, serviceRoleKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        })
+      : null
+
+  const { data: roundFromUserClient } = await supabase
     .from('rounds')
-    .select('id, title, owner_id')
+    .select('id, owner_id')
     .eq('id', roundId)
     .maybeSingle()
 
-  if (!round) {
+  let roundRaw = roundFromUserClient
+
+  if (!roundRaw && supabaseAdmin) {
+    const { data: roundFromAdminClient } = await supabaseAdmin
+      .from('rounds')
+      .select('id, owner_id')
+      .eq('id', roundId)
+      .maybeSingle()
+
+    roundRaw = roundFromAdminClient
+  }
+
+  if (!roundRaw) {
     redirect('/dashboard')
   }
 
+  const round = roundRaw as RoundRow
   const viewerIsOwner = round.owner_id === user.id
   const viewerEmail = String(user.email ?? '').trim().toLowerCase()
 
@@ -46,7 +78,7 @@ export async function sendRoundCheer(formData: FormData) {
       .eq('round_id', roundId)
       .eq('user_id', user.id)
       .maybeSingle(),
-    supabase
+    (supabaseAdmin ?? supabase)
       .from('profiles')
       .select('email')
       .eq('id', round.owner_id)
@@ -61,7 +93,9 @@ export async function sendRoundCheer(formData: FormData) {
   let isFriendOfOwner = false
 
   if (!viewerIsOwner && !membership && viewerEmail) {
-    const { data: directFriend } = await supabase
+    const friendReadClient = supabaseAdmin ?? supabase
+
+    const { data: directFriend } = await friendReadClient
       .from('friends')
       .select('id')
       .eq('user_id', round.owner_id)
@@ -71,7 +105,7 @@ export async function sendRoundCheer(formData: FormData) {
     if (directFriend) {
       isFriendOfOwner = true
     } else if (ownerEmail) {
-      const { data: reverseFriend } = await supabase
+      const { data: reverseFriend } = await friendReadClient
         .from('friends')
         .select('id')
         .eq('user_id', user.id)
@@ -83,25 +117,18 @@ export async function sendRoundCheer(formData: FormData) {
   }
 
   if (!viewerIsOwner && !membership && !isFriendOfOwner) {
-    redirect('/dashboard')
+    redirect(`/rounds/${roundId}/live?message=Du+saknar+behorighet&type=error`)
   }
 
-  const [{ data: actorProfile }, { data: roundMembers }] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('display_name, email')
-      .eq('id', user.id)
-      .maybeSingle(),
-    supabase
-      .from('round_members')
-      .select('user_id')
-      .eq('round_id', roundId),
-  ])
+  const dataReadClient =
+    !viewerIsOwner && !membership && isFriendOfOwner && supabaseAdmin
+      ? supabaseAdmin
+      : supabase
 
-  const actorName =
-    String(actorProfile?.display_name ?? '').trim() ||
-    String(actorProfile?.email ?? '').trim() ||
-    'En van'
+  const { data: roundMembers } = await dataReadClient
+    .from('round_members')
+    .select('user_id')
+    .eq('round_id', roundId)
 
   const cheerText = message || 'Heja! Ni spelar grymt.'
   const cheerToken = crypto.randomUUID()
