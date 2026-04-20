@@ -104,6 +104,8 @@ export async function sendRoundCheer(formData: FormData) {
     'En van'
 
   const cheerText = message || 'Heja! Ni spelar grymt.'
+  const cheerToken = crypto.randomUUID()
+  const cheerTitle = `HejaropRound:${roundId}:${cheerToken}:${cheerText}`
 
   const recipientIds = Array.from(
     new Set(
@@ -118,7 +120,7 @@ export async function sendRoundCheer(formData: FormData) {
       user_id: recipientId,
       actor_user_id: user.id,
       type: 'comment',
-      title: `Hejarop: "${cheerText}"`,
+      title: cheerTitle,
       feed_event_id: null,
     }))
 

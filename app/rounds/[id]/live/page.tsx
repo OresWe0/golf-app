@@ -54,8 +54,24 @@ type OwnerProfileRow = {
   display_name: string | null
 }
 
-type MembershipRow = {
+type CheerNotificationRow = {
   id: string
+  actor_user_id: string | null
+  title: string
+  created_at: string
+}
+
+type CheerEntry = {
+  token: string
+  message: string
+  actorUserId: string
+  createdAt: string
+}
+
+type CheerActorProfile = {
+  id: string
+  display_name: string | null
+  email: string | null
 }
 
 type LeaderRow = {
@@ -87,6 +103,34 @@ function getNowLabel() {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+  })
+}
+
+function parseCheerTitleForRound(title: string, roundId: string) {
+  const prefix = `HejaropRound:${roundId}:`
+  if (!title.startsWith(prefix)) return null
+
+  const rest = title.slice(prefix.length)
+  const splitIndex = rest.indexOf(':')
+  if (splitIndex < 1) return null
+
+  const token = rest.slice(0, splitIndex).trim()
+  const message = rest.slice(splitIndex + 1).trim()
+  if (!token) return null
+
+  return {
+    token,
+    message: message || 'Heja!',
+  }
+}
+
+function formatCheerTime(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+
+  return date.toLocaleTimeString('sv-SE', {
+    hour: '2-digit',
+    minute: '2-digit',
   })
 }
 
@@ -339,7 +383,13 @@ export default async function RoundLivePage({
   const isFriendViewer = !viewerIsOwner && !membership && isFriendOfOwner
   const dataReadClient = isFriendViewer && supabaseAdmin ? supabaseAdmin : supabase
 
-  const [{ data: courseRaw }, { data: holesRaw }, { data: playersRaw }, { data: scoresRaw }] =
+  const [
+    { data: courseRaw },
+    { data: holesRaw },
+    { data: playersRaw },
+    { data: scoresRaw },
+    { data: roundMembersRaw },
+  ] =
     await Promise.all([
       dataReadClient
         .from('courses')
@@ -364,6 +414,10 @@ export default async function RoundLivePage({
         .from('hole_scores')
         .select('round_player_id, hole_number, strokes')
         .eq('round_id', round.id),
+      dataReadClient
+        .from('round_members')
+        .select('user_id')
+        .eq('round_id', round.id),
     ])
 
   const course = (courseRaw as CourseRow | null) ?? null
@@ -373,6 +427,68 @@ export default async function RoundLivePage({
 
   if (!course || holes.length === 0 || players.length === 0) {
     notFound()
+  }
+
+  const roundMemberUserIds = Array.from(
+    new Set(
+      (roundMembersRaw ?? [])
+        .map((row) => String((row as { user_id?: string | null }).user_id ?? '').trim())
+        .filter((id) => id.length > 0)
+    )
+  )
+
+  let cheerEntries: CheerEntry[] = []
+
+  if (roundMemberUserIds.length > 0) {
+    const notificationReadClient = supabaseAdmin ?? supabase
+    const { data: cheerRowsRaw } = await notificationReadClient
+      .from('notifications')
+      .select('id, actor_user_id, title, created_at')
+      .in('user_id', roundMemberUserIds)
+      .like('title', `HejaropRound:${round.id}:%`)
+      .order('created_at', { ascending: false })
+      .limit(80)
+
+    const cheerRows = (cheerRowsRaw as CheerNotificationRow[] | null) ?? []
+    const byToken = new Map<string, CheerEntry>()
+
+    for (const row of cheerRows) {
+      const parsed = parseCheerTitleForRound(row.title, round.id)
+      const actorUserId = String(row.actor_user_id ?? '').trim()
+      if (!parsed || !actorUserId) continue
+      if (byToken.has(parsed.token)) continue
+
+      byToken.set(parsed.token, {
+        token: parsed.token,
+        message: parsed.message,
+        actorUserId,
+        createdAt: row.created_at,
+      })
+    }
+
+    cheerEntries = Array.from(byToken.values()).slice(0, 12)
+  }
+
+  const cheerActorIds = Array.from(
+    new Set(cheerEntries.map((item) => item.actorUserId).filter((id) => id.length > 0))
+  )
+
+  let cheerActorNameById = new Map<string, string>()
+
+  if (cheerActorIds.length > 0) {
+    const profileReadClient = supabaseAdmin ?? supabase
+    const { data: cheerActorProfilesRaw } = await profileReadClient
+      .from('profiles')
+      .select('id, display_name, email')
+      .in('id', cheerActorIds)
+
+    const cheerActorProfiles = (cheerActorProfilesRaw as CheerActorProfile[] | null) ?? []
+    cheerActorNameById = new Map(
+      cheerActorProfiles.map((profile) => [
+        profile.id,
+        profile.display_name?.trim() || profile.email?.trim() || 'En vän',
+      ])
+    )
   }
 
   const leaderboard = buildLeaderboard({
@@ -467,6 +583,39 @@ export default async function RoundLivePage({
               Skickar en notis till spelarna i den här rundan.
             </div>
           </form>
+        </div>
+
+        <div className="card" style={{ padding: 20, display: 'grid', gap: 12 }}>
+          <h2 style={{ margin: 0 }}>Publikchat</h2>
+          {cheerEntries.length === 0 ? (
+            <div className="muted" style={{ fontSize: 14 }}>
+              Inga hejarop ännu. Skriv ett peppmeddelande ovan.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: 8 }}>
+              {cheerEntries.map((entry) => (
+                <div
+                  key={entry.token}
+                  style={{
+                    border: '1px solid #dbe7dd',
+                    borderRadius: 12,
+                    padding: 10,
+                    background: '#f8fbf9',
+                    display: 'grid',
+                    gap: 4,
+                  }}
+                >
+                  <div style={{ fontWeight: 800, color: '#1f3327' }}>
+                    🔥 {cheerActorNameById.get(entry.actorUserId) ?? 'En vän'}
+                  </div>
+                  <div style={{ color: '#1f3327' }}>{entry.message}</div>
+                  <div className="muted" style={{ fontSize: 12 }}>
+                    {formatCheerTime(entry.createdAt)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="card" style={{ padding: 20, display: 'grid', gap: 12 }}>
