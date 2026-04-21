@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+﻿import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   env: {
@@ -6,6 +6,11 @@ const nextConfig: NextConfig = {
       process.env.NEXT_PUBLIC_SW_VERSION ??
       process.env.RENDER_GIT_COMMIT ??
       "dev",
+  },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "8mb",
+    },
   },
   turbopack: {
     root: __dirname,
