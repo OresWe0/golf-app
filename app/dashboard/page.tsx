@@ -319,9 +319,9 @@ function getPlayerNameForFeedEvent(
 const dashboardStyles = {
   heroCard: {
     background:
-      'linear-gradient(180deg, rgba(8, 20, 14, 0.62) 0%, rgba(13, 37, 26, 0.7) 44%, rgba(22, 59, 42, 0.82) 100%), url(/splash.png)',
+      'linear-gradient(180deg, rgba(8, 20, 14, 0.42) 0%, rgba(13, 37, 26, 0.56) 46%, rgba(22, 59, 42, 0.74) 100%), url(/hero-karsta.jpg)',
     backgroundSize: 'cover',
-    backgroundPosition: 'center',
+    backgroundPosition: 'center 42%',
     border: '1px solid rgba(255,255,255,0.18)',
     borderRadius: 28,
     boxShadow: '0 24px 56px rgba(22, 59, 42, 0.28)',
