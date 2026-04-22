@@ -366,6 +366,20 @@ const dashboardStyles = {
   } satisfies CSSProperties,
 }
 
+function getTimeGreetingSvSE(now = new Date()) {
+  const hour = Number(
+    new Intl.DateTimeFormat('sv-SE', {
+      hour: '2-digit',
+      hour12: false,
+      timeZone: 'Europe/Stockholm',
+    }).format(now)
+  )
+
+  if (hour >= 5 && hour < 10) return 'God morgon'
+  if (hour >= 10 && hour < 17) return 'God dag'
+  return 'God kväll'
+}
+
 function SectionEmptyState({
   title,
   description,
@@ -526,6 +540,7 @@ function FriendRequestNotice({
 function DashboardHeader({
   displayName,
   profile,
+  greeting,
   isAdmin,
   pendingCount,
   incomingFriendRequestsCount,
@@ -534,6 +549,7 @@ function DashboardHeader({
 }: {
   displayName: string
   profile: Profile | null
+  greeting: string
   isAdmin: boolean
   pendingCount: number
   incomingFriendRequestsCount: number
@@ -611,7 +627,7 @@ function DashboardHeader({
                 fontWeight: 900,
               }}
             >
-              God kväll,
+              {greeting},
               <br />
               <span style={{ fontWeight: 900 }}>{displayName}</span>
             </h1>
@@ -2031,6 +2047,7 @@ export default async function DashboardPage({
 
   const displayName =
     userProfile?.display_name?.trim() || user.email || 'Golfspelare'
+  const greeting = getTimeGreetingSvSE()
 
   const activeRounds = allRounds.filter((round) => round.status === 'active')
 
@@ -2233,6 +2250,7 @@ export default async function DashboardPage({
           <DashboardHeader
             displayName={displayName}
             profile={userProfile}
+            greeting={greeting}
             isAdmin={isAdmin}
             pendingCount={pendingCount}
             incomingFriendRequestsCount={incomingFriendRequestsCount}
