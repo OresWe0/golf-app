@@ -873,7 +873,7 @@ export default async function RoundLivePage({
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <Link className="button secondary" href={`/rounds/${round.id}/summary`}>
-                    Öppna fullt scorekort
+                    📋 Öppna fullt scorekort (alla spelare)
                   </Link>
                 </div>
               </div>
