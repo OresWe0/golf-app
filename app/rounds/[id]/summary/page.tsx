@@ -500,7 +500,7 @@ function ScoreTable({
                       fontSize: 15,
                     }}
                   >
-                    Poäng
+                    Po&#228;ng
                   </td>
                   {pointsPerHole.map((points, index) => (
                     <td
@@ -799,22 +799,22 @@ export default async function SummaryPage({
 
   const selectedIndex = summary.findIndex((player) => player.id === selectedPlayer?.id)
 
-  const roundTypeLabel = round.scoring_mode === 'stableford' ? 'Poängbogey' : 'Slagspel'
+  const roundTypeLabel = round.scoring_mode === 'stableford' ? 'Po&#228;ngbogey' : 'Slagspel'
   const scoringMode = round.scoring_mode
 
   const holesLabel =
     round.holes_mode === 18
       ? '18 hål'
       : startHole === 1
-        ? '9 hål · Främre 9'
-        : '9 hål · Bakre 9'
+        ? '9 hål &middot; Främre 9'
+        : '9 hål &middot; Bakre 9'
 
   const scorecardModeLabel =
     round.holes_mode === 18
       ? '18 hål'
       : startHole === 1
-        ? '9 hål · Främre'
-        : '9 hål · Bakre'
+        ? '9 hål &middot; Främre'
+        : '9 hål &middot; Bakre'
 
   const totalPar = sumPar(visibleHoles)
 
@@ -1107,7 +1107,7 @@ export default async function SummaryPage({
                 }}
               >
                 <span>{roundTypeLabel}</span>
-                <span style={{ opacity: 0.5 }}>•</span>
+                <span style={{ opacity: 0.5 }}>&bull;</span>
                 <span>{scorecardModeLabel}</span>
               </div>
             </div>
@@ -1128,8 +1128,8 @@ export default async function SummaryPage({
                 ...TYPE.meta,
               }}
             >
-              {winner.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Exakt HCP{' '}
-              {winner.exactHandicap ?? '-'} · Spel-HCP {winner.playingHandicap ?? 0}
+              {winner.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} &middot; Exakt HCP{' '}
+              {winner.exactHandicap ?? '-'} &middot; Spel-HCP {winner.playingHandicap ?? 0}
             </div>
             <div style={{ marginBottom: 12, ...TYPE.meta }}>{getPlayedRangeLabel(winner)}</div>
 
@@ -1195,25 +1195,31 @@ export default async function SummaryPage({
           />
         </div>
 
-        <div className="card" style={{ marginBottom: 14 }}>
-          <div
+        <details className="card" style={{ marginBottom: 14 }}>
+          <summary
             style={{
+              cursor: 'pointer',
+              listStyle: 'none',
               display: 'flex',
               justifyContent: 'space-between',
               gap: 12,
               alignItems: 'center',
               flexWrap: 'wrap',
-              marginBottom: 12,
             }}
           >
-            <h2
-              style={{
-                margin: 0,
-                ...TYPE.sectionTitle,
-              }}
-            >
-              Leaderboard
-            </h2>
+            <div style={{ minWidth: 0 }}>
+              <h2
+                style={{
+                  margin: 0,
+                  ...TYPE.sectionTitle,
+                }}
+              >
+                Leaderboard
+              </h2>
+              <div className="muted" style={{ marginTop: 4, fontSize: 13 }}>
+                Tryck f&#246;r att visa eller d&#246;lja full ranking.
+              </div>
+            </div>
 
             <div
               style={{
@@ -1229,13 +1235,13 @@ export default async function SummaryPage({
                 ...TYPE.labelStrong,
               }}
             >
-              <span>{roundTypeLabel}</span>
-              <span style={{ opacity: 0.5 }}>•</span>
+              <span>{summary.length} spelare</span>
+              <span style={{ opacity: 0.5 }}>&bull;</span>
               <span>{scorecardModeLabel}</span>
             </div>
-          </div>
+          </summary>
 
-          <div style={{ display: 'grid', gap: 10 }}>
+          <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
             {summary.map((player, index) => (
               <div
                 key={player.id}
@@ -1282,7 +1288,7 @@ export default async function SummaryPage({
                         ...TYPE.meta,
                       }}
                     >
-                      HCP {player.exactHandicap ?? '-'} · Spel-HCP {player.playingHandicap}
+                      HCP {player.exactHandicap ?? '-'} &middot; Spel-HCP {player.playingHandicap}
                     </div>
                     <div style={{ marginTop: 2, ...TYPE.meta }}>{getPlayedRangeLabel(player)}</div>
                   </div>
@@ -1345,15 +1351,14 @@ export default async function SummaryPage({
                       padding: 10,
                     }}
                   >
-                    <div style={TYPE.label}>Poäng</div>
+                    <div style={TYPE.label}>Po&#228;ng</div>
                     <div style={{ marginTop: 4, ...TYPE.statValueMd }}>{player.points}</div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-
+        </details>
         {selectedPlayer ? (
           <div className="card">
             <div style={{ marginBottom: 12 }}>
@@ -1442,7 +1447,7 @@ export default async function SummaryPage({
                     ...TYPE.meta,
                   }}
                 >
-                  {selectedPlayer.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Spel-HCP{' '}
+                  {selectedPlayer.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} &middot; Spel-HCP{' '}
                   {selectedPlayer.playingHandicap ?? 0}
                 </div>
                 <div style={{ marginBottom: 12, ...TYPE.meta }}>
