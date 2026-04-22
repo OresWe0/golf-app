@@ -96,12 +96,12 @@ function formatVsPar(value: number) {
 }
 
 function getScoringLabel(mode: RoundRow['scoring_mode']) {
-  return mode === 'stableford' ? 'PoÃ¤ngbogey' : 'Slagspel'
+  return mode === 'stableford' ? 'Poangbogey' : 'Slagspel'
 }
 
 function getModeLabel(round: RoundRow, startHole: number) {
-  if (round.holes_mode === 18) return '18 hÃ¥l'
-  return startHole === 1 ? '9 hÃ¥l Â· FrÃ¤mre 9' : '9 hÃ¥l Â· Bakre 9'
+  if (round.holes_mode === 18) return '18 hal'
+  return startHole === 1 ? '9 hal - Framre 9' : '9 hal - Bakre 9'
 }
 
 function getNowLabel() {
@@ -515,7 +515,7 @@ export default async function RoundLivePage({
     endHole,
   })
 
-  const ownerName = ownerProfile?.display_name?.trim() || ownerEmail || 'vÃ¤n'
+  const ownerName = ownerProfile?.display_name?.trim() || ownerEmail || 'van'
   const currentHolePar = holes.find((hole) => hole.hole_number === currentHole)?.par ?? null
 
   return (
@@ -529,7 +529,7 @@ export default async function RoundLivePage({
                 {round.title}
               </h1>
               <div className="muted">
-                {course.name} Â· {getScoringLabel(round.scoring_mode)} Â· {getModeLabel(round, startHole)}
+                {course.name} - {getScoringLabel(round.scoring_mode)} - {getModeLabel(round, startHole)}
               </div>
             </div>
 
@@ -555,11 +555,11 @@ export default async function RoundLivePage({
             }}
           >
             <div style={{ fontWeight: 800, color: '#1f3327' }}>
-              FÃ¶lj {ownerName}s runda live
+              Folj {ownerName}s runda live
             </div>
             <div className="muted" style={{ fontSize: 14 }}>
-              Aktuellt hÃ¥l: {currentHole}
-              {currentHolePar ? ` Â· Par ${currentHolePar}` : ''} Â· Status: {round.status}
+              Aktuellt hal: {currentHole}
+              {currentHolePar ? ` - Par ${currentHolePar}` : ''} - Status: {round.status}
             </div>
           </div>
 
@@ -594,7 +594,7 @@ export default async function RoundLivePage({
               Skicka hejarop
             </button>
             <div className="muted" style={{ fontSize: 13 }}>
-              Skickar en notis till spelarna i den hÃ¤r rundan.
+              Skickar en notis till spelarna i den har rundan.
             </div>
           </form>
         </div>
@@ -603,7 +603,7 @@ export default async function RoundLivePage({
           <h2 style={{ margin: 0 }}>Publikchat</h2>
           {cheerEntries.length === 0 ? (
             <div className="muted" style={{ fontSize: 14 }}>
-              Inga hejarop Ã¤nnu. Skriv ett peppmeddelande ovan.
+              Inga hejarop annu. Skriv ett peppmeddelande ovan.
             </div>
           ) : (
             <div style={{ display: 'grid', gap: 8 }}>
@@ -649,7 +649,7 @@ export default async function RoundLivePage({
                       )}
                     </div>
                     <div style={{ fontWeight: 800, color: '#1f3327' }}>
-                      ðŸ”¥ {cheerActorById.get(entry.actorUserId)?.name ?? 'En vän'}
+                      Hejarop - {cheerActorById.get(entry.actorUserId)?.name ?? 'En van'}
                     </div>
                   </div>
                   <div style={{ color: '#1f3327' }}>{entry.message}</div>
@@ -685,7 +685,7 @@ export default async function RoundLivePage({
                     #{entry.position} {entry.name}
                   </div>
                   <div className="muted" style={{ fontSize: 13 }}>
-                    Registrerade hÃ¥l: {entry.holesPlayed}
+                    Registrerade hal: {entry.holesPlayed}
                   </div>
                 </div>
 
@@ -733,7 +733,7 @@ export default async function RoundLivePage({
                     }}
                   >
                     <div className="muted" style={{ fontSize: 12 }}>
-                      PoÃ¤ng
+                      Poang
                     </div>
                     <div style={{ fontWeight: 900, fontSize: 24 }}>{entry.totalPoints}</div>
                   </div>
