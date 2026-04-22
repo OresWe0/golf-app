@@ -564,6 +564,22 @@ function DashboardHeader({
         }).format(handicapIndex)
       : '—'
 
+  const iconButtonStyle: CSSProperties = {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: '1px solid rgba(255,255,255,0.24)',
+    background: 'rgba(12, 35, 24, 0.36)',
+    color: '#fff',
+    backdropFilter: 'blur(8px)',
+    boxShadow: '0 8px 22px rgba(15, 23, 42, 0.2)',
+    fontSize: 22,
+    lineHeight: 1,
+  }
+
   return (
     <div className="card" style={dashboardStyles.heroCard}>
       <div
@@ -698,76 +714,16 @@ function DashboardHeader({
             </div>
           </div>
 
-          {isAdmin && pendingCount > 0 ? (
-            <div
-              style={{
-                ...dashboardStyles.pill,
-                background: 'rgba(255, 245, 217, 0.96)',
-                color: '#92400e',
-                border: '1px solid rgba(244, 213, 124, 0.95)',
-                boxShadow: '0 10px 24px rgba(15, 23, 42, 0.16)',
-              }}
-            >
-              {pendingCount} väntar på godkännande
-            </div>
-          ) : null}
-        </div>
-
-        <div style={{ display: 'grid', gap: 12 }}>
-          <Link
-            href="/rounds/new"
-            className="button"
-            style={{
-              width: '100%',
-              minHeight: 56,
-              fontSize: 18,
-              fontWeight: 900,
-              borderRadius: 18,
-              background: 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)',
-              color: '#fff',
-              boxShadow: '0 20px 42px rgba(15, 47, 32, 0.32)',
-              border: '1px solid rgba(255,255,255,0.12)',
-            }}
-          >
-            ⛳ Starta ny runda
-          </Link>
-
           <div
-            className="dashboard-header-actions"
             style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 8,
+              display: 'inline-flex',
+              gap: 10,
               alignItems: 'center',
             }}
           >
-            {isAdmin ? (
-              <Link
-                href="/admin/users"
-                className="button secondary"
-                style={{
-                  ...dashboardStyles.quickAction,
-                  background: 'rgba(255,255,255,0.14)',
-                  color: '#ffffff',
-                  border: '1px solid rgba(255,255,255,0.16)',
-                }}
-              >
-                🛠 Admin{pendingCount > 0 ? ` ${pendingCount}` : ''}
-              </Link>
-            ) : null}
-
             <div style={{ position: 'relative' }}>
-              <Link
-                href="/profile"
-                className="button secondary"
-                style={{
-                  ...dashboardStyles.quickAction,
-                  background: 'rgba(255,255,255,0.14)',
-                  color: '#ffffff',
-                  border: '1px solid rgba(255,255,255,0.16)',
-                }}
-              >
-                👤 Profil
+              <Link href="/profile" aria-label="Öppna profil" style={iconButtonStyle}>
+                👤
               </Link>
 
               {incomingFriendRequestsCount > 0 ? (
@@ -775,8 +731,8 @@ function DashboardHeader({
                   aria-label={`${incomingFriendRequestsCount} inkommande vänförfrågningar`}
                   style={{
                     position: 'absolute',
-                    top: -5,
-                    right: -5,
+                    top: -4,
+                    right: -4,
                     minWidth: 20,
                     height: 20,
                     borderRadius: 999,
@@ -797,34 +753,77 @@ function DashboardHeader({
               ) : null}
             </div>
 
-            <Link
-              href="/statistik"
-              className="button secondary"
-              style={{
-                ...dashboardStyles.quickAction,
-                background: 'rgba(255,255,255,0.14)',
-                color: '#ffffff',
-                border: '1px solid rgba(255,255,255,0.16)',
-              }}
-            >
-              📈 Stats
-            </Link>
-
-            <form action={signOut}>
-              <button
-                type="submit"
-                className="button secondary"
+            <details style={{ position: 'relative' }}>
+              <summary
+                aria-label="Öppna meny"
                 style={{
-                  ...dashboardStyles.quickAction,
-                  background: 'rgba(255,255,255,0.14)',
-                  color: '#ffffff',
-                  border: '1px solid rgba(255,255,255,0.16)',
+                  ...iconButtonStyle,
+                  listStyle: 'none',
+                  cursor: 'pointer',
                 }}
               >
-                ↪ Ut
-              </button>
-            </form>
+                ☰
+              </summary>
+
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 52,
+                  right: 0,
+                  minWidth: 180,
+                  zIndex: 5,
+                  borderRadius: 14,
+                  border: '1px solid rgba(255,255,255,0.24)',
+                  background: 'rgba(12, 35, 24, 0.86)',
+                  backdropFilter: 'blur(10px)',
+                  boxShadow: '0 18px 36px rgba(15, 23, 42, 0.35)',
+                  padding: 8,
+                  display: 'grid',
+                  gap: 6,
+                }}
+              >
+                {isAdmin ? (
+                  <Link href="/admin/users" className="button secondary" style={dashboardStyles.quickAction}>
+                    🛠 Admin{pendingCount > 0 ? ` ${pendingCount}` : ''}
+                  </Link>
+                ) : null}
+
+                <Link href="/profile" className="button secondary" style={dashboardStyles.quickAction}>
+                  👤 Profil
+                </Link>
+
+                <Link href="/statistik" className="button secondary" style={dashboardStyles.quickAction}>
+                  📈 Stats
+                </Link>
+
+                <form action={signOut}>
+                  <button type="submit" className="button secondary" style={dashboardStyles.quickAction}>
+                    ↪ Ut
+                  </button>
+                </form>
+              </div>
+            </details>
           </div>
+        </div>
+
+        <div style={{ display: 'grid', gap: 12 }}>
+          <Link
+            href="/rounds/new"
+            className="button"
+            style={{
+              width: '100%',
+              minHeight: 56,
+              fontSize: 18,
+              fontWeight: 900,
+              borderRadius: 18,
+              background: 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)',
+              color: '#fff',
+              boxShadow: '0 20px 42px rgba(15, 47, 32, 0.32)',
+              border: '1px solid rgba(255,255,255,0.12)',
+            }}
+          >
+            ⛳ Starta ny runda
+          </Link>
         </div>
       </div>
     </div>
