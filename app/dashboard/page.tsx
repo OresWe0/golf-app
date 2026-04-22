@@ -353,10 +353,10 @@ const dashboardStyles = {
     boxSizing: 'border-box' as const,
   },
   quickAction: {
-    minHeight: 40,
-    padding: '8px 14px',
+    minHeight: 36,
+    padding: '7px 12px',
     borderRadius: 999,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 800,
     width: 'auto',
     display: 'inline-flex',
@@ -736,7 +736,7 @@ function DashboardHeader({
                   border: '1px solid rgba(255,255,255,0.16)',
                 }}
               >
-                🛠 Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
+                🛠 Admin{pendingCount > 0 ? ` ${pendingCount}` : ''}
               </Link>
             ) : null}
 
@@ -751,7 +751,7 @@ function DashboardHeader({
                   border: '1px solid rgba(255,255,255,0.16)',
                 }}
               >
-                👤 Profil & vänner
+                👤 Profil
               </Link>
 
               {incomingFriendRequestsCount > 0 ? (
@@ -791,7 +791,7 @@ function DashboardHeader({
                 border: '1px solid rgba(255,255,255,0.16)',
               }}
             >
-              📈 Statistik
+              📈 Stats
             </Link>
 
             <form action={signOut}>
@@ -805,7 +805,7 @@ function DashboardHeader({
                   border: '1px solid rgba(255,255,255,0.16)',
                 }}
               >
-                ↪ Logga ut
+                ↪ Ut
               </button>
             </form>
           </div>
