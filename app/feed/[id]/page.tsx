@@ -37,6 +37,15 @@ type FriendRow = {
   friend_email: string | null
 }
 
+type ReverseFriendRow = {
+  user_id: string | null
+}
+
+type FriendProfileLite = {
+  id: string
+  email: string | null
+}
+
 function getAvatarInitial(name?: string | null) {
   const normalized = String(name ?? '').trim()
   return normalized ? normalized.charAt(0).toUpperCase() : 'G'
@@ -153,38 +162,12 @@ export default async function FeedEventDetailPage({
 
   const currentUserEmail = (user.email ?? '').trim().toLowerCase()
 
-  const { data: friendsData } = await supabase
-    .from('friends')
-    .select('friend_email')
-    .eq('user_email', currentUserEmail)
-    .eq('status', 'accepted')
-
-  const friendEmails = ((friendsData as FriendRow[] | null) ?? [])
-    .map((friend) => friend.friend_email)
-    .filter((email): email is string => typeof email === 'string')
-    .map((email) => email.trim().toLowerCase())
-    .filter((email) => email.length > 0)
-
-  let friendUserIds: string[] = []
-
-  if (friendEmails.length > 0) {
-    const { data: friendProfiles } = await supabase
-      .from('profiles')
-      .select('id, email')
-      .in('email', friendEmails)
-
-    friendUserIds = (friendProfiles ?? []).map((profile) => profile.id)
-  }
-
-  const visibleUserIds = Array.from(new Set([user.id, ...friendUserIds]))
-
   const { data: eventData, error: eventError } = await supabase
     .from('feed_events')
     .select(
       'id, user_id, round_id, event_type, hole_number, created_at, player_name, course_name'
     )
     .eq('id', id)
-    .in('user_id', visibleUserIds)
     .maybeSingle()
 
   if (eventError) {
@@ -195,6 +178,56 @@ export default async function FeedEventDetailPage({
 
   if (!event) {
     notFound()
+  }
+
+  if (event.user_id !== user.id) {
+    const [
+      { data: directFriendsData, error: directFriendsError },
+      { data: reverseFriendsData, error: reverseFriendsError },
+    ] = await Promise.all([
+      supabase.from('friends').select('friend_email').eq('user_id', user.id),
+      supabase.from('friends').select('user_id').eq('friend_email', currentUserEmail),
+    ])
+
+    if (directFriendsError) {
+      console.error('Failed to load direct friends for feed detail:', directFriendsError)
+    }
+    if (reverseFriendsError) {
+      console.error('Failed to load reverse friends for feed detail:', reverseFriendsError)
+    }
+
+    const friendEmails = ((directFriendsData as FriendRow[] | null) ?? [])
+      .map((friend) => friend.friend_email)
+      .filter((email): email is string => typeof email === 'string')
+      .map((email) => email.trim().toLowerCase())
+      .filter((email) => email.length > 0)
+
+    let friendUserIds: string[] = []
+
+    if (friendEmails.length > 0) {
+      const { data: friendProfilesData, error: friendProfilesError } = await supabase
+        .from('profiles')
+        .select('id, email')
+        .in('email', friendEmails)
+
+      if (friendProfilesError) {
+        console.error('Failed to load friend profiles for feed detail:', friendProfilesError)
+      }
+
+      friendUserIds = ((friendProfilesData as FriendProfileLite[] | null) ?? [])
+        .map((profile) => profile.id)
+        .filter((id) => typeof id === 'string' && id.length > 0)
+    }
+
+    const reverseFriendUserIds = ((reverseFriendsData as ReverseFriendRow[] | null) ?? [])
+      .map((row) => String(row.user_id ?? '').trim())
+      .filter((id) => id.length > 0)
+
+    const allFriendUserIds = new Set([...friendUserIds, ...reverseFriendUserIds])
+
+    if (!allFriendUserIds.has(event.user_id)) {
+      notFound()
+    }
   }
 
   const [{ data: likesData }, { data: commentsData }] = await Promise.all([
