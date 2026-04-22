@@ -41,7 +41,10 @@ function getAvatarPathFromPublicUrl(url: string) {
   const marker = `/storage/v1/object/public/${AVATAR_BUCKET}/`
   const markerIndex = url.indexOf(marker)
   if (markerIndex < 0) return null
-  return url.slice(markerIndex + marker.length)
+
+  const pathWithQuery = url.slice(markerIndex + marker.length)
+  const cleanPath = pathWithQuery.split('?')[0].split('#')[0]
+  return cleanPath || null
 }
 
 export async function uploadAvatar(formData: FormData) {
@@ -71,8 +74,20 @@ export async function uploadAvatar(formData: FormData) {
     redirect('/profile?message=Bilden ar for stor, max 5 MB&type=error')
   }
 
+  const { data: existingProfile } = await supabase
+    .from('profiles')
+    .select('avatar_url')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const oldAvatarUrl = String(
+    (existingProfile as { avatar_url?: string | null } | null)?.avatar_url ?? ''
+  )
+  const oldAvatarPath = oldAvatarUrl ? getAvatarPathFromPublicUrl(oldAvatarUrl) : null
+
   const ext = getAvatarFileExt(file)
-  const avatarPath = `${user.id}/avatar.${ext}`
+  const uploadVersion = Date.now()
+  const avatarPath = `${user.id}/avatar-${uploadVersion}.${ext}`
 
   const { error: uploadError } = await supabase.storage
     .from(AVATAR_BUCKET)
@@ -91,7 +106,7 @@ export async function uploadAvatar(formData: FormData) {
     .from(AVATAR_BUCKET)
     .getPublicUrl(avatarPath)
 
-  const avatarUrl = publicUrlData.publicUrl
+  const avatarUrl = `${publicUrlData.publicUrl}?v=${uploadVersion}`
 
   const { error: updateError } = await supabase
     .from('profiles')
@@ -101,6 +116,10 @@ export async function uploadAvatar(formData: FormData) {
   if (updateError) {
     console.error('uploadAvatar profile update failed:', updateError)
     redirect('/profile?message=Kunde inte spara profilbild&type=error')
+  }
+
+  if (oldAvatarPath && oldAvatarPath !== avatarPath) {
+    await supabase.storage.from(AVATAR_BUCKET).remove([oldAvatarPath])
   }
 
   revalidatePath('/profile')
@@ -127,7 +146,9 @@ export async function removeAvatar() {
     .eq('id', user.id)
     .maybeSingle()
 
-  const avatarUrl = String((profileData as { avatar_url?: string | null } | null)?.avatar_url ?? '')
+  const avatarUrl = String(
+    (profileData as { avatar_url?: string | null } | null)?.avatar_url ?? ''
+  )
   const avatarPath = avatarUrl ? getAvatarPathFromPublicUrl(avatarUrl) : null
 
   if (avatarPath) {

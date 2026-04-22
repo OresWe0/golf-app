@@ -787,7 +787,7 @@ export default async function ProfilePage({
                     </div>
                   </div>
 
-                  <form action={uploadAvatar} style={{ display: 'grid', gap: 10 }}>
+                  <form action={uploadAvatar} method="post" encType="multipart/form-data" style={{ display: 'grid', gap: 10 }}>
                     <input
                       name="avatar"
                       type="file"
@@ -808,6 +808,7 @@ export default async function ProfilePage({
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       <button
                         type="submit"
+                        formAction={uploadAvatar}
                         className="button secondary"
                         style={{ minHeight: 46, fontWeight: 800 }}
                       >
@@ -1132,6 +1133,7 @@ export default async function ProfilePage({
     </main>
   )
 }
+
 
 
 
