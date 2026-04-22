@@ -103,6 +103,55 @@ type RoundWithCreatedAt = Round & {
   created_at?: string | null
 }
 
+function getAvatarInitial(name?: string | null) {
+  const normalized = String(name ?? '').trim()
+  return normalized ? normalized.charAt(0).toUpperCase() : 'G'
+}
+
+function UserAvatar({
+  profile,
+  name,
+  size = 32,
+}: {
+  profile?: Profile | null
+  name?: string | null
+  size?: number
+}) {
+  const avatarUrl = profile?.avatar_url?.trim()
+  const initial = getAvatarInitial(name ?? profile?.display_name ?? profile?.email ?? '')
+
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        overflow: 'hidden',
+        border: '1px solid #d1d5db',
+        background: '#e8f2ea',
+        color: '#1f3327',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 900,
+        fontSize: Math.max(12, Math.round(size * 0.45)),
+        flexShrink: 0,
+      }}
+      aria-hidden="true"
+    >
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt=""
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      ) : (
+        initial
+      )}
+    </div>
+  )
+}
+
 function getSingleParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value
 }
@@ -683,6 +732,8 @@ function NotificationsSection({
 
       <div style={{ display: 'grid', gap: 10 }}>
         {notifications.map((notification) => {
+          const actorProfile =
+            actorProfiles.find((profile) => profile.id === notification.actor_user_id) ?? null
           const actorName = getNotificationActorName(
             notification,
             actorProfiles
@@ -703,13 +754,16 @@ function NotificationsSection({
                 flexWrap: 'wrap',
               }}
             >
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontWeight: 800, color: '#1f3327' }}>
-                  {getNotificationSummary(notification, actorName)}
-                </div>
+              <div style={{ minWidth: 0, flex: 1, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <UserAvatar profile={actorProfile} name={actorName} size={34} />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontWeight: 800, color: '#1f3327' }}>
+                    {getNotificationSummary(notification, actorName)}
+                  </div>
 
-                <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
-                  {formatFeedEventTime(notification.created_at)}
+                  <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+                    {formatFeedEventTime(notification.created_at)}
+                  </div>
                 </div>
               </div>
 
@@ -936,6 +990,7 @@ function getNotificationSummary(notification: NotificationRow, actorName: string
 function FeedEventCard({
   event,
   playerName,
+  playerProfile,
   courseName,
   likesCount,
   likedByMe,
@@ -943,6 +998,7 @@ function FeedEventCard({
 }: {
   event: FeedEvent
   playerName: string
+  playerProfile?: Profile | null
   courseName: string
   likesCount: number
   likedByMe: boolean
@@ -969,8 +1025,11 @@ function FeedEventCard({
         boxShadow: '0 12px 28px rgba(15, 23, 42, 0.04)',
       }}
     >
-      <div style={{ fontWeight: 900, color: '#1f3327' }}>
-        {eventMeta.emoji} {playerName} {eventMeta.text}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <UserAvatar profile={playerProfile} name={playerName} size={34} />
+        <div style={{ fontWeight: 900, color: '#1f3327' }}>
+          {eventMeta.emoji} {playerName} {eventMeta.text}
+        </div>
       </div>
 
       <div className="muted">Hål {event.hole_number} - {courseName}</div>
@@ -1831,7 +1890,7 @@ export default async function DashboardPage({
   if (profileIdsForFeedAndNotifications.length > 0) {
     const { data: profileData, error: profileDataError } = await supabase
       .from('profiles')
-      .select('id, display_name, email')
+      .select('id, display_name, email, avatar_url')
       .in('id', profileIdsForFeedAndNotifications)
 
     if (profileDataError) {
@@ -1860,6 +1919,8 @@ export default async function DashboardPage({
   const membershipByRoundId = new Map(
     userMemberships.map((member) => [member.round_id, member.role] as const)
   )
+
+  const profileById = new Map(actorProfiles.map((profile) => [profile.id, profile] as const))
 
   const displayName =
     userProfile?.display_name?.trim() || user.email || 'Golfspelare'
@@ -2154,6 +2215,7 @@ export default async function DashboardPage({
                       key={event.id}
                       event={event}
                       playerName={getPlayerNameForFeedEvent(event, allRoundPlayers)}
+                      playerProfile={profileById.get(event.user_id) ?? null}
                       courseName={getCourseNameForFeedEvent(
                         event,
                         allRounds,

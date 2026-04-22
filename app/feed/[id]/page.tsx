@@ -37,6 +37,55 @@ type FriendRow = {
   friend_email: string | null
 }
 
+function getAvatarInitial(name?: string | null) {
+  const normalized = String(name ?? '').trim()
+  return normalized ? normalized.charAt(0).toUpperCase() : 'G'
+}
+
+function UserAvatar({
+  profile,
+  name,
+  size = 34,
+}: {
+  profile?: Profile | null
+  name?: string | null
+  size?: number
+}) {
+  const avatarUrl = profile?.avatar_url?.trim()
+  const initial = getAvatarInitial(name ?? profile?.display_name ?? profile?.email ?? '')
+
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        overflow: 'hidden',
+        border: '1px solid #d1d5db',
+        background: '#e8f2ea',
+        color: '#1f3327',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 900,
+        fontSize: Math.max(12, Math.round(size * 0.45)),
+        flexShrink: 0,
+      }}
+      aria-hidden="true"
+    >
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt=""
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      ) : (
+        initial
+      )}
+    </div>
+  )
+}
+
 function formatFeedEventTime(value: string) {
   const date = new Date(value)
 
@@ -176,7 +225,7 @@ export default async function FeedEventDetailPage({
   if (profileIds.length > 0) {
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .select('id, display_name, email')
+      .select('id, display_name, email, avatar_url')
       .in('id', profileIds)
 
     if (profileError) {
@@ -230,8 +279,11 @@ export default async function FeedEventDetailPage({
         </div>
 
         <div className="card" style={{ borderRadius: 22, display: 'grid', gap: 10 }}>
-          <div style={{ fontWeight: 900, color: '#1f3327', fontSize: 22 }}>
-            {eventMeta.emoji} {playerName} gjorde {eventMeta.text}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <UserAvatar profile={profileById.get(event.user_id)} name={playerName} size={38} />
+            <div style={{ fontWeight: 900, color: '#1f3327', fontSize: 22 }}>
+              {eventMeta.emoji} {playerName} gjorde {eventMeta.text}
+            </div>
           </div>
 
           <div className="muted">
@@ -295,8 +347,11 @@ export default async function FeedEventDetailPage({
                       background: '#f8fafc',
                     }}
                   >
-                    <div style={{ fontWeight: 900 }}>{authorName}</div>
-                    <div style={{ marginTop: 4, color: '#374151' }}>{comment.body}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <UserAvatar profile={author} name={authorName} size={30} />
+                      <div style={{ fontWeight: 900 }}>{authorName}</div>
+                    </div>
+                    <div style={{ marginTop: 6, color: '#374151' }}>{comment.body}</div>
                   </div>
                 )
               })}

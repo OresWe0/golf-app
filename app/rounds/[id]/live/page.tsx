@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
@@ -72,6 +72,12 @@ type CheerActorProfile = {
   id: string
   display_name: string | null
   email: string | null
+  avatar_url?: string | null
+}
+
+type CheerActorView = {
+  name: string
+  avatarUrl: string | null
 }
 
 type LeaderRow = {
@@ -90,12 +96,12 @@ function formatVsPar(value: number) {
 }
 
 function getScoringLabel(mode: RoundRow['scoring_mode']) {
-  return mode === 'stableford' ? 'Poängbogey' : 'Slagspel'
+  return mode === 'stableford' ? 'PoÃ¤ngbogey' : 'Slagspel'
 }
 
 function getModeLabel(round: RoundRow, startHole: number) {
-  if (round.holes_mode === 18) return '18 hål'
-  return startHole === 1 ? '9 hål · Främre 9' : '9 hål · Bakre 9'
+  if (round.holes_mode === 18) return '18 hÃ¥l'
+  return startHole === 1 ? '9 hÃ¥l Â· FrÃ¤mre 9' : '9 hÃ¥l Â· Bakre 9'
 }
 
 function getNowLabel() {
@@ -132,6 +138,11 @@ function formatCheerTime(value: string) {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+function getAvatarInitial(name?: string | null) {
+  const normalized = String(name ?? '').trim()
+  return normalized ? normalized.charAt(0).toUpperCase() : 'G'
 }
 
 function buildLeaderboard(args: {
@@ -473,20 +484,23 @@ export default async function RoundLivePage({
     new Set(cheerEntries.map((item) => item.actorUserId).filter((id) => id.length > 0))
   )
 
-  let cheerActorNameById = new Map<string, string>()
+  let cheerActorById = new Map<string, CheerActorView>()
 
   if (cheerActorIds.length > 0) {
     const profileReadClient = supabaseAdmin ?? supabase
     const { data: cheerActorProfilesRaw } = await profileReadClient
       .from('profiles')
-      .select('id, display_name, email')
+      .select('id, display_name, email, avatar_url')
       .in('id', cheerActorIds)
 
     const cheerActorProfiles = (cheerActorProfilesRaw as CheerActorProfile[] | null) ?? []
-    cheerActorNameById = new Map(
+    cheerActorById = new Map(
       cheerActorProfiles.map((profile) => [
         profile.id,
-        profile.display_name?.trim() || profile.email?.trim() || 'En vän',
+        {
+          name: profile.display_name?.trim() || profile.email?.trim() || 'En vän',
+          avatarUrl: profile.avatar_url?.trim() || null,
+        },
       ])
     )
   }
@@ -501,7 +515,7 @@ export default async function RoundLivePage({
     endHole,
   })
 
-  const ownerName = ownerProfile?.display_name?.trim() || ownerEmail || 'vän'
+  const ownerName = ownerProfile?.display_name?.trim() || ownerEmail || 'vÃ¤n'
   const currentHolePar = holes.find((hole) => hole.hole_number === currentHole)?.par ?? null
 
   return (
@@ -515,7 +529,7 @@ export default async function RoundLivePage({
                 {round.title}
               </h1>
               <div className="muted">
-                {course.name} · {getScoringLabel(round.scoring_mode)} · {getModeLabel(round, startHole)}
+                {course.name} Â· {getScoringLabel(round.scoring_mode)} Â· {getModeLabel(round, startHole)}
               </div>
             </div>
 
@@ -541,11 +555,11 @@ export default async function RoundLivePage({
             }}
           >
             <div style={{ fontWeight: 800, color: '#1f3327' }}>
-              Följ {ownerName}s runda live
+              FÃ¶lj {ownerName}s runda live
             </div>
             <div className="muted" style={{ fontSize: 14 }}>
-              Aktuellt hål: {currentHole}
-              {currentHolePar ? ` · Par ${currentHolePar}` : ''} · Status: {round.status}
+              Aktuellt hÃ¥l: {currentHole}
+              {currentHolePar ? ` Â· Par ${currentHolePar}` : ''} Â· Status: {round.status}
             </div>
           </div>
 
@@ -580,7 +594,7 @@ export default async function RoundLivePage({
               Skicka hejarop
             </button>
             <div className="muted" style={{ fontSize: 13 }}>
-              Skickar en notis till spelarna i den här rundan.
+              Skickar en notis till spelarna i den hÃ¤r rundan.
             </div>
           </form>
         </div>
@@ -589,7 +603,7 @@ export default async function RoundLivePage({
           <h2 style={{ margin: 0 }}>Publikchat</h2>
           {cheerEntries.length === 0 ? (
             <div className="muted" style={{ fontSize: 14 }}>
-              Inga hejarop ännu. Skriv ett peppmeddelande ovan.
+              Inga hejarop Ã¤nnu. Skriv ett peppmeddelande ovan.
             </div>
           ) : (
             <div style={{ display: 'grid', gap: 8 }}>
@@ -605,8 +619,38 @@ export default async function RoundLivePage({
                     gap: 4,
                   }}
                 >
-                  <div style={{ fontWeight: 800, color: '#1f3327' }}>
-                    🔥 {cheerActorNameById.get(entry.actorUserId) ?? 'En vän'}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: '50%',
+                        overflow: 'hidden',
+                        border: '1px solid #d1d5db',
+                        background: '#e8f2ea',
+                        color: '#1f3327',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 900,
+                        fontSize: 14,
+                        flexShrink: 0,
+                      }}
+                      aria-hidden="true"
+                    >
+                      {cheerActorById.get(entry.actorUserId)?.avatarUrl ? (
+                        <img
+                          src={cheerActorById.get(entry.actorUserId)?.avatarUrl ?? ''}
+                          alt=""
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        getAvatarInitial(cheerActorById.get(entry.actorUserId)?.name ?? 'En vän')
+                      )}
+                    </div>
+                    <div style={{ fontWeight: 800, color: '#1f3327' }}>
+                      ðŸ”¥ {cheerActorById.get(entry.actorUserId)?.name ?? 'En vän'}
+                    </div>
                   </div>
                   <div style={{ color: '#1f3327' }}>{entry.message}</div>
                   <div className="muted" style={{ fontSize: 12 }}>
@@ -641,7 +685,7 @@ export default async function RoundLivePage({
                     #{entry.position} {entry.name}
                   </div>
                   <div className="muted" style={{ fontSize: 13 }}>
-                    Registrerade hål: {entry.holesPlayed}
+                    Registrerade hÃ¥l: {entry.holesPlayed}
                   </div>
                 </div>
 
@@ -689,7 +733,7 @@ export default async function RoundLivePage({
                     }}
                   >
                     <div className="muted" style={{ fontSize: 12 }}>
-                      Poäng
+                      PoÃ¤ng
                     </div>
                     <div style={{ fontWeight: 900, fontSize: 24 }}>{entry.totalPoints}</div>
                   </div>
@@ -702,3 +746,4 @@ export default async function RoundLivePage({
     </main>
   )
 }
+
