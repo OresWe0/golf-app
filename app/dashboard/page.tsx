@@ -323,6 +323,8 @@ const dashboardStyles = {
     border: '1px solid rgba(255,255,255,0.18)',
     borderRadius: 28,
     boxShadow: '0 24px 56px rgba(22, 59, 42, 0.28)',
+    position: 'relative' as const,
+    overflow: 'hidden' as const,
     marginBottom: 24,
   },
   sectionCard: {
@@ -508,18 +510,64 @@ function FriendRequestNotice({
 
 function DashboardHeader({
   displayName,
+  profile,
   isAdmin,
   pendingCount,
   incomingFriendRequestsCount,
+  friendCount,
+  handicapIndex,
 }: {
   displayName: string
+  profile: Profile | null
   isAdmin: boolean
   pendingCount: number
   incomingFriendRequestsCount: number
+  friendCount: number
+  handicapIndex: number | null
 }) {
+  const handicapLabel =
+    typeof handicapIndex === 'number' && Number.isFinite(handicapIndex)
+      ? handicapIndex.toFixed(1)
+      : '—'
+
   return (
     <div className="card" style={dashboardStyles.heroCard}>
-      <div style={{ display: 'grid', gap: 20 }}>
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+          borderRadius: 28,
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            width: 320,
+            height: 320,
+            right: -110,
+            top: -130,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 72%)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            width: 360,
+            height: 360,
+            left: -170,
+            bottom: -210,
+            borderRadius: '50%',
+            background:
+              'radial-gradient(circle, rgba(187,247,208,0.26) 0%, rgba(187,247,208,0) 72%)',
+          }}
+        />
+      </div>
+
+      <div style={{ display: 'grid', gap: 20, position: 'relative', zIndex: 1 }}>
         <div
           style={{
             display: 'flex',
@@ -530,34 +578,38 @@ function DashboardHeader({
           }}
         >
           <div style={{ maxWidth: 720 }}>
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '10px 14px',
-                borderRadius: 999,
-                background: 'rgba(255,255,255,0.14)',
-                border: '1px solid rgba(255,255,255,0.18)',
-                color: '#ffffff',
-                fontWeight: 900,
-                backdropFilter: 'blur(6px)',
-              }}
-            >
-              👋 Inloggad som {displayName}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+              <UserAvatar profile={profile} name={displayName} size={68} />
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '10px 14px',
+                  borderRadius: 999,
+                  background: 'rgba(255,255,255,0.14)',
+                  border: '1px solid rgba(255,255,255,0.18)',
+                  color: '#ffffff',
+                  fontWeight: 900,
+                  backdropFilter: 'blur(6px)',
+                }}
+              >
+                👋 Inloggad som {displayName}
+              </span>
+            </div>
 
             <h1
               style={{
-                marginTop: 18,
+                marginTop: 6,
                 marginBottom: 12,
                 fontSize: 'clamp(2.2rem, 5vw, 3.4rem)',
                 lineHeight: 0.95,
                 color: '#ffffff',
                 letterSpacing: -1,
+                fontWeight: 900,
               }}
             >
-              Träffa fairway,
+              God kväll,
               <br />
               <span style={{ fontWeight: 900 }}>{displayName}</span>
             </h1>
@@ -574,6 +626,51 @@ function DashboardHeader({
               Redo för nästa runda? Starta snabbt, fortsätt en aktiv runda eller
               följ dina golfvänner.
             </p>
+
+            <div
+              className="dashboard-hero-metrics"
+              style={{
+                marginTop: 16,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: 10,
+                maxWidth: 520,
+              }}
+            >
+              <div
+                style={{
+                  borderRadius: 18,
+                  padding: '12px 14px',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  background: 'rgba(255,255,255,0.13)',
+                  backdropFilter: 'blur(6px)',
+                }}
+              >
+                <div style={{ color: 'rgba(255,255,255,0.82)', fontSize: 12, fontWeight: 700 }}>
+                  Vänner
+                </div>
+                <div style={{ marginTop: 4, color: '#fff', fontSize: 28, fontWeight: 900 }}>
+                  {friendCount}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  borderRadius: 18,
+                  padding: '12px 14px',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  background: 'rgba(255,255,255,0.13)',
+                  backdropFilter: 'blur(6px)',
+                }}
+              >
+                <div style={{ color: 'rgba(255,255,255,0.82)', fontSize: 12, fontWeight: 700 }}>
+                  HCP
+                </div>
+                <div style={{ marginTop: 4, color: '#fff', fontSize: 28, fontWeight: 900 }}>
+                  {handicapLabel}
+                </div>
+              </div>
+            </div>
           </div>
 
           {isAdmin && pendingCount > 0 ? (
@@ -2068,6 +2165,10 @@ export default async function DashboardPage({
             grid-template-columns: 1fr 1fr !important;
           }
 
+          .dashboard-hero-metrics {
+            grid-template-columns: 1fr 1fr !important;
+          }
+
           .dashboard-header-actions form {
             grid-column: 1 / -1;
           }
@@ -2075,6 +2176,10 @@ export default async function DashboardPage({
 
         @media (max-width: 560px) {
           .dashboard-header-actions {
+            grid-template-columns: 1fr !important;
+          }
+
+          .dashboard-hero-metrics {
             grid-template-columns: 1fr !important;
           }
 
@@ -2130,9 +2235,12 @@ export default async function DashboardPage({
         <div style={{ display: 'grid', gap: 16, marginBottom: 18 }}>
           <DashboardHeader
             displayName={displayName}
+            profile={userProfile}
             isAdmin={isAdmin}
             pendingCount={pendingCount}
             incomingFriendRequestsCount={incomingFriendRequestsCount}
+            friendCount={friendUserIds.length}
+            handicapIndex={userProfile?.handicap_index ?? null}
           />
 
           <InstallAppPrompt />
