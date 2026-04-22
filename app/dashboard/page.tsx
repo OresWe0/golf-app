@@ -3,6 +3,7 @@ import {
   unlikeFeedEvent,
   markNotificationAsRead,
 } from './actions'
+import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -351,6 +352,18 @@ const dashboardStyles = {
     textAlign: 'center' as const,
     boxSizing: 'border-box' as const,
   },
+  quickAction: {
+    minHeight: 40,
+    padding: '8px 14px',
+    borderRadius: 999,
+    fontSize: 14,
+    fontWeight: 800,
+    width: 'auto',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: 'none',
+  } satisfies CSSProperties,
 }
 
 function SectionEmptyState({
@@ -619,10 +632,10 @@ function DashboardHeader({
             <div
               className="dashboard-hero-metrics"
               style={{
-                marginTop: 16,
+                marginTop: 12,
                 display: 'grid',
                 gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gap: 10,
+                gap: 8,
                 maxWidth: 520,
               }}
             >
@@ -631,7 +644,7 @@ function DashboardHeader({
                 className="button secondary"
                 style={{
                   borderRadius: 18,
-                  padding: '12px 14px',
+                  padding: '10px 12px',
                   border: '1px solid rgba(255,255,255,0.2)',
                   background: 'rgba(255,255,255,0.13)',
                   backdropFilter: 'blur(6px)',
@@ -645,7 +658,7 @@ function DashboardHeader({
                 <div style={{ color: 'rgba(255,255,255,0.82)', fontSize: 12, fontWeight: 700 }}>
                   Vänner
                 </div>
-                <div style={{ marginTop: 4, color: '#fff', fontSize: 28, fontWeight: 900 }}>
+                <div style={{ marginTop: 3, color: '#fff', fontSize: 24, fontWeight: 900 }}>
                   {friendCount}
                 </div>
               </Link>
@@ -653,7 +666,7 @@ function DashboardHeader({
               <div
                 style={{
                   borderRadius: 18,
-                  padding: '12px 14px',
+                  padding: '10px 12px',
                   border: '1px solid rgba(255,255,255,0.2)',
                   background: 'rgba(255,255,255,0.13)',
                   backdropFilter: 'blur(6px)',
@@ -662,7 +675,7 @@ function DashboardHeader({
                 <div style={{ color: 'rgba(255,255,255,0.82)', fontSize: 12, fontWeight: 700 }}>
                   HCP
                 </div>
-                <div style={{ marginTop: 4, color: '#fff', fontSize: 28, fontWeight: 900 }}>
+                <div style={{ marginTop: 3, color: '#fff', fontSize: 24, fontWeight: 900 }}>
                   {handicapLabel}
                 </div>
               </div>
@@ -690,10 +703,10 @@ function DashboardHeader({
             className="button"
             style={{
               width: '100%',
-              minHeight: 64,
-              fontSize: 21,
+              minHeight: 56,
+              fontSize: 18,
               fontWeight: 900,
-              borderRadius: 22,
+              borderRadius: 18,
               background: 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)',
               color: '#fff',
               boxShadow: '0 20px 42px rgba(15, 47, 32, 0.32)',
@@ -706,12 +719,10 @@ function DashboardHeader({
           <div
             className="dashboard-header-actions"
             style={{
-              display: 'grid',
-              gridTemplateColumns: isAdmin
-                ? 'repeat(4, minmax(0, 1fr))'
-                : 'repeat(3, minmax(0, 1fr))',
-              gap: 10,
-              alignItems: 'stretch',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              alignItems: 'center',
             }}
           >
             {isAdmin ? (
@@ -719,13 +730,13 @@ function DashboardHeader({
                 href="/admin/users"
                 className="button secondary"
                 style={{
-                  ...dashboardStyles.softButton,
+                  ...dashboardStyles.quickAction,
                   background: 'rgba(255,255,255,0.14)',
                   color: '#ffffff',
                   border: '1px solid rgba(255,255,255,0.16)',
                 }}
               >
-                Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
+                🛠 Admin{pendingCount > 0 ? ` (${pendingCount})` : ''}
               </Link>
             ) : null}
 
@@ -734,7 +745,7 @@ function DashboardHeader({
                 href="/profile"
                 className="button secondary"
                 style={{
-                  ...dashboardStyles.softButton,
+                  ...dashboardStyles.quickAction,
                   background: 'rgba(255,255,255,0.14)',
                   color: '#ffffff',
                   border: '1px solid rgba(255,255,255,0.16)',
@@ -748,19 +759,19 @@ function DashboardHeader({
                   aria-label={`${incomingFriendRequestsCount} inkommande vänförfrågningar`}
                   style={{
                     position: 'absolute',
-                    top: -6,
-                    right: -6,
-                    minWidth: 24,
-                    height: 24,
+                    top: -5,
+                    right: -5,
+                    minWidth: 20,
+                    height: 20,
                     borderRadius: 999,
                     background: '#dc2626',
                     color: '#fff',
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: 900,
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    padding: '0 7px',
+                    padding: '0 6px',
                     boxShadow: '0 8px 18px rgba(220, 38, 38, 0.26)',
                     border: '2px solid #fff',
                   }}
@@ -774,13 +785,13 @@ function DashboardHeader({
               href="/statistik"
               className="button secondary"
               style={{
-                ...dashboardStyles.softButton,
+                ...dashboardStyles.quickAction,
                 background: 'rgba(255,255,255,0.14)',
                 color: '#ffffff',
                 border: '1px solid rgba(255,255,255,0.16)',
               }}
             >
-              Statistik
+              📈 Statistik
             </Link>
 
             <form action={signOut}>
@@ -788,14 +799,13 @@ function DashboardHeader({
                 type="submit"
                 className="button secondary"
                 style={{
-                  width: '100%',
-                  minHeight: 52,
+                  ...dashboardStyles.quickAction,
                   background: 'rgba(255,255,255,0.14)',
                   color: '#ffffff',
                   border: '1px solid rgba(255,255,255,0.16)',
                 }}
               >
-                Logga ut
+                ↪ Logga ut
               </button>
             </form>
           </div>
@@ -2162,29 +2172,16 @@ export default async function DashboardPage({
 
         @media (max-width: 820px) {
           .dashboard-header-actions {
-            grid-template-columns: 1fr 1fr !important;
-          }
-
-          .dashboard-hero-metrics {
-            grid-template-columns: 1fr 1fr !important;
-          }
-
-          .dashboard-header-actions form {
-            grid-column: 1 / -1;
+            flex-wrap: nowrap !important;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            scrollbar-width: thin;
           }
         }
 
         @media (max-width: 560px) {
-          .dashboard-header-actions {
-            grid-template-columns: 1fr !important;
-          }
-
           .dashboard-hero-metrics {
             grid-template-columns: 1fr !important;
-          }
-
-          .dashboard-header-actions form {
-            grid-column: auto;
           }
         }
 
