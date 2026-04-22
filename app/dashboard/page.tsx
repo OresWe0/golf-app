@@ -321,8 +321,8 @@ const dashboardStyles = {
   heroCard: {
     background:
       'linear-gradient(180deg, rgba(8, 20, 14, 0.42) 0%, rgba(13, 37, 26, 0.56) 46%, rgba(22, 59, 42, 0.74) 100%), url(/hero-karsta.jpg)',
-    backgroundSize: 'cover',
-    backgroundPosition: 'center 42%',
+    backgroundSize: '115% auto',
+    backgroundPosition: 'center 38%',
     border: '1px solid rgba(255,255,255,0.18)',
     borderRadius: 28,
     boxShadow: '0 24px 56px rgba(22, 59, 42, 0.28)',
@@ -575,7 +575,7 @@ function DashboardHeader({
   }
 
   return (
-    <div className="card" style={dashboardStyles.heroCard}>
+    <div className="card dashboard-hero" style={dashboardStyles.heroCard}>
       <div
         aria-hidden="true"
         style={{
@@ -615,7 +615,7 @@ function DashboardHeader({
         <div
           style={{
             position: 'absolute',
-            top: 0,
+            top: 'calc(env(safe-area-inset-top) + 10px)',
             right: 0,
             display: 'inline-flex',
             gap: 10,
@@ -715,11 +715,12 @@ function DashboardHeader({
             gap: 10,
             alignItems: 'flex-start',
             flexWrap: 'wrap',
+            marginTop: 'calc(env(safe-area-inset-top) + 14px)',
           }}
         >
           <div style={{ maxWidth: 720 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-              <UserAvatar profile={profile} name={displayName} size={74} />
+              <UserAvatar profile={profile} name={displayName} size={92} />
             </div>
 
             <h1
@@ -2126,6 +2127,18 @@ export default async function DashboardPage({
   return (
     <main style={{ width: '100%', overflowX: 'hidden' }}>
       <style>{`
+        .dashboard-hero {
+          background-size: 115% auto !important;
+          background-position: center 38% !important;
+        }
+
+        @media (min-width: 980px) {
+          .dashboard-hero {
+            background-size: cover !important;
+            background-position: center 42% !important;
+          }
+        }
+
         .dashboard-header-actions,
         .dashboard-stats-grid,
         .round-meta-grid,
