@@ -1734,13 +1734,18 @@ const handleMapTouchEnd: TouchEventHandler<HTMLDivElement> = () => {
     setDistanceErrorMessage(null)
   }
 
-const navigateTo = (target: string) => {
+const navigateTo = (target: string, options?: { replace?: boolean }) => {
   if (isNavigatingRef.current) return
 
   clearPostSaveTimeout()
   clearToastTimeout()
 
   isNavigatingRef.current = true
+  if (options?.replace) {
+    router.replace(target, { scroll: false })
+    return
+  }
+
   router.push(target, { scroll: false })
 }  
 
@@ -1750,7 +1755,7 @@ const navigateTo = (target: string) => {
     const target =
       currentHole > startHole ? `/rounds/${roundId}?hole=${currentHole - 1}` : '/dashboard'
 
-    navigateTo(target)
+    navigateTo(target, { replace: currentHole === endHole })
   }
 
   const goNext = () => {
@@ -1798,7 +1803,7 @@ const navigateTo = (target: string) => {
         return
       }
 
-      navigateTo(`/rounds/${roundId}/summary`)
+      navigateTo(`/rounds/${roundId}/summary`, { replace: true })
     } finally {
       if (!isNavigatingRef.current) {
         setLoading(false)
