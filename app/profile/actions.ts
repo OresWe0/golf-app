@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { sendPushNotification } from '@/lib/send-push'
 
 type SavePushSubscriptionInput = {
@@ -19,6 +20,22 @@ type UploadedAvatarFile = {
 const AVATAR_BUCKET = 'avatars'
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024
 const ALLOWED_AVATAR_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+
+function getAdminClientOrNull() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    return null
+  }
+
+  return createAdminClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
+}
 
 function isUploadedAvatarFile(value: FormDataEntryValue | null): value is File {
   return (
@@ -108,10 +125,23 @@ export async function uploadAvatar(formData: FormData) {
 
   const avatarUrl = `${publicUrlData.publicUrl}?v=${uploadVersion}`
 
-  const { error: updateError } = await supabase
+  let { error: updateError } = await supabase
     .from('profiles')
     .update({ avatar_url: avatarUrl })
     .eq('id', user.id)
+
+  if (updateError) {
+    const adminClient = getAdminClientOrNull()
+
+    if (adminClient) {
+      const { error: adminUpdateError } = await adminClient
+        .from('profiles')
+        .update({ avatar_url: avatarUrl })
+        .eq('id', user.id)
+
+      updateError = adminUpdateError ?? null
+    }
+  }
 
   if (updateError) {
     console.error('uploadAvatar profile update failed:', updateError)
@@ -155,10 +185,23 @@ export async function removeAvatar() {
     await supabase.storage.from(AVATAR_BUCKET).remove([avatarPath])
   }
 
-  const { error: updateError } = await supabase
+  let { error: updateError } = await supabase
     .from('profiles')
     .update({ avatar_url: null })
     .eq('id', user.id)
+
+  if (updateError) {
+    const adminClient = getAdminClientOrNull()
+
+    if (adminClient) {
+      const { error: adminUpdateError } = await adminClient
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('id', user.id)
+
+      updateError = adminUpdateError ?? null
+    }
+  }
 
   if (updateError) {
     console.error('removeAvatar profile update failed:', updateError)
@@ -295,3 +338,4 @@ export async function sendTestPushNotification() {
 
   return { ok: true }
 }
+
