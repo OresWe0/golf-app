@@ -934,7 +934,7 @@ export default async function SummaryPage({
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
               gap: 10,
             }}
           >
@@ -1071,8 +1071,8 @@ export default async function SummaryPage({
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                gap: 12,
-                alignItems: 'flex-start',
+                gap: 10,
+                alignItems: 'stretch',
                 flexWrap: 'wrap',
                 marginBottom: 10,
               }}
@@ -1096,13 +1096,16 @@ export default async function SummaryPage({
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 8,
+                  gap: 6,
                   padding: '6px 12px',
                   borderRadius: 999,
                   border: '1px solid #d1fae5',
                   background: '#fff',
                   color: '#166534',
                   flexWrap: 'wrap',
+                  justifyContent: 'center',
+                  maxWidth: '100%',
+                  textAlign: 'center',
                   ...TYPE.labelStrong,
                 }}
               >
@@ -1126,6 +1129,7 @@ export default async function SummaryPage({
               style={{
                 marginBottom: 12,
                 ...TYPE.meta,
+                wordBreak: 'break-word',
               }}
             >
               {winner.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Exakt HCP{' '}
@@ -1225,13 +1229,16 @@ export default async function SummaryPage({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 8,
+                gap: 6,
                 padding: '6px 12px',
                 borderRadius: 999,
                 border: '1px solid #bbf7d0',
                 background: '#f0fdf4',
                 color: '#166534',
                 flexWrap: 'wrap',
+                justifyContent: 'center',
+                maxWidth: '100%',
+                textAlign: 'center',
                 ...TYPE.labelStrong,
               }}
             >
