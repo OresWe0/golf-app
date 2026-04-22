@@ -352,18 +352,6 @@ const dashboardStyles = {
     textAlign: 'center' as const,
     boxSizing: 'border-box' as const,
   },
-  quickAction: {
-    minHeight: 36,
-    padding: '7px 12px',
-    borderRadius: 999,
-    fontSize: 13,
-    fontWeight: 800,
-    width: 'auto',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: 'none',
-  } satisfies CSSProperties,
 }
 
 function getTimeGreetingSvSE(now = new Date()) {
@@ -544,8 +532,6 @@ function DashboardHeader({
   isAdmin,
   pendingCount,
   incomingFriendRequestsCount,
-  friendCount,
-  handicapIndex,
 }: {
   displayName: string
   profile: Profile | null
@@ -553,17 +539,7 @@ function DashboardHeader({
   isAdmin: boolean
   pendingCount: number
   incomingFriendRequestsCount: number
-  friendCount: number
-  handicapIndex: number | null
 }) {
-  const handicapLabel =
-    typeof handicapIndex === 'number' && Number.isFinite(handicapIndex)
-      ? new Intl.NumberFormat('sv-SE', {
-          minimumFractionDigits: 1,
-          maximumFractionDigits: 1,
-        }).format(handicapIndex)
-      : '—'
-
   const iconButtonStyle: CSSProperties = {
     width: 44,
     height: 44,
@@ -578,6 +554,24 @@ function DashboardHeader({
     boxShadow: '0 8px 22px rgba(15, 23, 42, 0.2)',
     fontSize: 22,
     lineHeight: 1,
+  }
+
+  const menuItemStyle: CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    justifyContent: 'flex-start',
+    width: '100%',
+    minHeight: 38,
+    padding: '8px 10px',
+    borderRadius: 10,
+    border: '1px solid rgba(255,255,255,0.18)',
+    background: 'rgba(255,255,255,0.09)',
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 800,
+    textDecoration: 'none',
+    boxSizing: 'border-box',
   }
 
   return (
@@ -620,9 +614,105 @@ function DashboardHeader({
       <div style={{ display: 'grid', gap: 20, position: 'relative', zIndex: 1 }}>
         <div
           style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            display: 'inline-flex',
+            gap: 10,
+            alignItems: 'center',
+            zIndex: 4,
+          }}
+        >
+          <div style={{ position: 'relative' }}>
+            <Link href="/profile" aria-label="Öppna profil" style={iconButtonStyle}>
+              👤
+            </Link>
+
+            {incomingFriendRequestsCount > 0 ? (
+              <span
+                aria-label={`${incomingFriendRequestsCount} inkommande vänförfrågningar`}
+                style={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -4,
+                  minWidth: 20,
+                  height: 20,
+                  borderRadius: 999,
+                  background: '#dc2626',
+                  color: '#fff',
+                  fontSize: 11,
+                  fontWeight: 900,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 6px',
+                  boxShadow: '0 8px 18px rgba(220, 38, 38, 0.26)',
+                  border: '2px solid #fff',
+                }}
+              >
+                {incomingFriendRequestsCount}
+              </span>
+            ) : null}
+          </div>
+
+          <details style={{ position: 'relative' }}>
+            <summary
+              aria-label="Öppna meny"
+              style={{
+                ...iconButtonStyle,
+                listStyle: 'none',
+                cursor: 'pointer',
+                WebkitAppearance: 'none',
+              }}
+            >
+              ☰
+            </summary>
+
+            <div
+              style={{
+                position: 'absolute',
+                top: 52,
+                right: 0,
+                minWidth: 172,
+                zIndex: 6,
+                borderRadius: 12,
+                border: '1px solid rgba(255,255,255,0.24)',
+                background: 'rgba(12, 35, 24, 0.92)',
+                backdropFilter: 'blur(10px)',
+                boxShadow: '0 18px 36px rgba(15, 23, 42, 0.35)',
+                padding: 8,
+                display: 'grid',
+                gap: 6,
+              }}
+            >
+              {isAdmin ? (
+                <Link href="/admin/users" style={menuItemStyle}>
+                  🛠 Admin{pendingCount > 0 ? ` ${pendingCount}` : ''}
+                </Link>
+              ) : null}
+
+              <Link href="/profile" style={menuItemStyle}>
+                👤 Profil
+              </Link>
+
+              <Link href="/statistik" style={menuItemStyle}>
+                📈 Stats
+              </Link>
+
+              <form action={signOut}>
+                <button type="submit" style={menuItemStyle}>
+                  ↪ Ut
+                </button>
+              </form>
+            </div>
+          </details>
+        </div>
+
+        <div
+          style={{
             display: 'flex',
-            justifyContent: 'space-between',
-            gap: 14,
+            justifyContent: 'flex-start',
+            gap: 10,
             alignItems: 'flex-start',
             flexWrap: 'wrap',
           }}
@@ -660,149 +750,6 @@ function DashboardHeader({
               Redo för nästa runda? Starta snabbt, fortsätt en aktiv runda eller följ dina
               golfvänner.
             </p>
-
-            <div
-              className="dashboard-hero-metrics"
-              style={{
-                marginTop: 12,
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gap: 8,
-                maxWidth: 520,
-              }}
-            >
-              <Link
-                href="/profile"
-                className="button secondary"
-                style={{
-                  borderRadius: 18,
-                  padding: '10px 12px',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  background: 'rgba(255,255,255,0.13)',
-                  backdropFilter: 'blur(6px)',
-                  minHeight: 0,
-                  display: 'block',
-                  textAlign: 'left',
-                  color: 'inherit',
-                  boxShadow: 'none',
-                }}
-              >
-                <div style={{ color: 'rgba(255,255,255,0.82)', fontSize: 12, fontWeight: 700 }}>
-                  Vänner
-                </div>
-                <div style={{ marginTop: 3, color: '#fff', fontSize: 24, fontWeight: 900 }}>
-                  {friendCount}
-                </div>
-              </Link>
-
-              <div
-                style={{
-                  borderRadius: 18,
-                  padding: '10px 12px',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  background: 'rgba(255,255,255,0.13)',
-                  backdropFilter: 'blur(6px)',
-                }}
-              >
-                <div style={{ color: 'rgba(255,255,255,0.82)', fontSize: 12, fontWeight: 700 }}>
-                  HCP
-                </div>
-                <div style={{ marginTop: 3, color: '#fff', fontSize: 24, fontWeight: 900 }}>
-                  {handicapLabel}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: 'inline-flex',
-              gap: 10,
-              alignItems: 'center',
-            }}
-          >
-            <div style={{ position: 'relative' }}>
-              <Link href="/profile" aria-label="Öppna profil" style={iconButtonStyle}>
-                👤
-              </Link>
-
-              {incomingFriendRequestsCount > 0 ? (
-                <span
-                  aria-label={`${incomingFriendRequestsCount} inkommande vänförfrågningar`}
-                  style={{
-                    position: 'absolute',
-                    top: -4,
-                    right: -4,
-                    minWidth: 20,
-                    height: 20,
-                    borderRadius: 999,
-                    background: '#dc2626',
-                    color: '#fff',
-                    fontSize: 11,
-                    fontWeight: 900,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '0 6px',
-                    boxShadow: '0 8px 18px rgba(220, 38, 38, 0.26)',
-                    border: '2px solid #fff',
-                  }}
-                >
-                  {incomingFriendRequestsCount}
-                </span>
-              ) : null}
-            </div>
-
-            <details style={{ position: 'relative' }}>
-              <summary
-                aria-label="Öppna meny"
-                style={{
-                  ...iconButtonStyle,
-                  listStyle: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                ☰
-              </summary>
-
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 52,
-                  right: 0,
-                  minWidth: 180,
-                  zIndex: 5,
-                  borderRadius: 14,
-                  border: '1px solid rgba(255,255,255,0.24)',
-                  background: 'rgba(12, 35, 24, 0.86)',
-                  backdropFilter: 'blur(10px)',
-                  boxShadow: '0 18px 36px rgba(15, 23, 42, 0.35)',
-                  padding: 8,
-                  display: 'grid',
-                  gap: 6,
-                }}
-              >
-                {isAdmin ? (
-                  <Link href="/admin/users" className="button secondary" style={dashboardStyles.quickAction}>
-                    🛠 Admin{pendingCount > 0 ? ` ${pendingCount}` : ''}
-                  </Link>
-                ) : null}
-
-                <Link href="/profile" className="button secondary" style={dashboardStyles.quickAction}>
-                  👤 Profil
-                </Link>
-
-                <Link href="/statistik" className="button secondary" style={dashboardStyles.quickAction}>
-                  📈 Stats
-                </Link>
-
-                <form action={signOut}>
-                  <button type="submit" className="button secondary" style={dashboardStyles.quickAction}>
-                    ↪ Ut
-                  </button>
-                </form>
-              </div>
-            </details>
           </div>
         </div>
 
@@ -2195,12 +2142,6 @@ export default async function DashboardPage({
           }
         }
 
-        @media (max-width: 560px) {
-          .dashboard-hero-metrics {
-            grid-template-columns: 1fr !important;
-          }
-        }
-
         @media (max-width: 720px) {
           .round-meta-grid {
             grid-template-columns: 1fr 1fr !important;
@@ -2253,8 +2194,6 @@ export default async function DashboardPage({
             isAdmin={isAdmin}
             pendingCount={pendingCount}
             incomingFriendRequestsCount={incomingFriendRequestsCount}
-            friendCount={friendUserIds.length}
-            handicapIndex={userProfile?.handicap_index ?? null}
           />
 
           <InstallAppPrompt />
