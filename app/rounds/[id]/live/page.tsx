@@ -80,6 +80,13 @@ type CheerActorView = {
   avatarUrl: string | null
 }
 
+type PlayerProfileView = {
+  id: string
+  display_name: string | null
+  email: string | null
+  avatar_url?: string | null
+}
+
 type LeaderRow = {
   playerId: string
   name: string
@@ -96,12 +103,12 @@ function formatVsPar(value: number) {
 }
 
 function getScoringLabel(mode: RoundRow['scoring_mode']) {
-  return mode === 'stableford' ? 'Poangbogey' : 'Slagspel'
+  return mode === 'stableford' ? 'Poängbogey' : 'Slagspel'
 }
 
 function getModeLabel(round: RoundRow, startHole: number) {
-  if (round.holes_mode === 18) return '18 hal'
-  return startHole === 1 ? '9 hal - Framre 9' : '9 hal - Bakre 9'
+  if (round.holes_mode === 18) return '18 hål'
+  return startHole === 1 ? '9 hål - Främre 9' : '9 hål - Bakre 9'
 }
 
 function getNowLabel() {
@@ -143,6 +150,47 @@ function formatCheerTime(value: string) {
 function getAvatarInitial(name?: string | null) {
   const normalized = String(name ?? '').trim()
   return normalized ? normalized.charAt(0).toUpperCase() : 'G'
+}
+
+function UserAvatar({
+  name,
+  avatarUrl,
+  size = 38,
+}: {
+  name?: string | null
+  avatarUrl?: string | null
+  size?: number
+}) {
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        overflow: 'hidden',
+        border: '1px solid #d1d5db',
+        background: '#e8f2ea',
+        color: '#1f3327',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 900,
+        fontSize: Math.max(12, Math.round(size * 0.42)),
+        flexShrink: 0,
+      }}
+      aria-hidden="true"
+    >
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt=""
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      ) : (
+        getAvatarInitial(name ?? 'Spelare')
+      )}
+    </div>
+  )
 }
 
 function buildLeaderboard(args: {
@@ -515,7 +563,29 @@ export default async function RoundLivePage({
     endHole,
   })
 
-  const ownerName = ownerProfile?.display_name?.trim() || ownerEmail || 'van'
+  const playerUserIds = Array.from(
+    new Set(players.map((player) => player.user_id).filter((id): id is string => !!id))
+  )
+  let playerProfileByUserId = new Map<string, PlayerProfileView>()
+
+  if (playerUserIds.length > 0) {
+    const profileReadClient = supabaseAdmin ?? supabase
+    const { data: playerProfilesRaw } = await profileReadClient
+      .from('profiles')
+      .select('id, display_name, email, avatar_url')
+      .in('id', playerUserIds)
+
+    const playerProfiles = (playerProfilesRaw as PlayerProfileView[] | null) ?? []
+    playerProfileByUserId = new Map(playerProfiles.map((profile) => [profile.id, profile]))
+  }
+
+  const scoreByPlayerHole = new Map<string, ScoreRow>()
+  for (const row of scores) {
+    scoreByPlayerHole.set(`${row.round_player_id}:${row.hole_number}`, row)
+  }
+
+  const playerById = new Map(players.map((player) => [player.id, player]))
+  const ownerName = ownerProfile?.display_name?.trim() || ownerEmail || 'vän'
   const currentHolePar = holes.find((hole) => hole.hole_number === currentHole)?.par ?? null
 
   return (
@@ -535,6 +605,9 @@ export default async function RoundLivePage({
 
             <div style={{ display: 'grid', gap: 8, justifyItems: 'end' }}>
               <LiveAutoRefresh intervalMs={15000} />
+              <Link className="button secondary" href="/dashboard">
+                Till startsidan
+              </Link>
               <Link className="button secondary" href={`/rounds/${round.id}/live`}>
                 Uppdatera live
               </Link>
@@ -555,10 +628,10 @@ export default async function RoundLivePage({
             }}
           >
             <div style={{ fontWeight: 800, color: '#1f3327' }}>
-              Folj {ownerName}s runda live
+              Följ {ownerName}s runda live
             </div>
             <div className="muted" style={{ fontSize: 14 }}>
-              Aktuellt hal: {currentHole}
+              Aktuellt hål: {currentHole}
               {currentHolePar ? ` - Par ${currentHolePar}` : ''} - Status: {round.status}
             </div>
           </div>
@@ -594,7 +667,7 @@ export default async function RoundLivePage({
               Skicka hejarop
             </button>
             <div className="muted" style={{ fontSize: 13 }}>
-              Skickar en notis till spelarna i den har rundan.
+              Skickar en notis till spelarna i den här rundan.
             </div>
           </form>
         </div>
@@ -603,7 +676,7 @@ export default async function RoundLivePage({
           <h2 style={{ margin: 0 }}>Publikchat</h2>
           {cheerEntries.length === 0 ? (
             <div className="muted" style={{ fontSize: 14 }}>
-              Inga hejarop annu. Skriv ett peppmeddelande ovan.
+              Inga hejarop ännu. Skriv ett peppmeddelande ovan.
             </div>
           ) : (
             <div style={{ display: 'grid', gap: 8 }}>
@@ -620,36 +693,13 @@ export default async function RoundLivePage({
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div
-                      style={{
-                        width: 30,
-                        height: 30,
-                        borderRadius: '50%',
-                        overflow: 'hidden',
-                        border: '1px solid #d1d5db',
-                        background: '#e8f2ea',
-                        color: '#1f3327',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 900,
-                        fontSize: 14,
-                        flexShrink: 0,
-                      }}
-                      aria-hidden="true"
-                    >
-                      {cheerActorById.get(entry.actorUserId)?.avatarUrl ? (
-                        <img
-                          src={cheerActorById.get(entry.actorUserId)?.avatarUrl ?? ''}
-                          alt=""
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      ) : (
-                        getAvatarInitial(cheerActorById.get(entry.actorUserId)?.name ?? 'En vän')
-                      )}
-                    </div>
+                    <UserAvatar
+                      name={cheerActorById.get(entry.actorUserId)?.name ?? 'En vän'}
+                      avatarUrl={cheerActorById.get(entry.actorUserId)?.avatarUrl ?? null}
+                      size={40}
+                    />
                     <div style={{ fontWeight: 800, color: '#1f3327' }}>
-                      Hejarop - {cheerActorById.get(entry.actorUserId)?.name ?? 'En van'}
+                      Hejarop - {cheerActorById.get(entry.actorUserId)?.name ?? 'En vän'}
                     </div>
                   </div>
                   <div style={{ color: '#1f3327' }}>{entry.message}</div>
@@ -663,7 +713,7 @@ export default async function RoundLivePage({
         </div>
 
         <div className="card" style={{ padding: 20, display: 'grid', gap: 12 }}>
-          <h2 style={{ margin: 0 }}>Leaderboard just nu</h2>
+          <h2 style={{ margin: 0 }}>Spelarnas scorekort live</h2>
           <div style={{ display: 'grid', gap: 10 }}>
             {leaderboard.map((entry) => (
               <div
@@ -681,11 +731,23 @@ export default async function RoundLivePage({
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                  <div style={{ fontWeight: 900, color: '#1f3327' }}>
-                    #{entry.position} {entry.name}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <UserAvatar
+                      name={entry.name}
+                      avatarUrl={
+                        playerById.get(entry.playerId)?.user_id
+                          ? playerProfileByUserId.get(playerById.get(entry.playerId)?.user_id ?? '')?.avatar_url ??
+                            null
+                          : null
+                      }
+                      size={46}
+                    />
+                    <div style={{ fontWeight: 900, color: '#1f3327' }}>
+                      #{entry.position} {entry.name}
+                    </div>
                   </div>
                   <div className="muted" style={{ fontSize: 13 }}>
-                    Registrerade hal: {entry.holesPlayed}
+                    Registrerade hål: {entry.holesPlayed}
                   </div>
                 </div>
 
@@ -733,10 +795,86 @@ export default async function RoundLivePage({
                     }}
                   >
                     <div className="muted" style={{ fontSize: 12 }}>
-                      Poang
+                      Poäng
                     </div>
                     <div style={{ fontWeight: 900, fontSize: 24 }}>{entry.totalPoints}</div>
                   </div>
+                </div>
+
+                <div
+                  style={{
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 12,
+                    padding: 10,
+                    background: '#fff',
+                    overflowX: 'auto',
+                  }}
+                >
+                  <div style={{ display: 'grid', gridAutoFlow: 'column', gap: 8, width: 'max-content' }}>
+                    {holes
+                      .filter((hole) => hole.hole_number >= startHole && hole.hole_number <= currentHole)
+                      .map((hole) => {
+                        const score = scoreByPlayerHole.get(`${entry.playerId}:${hole.hole_number}`)
+                        const strokes = typeof score?.strokes === 'number' ? score.strokes : null
+                        const vsPar = strokes !== null ? scoreVsPar(strokes, hole.par) : null
+                        const scoreBg =
+                          vsPar === null ? '#f8fafc' : vsPar <= 0 ? '#ecfdf3' : '#fff7ed'
+
+                        const activeHoleIndexes = holes
+                          .filter((h) => {
+                            const player = playerById.get(entry.playerId)
+                            if (!player) return false
+                            const from = Math.max(player.active_from_hole ?? startHole, startHole)
+                            const to = Math.min(player.active_to_hole ?? endHole, endHole)
+                            return h.hole_number >= from && h.hole_number <= to
+                          })
+                          .map((h) => h.hcp_index)
+
+                        const points =
+                          strokes !== null
+                            ? stablefordPoints(
+                                strokes,
+                                hole.par,
+                                getReceivedStrokesForSelectedHole(
+                                  playerById.get(entry.playerId)?.playing_handicap ?? 0,
+                                  activeHoleIndexes,
+                                  hole.hcp_index
+                                )
+                              )
+                            : null
+
+                        return (
+                          <div
+                            key={`${entry.playerId}:${hole.hole_number}`}
+                            style={{
+                              minWidth: 86,
+                              border: '1px solid #e5e7eb',
+                              borderRadius: 10,
+                              padding: 8,
+                              background: scoreBg,
+                              display: 'grid',
+                              gap: 4,
+                            }}
+                          >
+                            <div className="muted" style={{ fontSize: 11 }}>
+                              Hål {hole.hole_number}
+                            </div>
+                            <div style={{ fontSize: 20, fontWeight: 900, color: '#1f3327', lineHeight: 1 }}>
+                              {strokes ?? '-'}
+                            </div>
+                            <div className="muted" style={{ fontSize: 11 }}>
+                              {points !== null ? `${points} p` : '—'}
+                            </div>
+                          </div>
+                        )
+                      })}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <Link className="button secondary" href={`/rounds/${round.id}/summary`}>
+                    Öppna fullt scorekort
+                  </Link>
                 </div>
               </div>
             ))}
@@ -746,4 +884,3 @@ export default async function RoundLivePage({
     </main>
   )
 }
-
