@@ -1524,33 +1524,70 @@ export default async function SummaryPage({
               </div>
 
               <div style={{ padding: 14, display: 'grid', gap: 12 }}>
-                <ScoreTable
-                  title={
-                    isNineHoleRound
-                      ? startHole === 1
-                        ? 'Främre 9'
-                        : 'Bakre 9'
-                      : 'Främre 9'
-                  }
-                  holes={firstHalf}
-                  scores={selectedFrontScores}
-                  selectedPlayer={selectedPlayer}
-                  scoringMode={round.scoring_mode}
-                  totalLabel={isNineHoleRound ? 'Summa' : 'Ut'}
-                />
+                <div
+                  style={{
+                    position: 'sticky',
+                    top: 8,
+                    zIndex: 20,
+                    display: 'grid',
+                    gridTemplateColumns: isNineHoleRound
+                      ? '1fr 1fr'
+                      : 'repeat(3, minmax(0, 1fr))',
+                    gap: 8,
+                    padding: 8,
+                    borderRadius: 12,
+                    background: 'rgba(255,255,255,0.95)',
+                    border: '1px solid #dbe7dd',
+                    boxShadow: '0 10px 24px rgba(15, 23, 42, 0.08)',
+                    backdropFilter: 'blur(4px)',
+                  }}
+                >
+                  <a href="#score-front" className="button secondary" style={{ minHeight: 42 }}>
+                    {startHole === 1 ? 'Främre 9' : 'Bakre 9'}
+                  </a>
 
-                {!isNineHoleRound && secondHalf.length > 0 ? (
+                  {!isNineHoleRound ? (
+                    <a href="#score-back" className="button secondary" style={{ minHeight: 42 }}>
+                      Bakre 9
+                    </a>
+                  ) : null}
+
+                  <a href="#score-total" className="button secondary" style={{ minHeight: 42 }}>
+                    Summa
+                  </a>
+                </div>
+
+                <div id="score-front" style={{ scrollMarginTop: 92 }}>
                   <ScoreTable
-                    title="Bakre 9"
-                    holes={secondHalf}
-                    scores={selectedBackScores}
+                    title={
+                      isNineHoleRound
+                        ? startHole === 1
+                          ? 'Främre 9'
+                          : 'Bakre 9'
+                        : 'Främre 9'
+                    }
+                    holes={firstHalf}
+                    scores={selectedFrontScores}
                     selectedPlayer={selectedPlayer}
                     scoringMode={round.scoring_mode}
-                    totalLabel="In"
+                    totalLabel={isNineHoleRound ? 'Summa' : 'Ut'}
                   />
+                </div>
+
+                {!isNineHoleRound && secondHalf.length > 0 ? (
+                  <div id="score-back" style={{ scrollMarginTop: 92 }}>
+                    <ScoreTable
+                      title="Bakre 9"
+                      holes={secondHalf}
+                      scores={selectedBackScores}
+                      selectedPlayer={selectedPlayer}
+                      scoringMode={round.scoring_mode}
+                      totalLabel="In"
+                    />
+                  </div>
                 ) : null}
 
-                <h3
+                <h3 id="score-total"
                   style={{
                     margin: '4px 0 2px 0',
                     fontSize: 16,
