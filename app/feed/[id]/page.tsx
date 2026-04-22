@@ -70,7 +70,8 @@ function UserAvatar({
         height: size,
         borderRadius: '50%',
         overflow: 'hidden',
-        border: '1px solid #d1d5db',
+        border: '2px solid #d1e8d6',
+        boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
         background: '#e8f2ea',
         color: '#1f3327',
         display: 'inline-flex',
@@ -286,34 +287,15 @@ export default async function FeedEventDetailPage({
   return (
     <main>
       <div className="container" style={{ display: 'grid', gap: 16 }}>
-        <div className="card" style={{ borderRadius: 24 }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 10,
-              flexWrap: 'wrap',
-            }}
-          >
-            <div>
-              <h1 className="title" style={{ margin: 0 }}>
-                Händelse
-              </h1>
-              <p className="meta" style={{ marginTop: 8 }}>
-                Gilla och kommentera i en renare vy.
-              </p>
-            </div>
-
-            <Link href="/dashboard#friend-feed" className="button secondary">
-              Tillbaka till vänflöde
-            </Link>
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+          <Link href="/dashboard#friend-feed" className="button secondary" style={{ minHeight: 46 }}>
+            Tillbaka till vänflöde
+          </Link>
         </div>
 
         <div className="card" style={{ borderRadius: 22, display: 'grid', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <UserAvatar profile={profileById.get(event.user_id)} name={playerName} size={38} />
+            <UserAvatar profile={profileById.get(event.user_id)} name={playerName} size={52} />
             <div style={{ fontWeight: 900, color: '#1f3327', fontSize: 22 }}>
               {eventMeta.emoji} {playerName} gjorde {eventMeta.text}
             </div>
@@ -381,8 +363,8 @@ export default async function FeedEventDetailPage({
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <UserAvatar profile={author} name={authorName} size={30} />
-                      <div style={{ fontWeight: 900 }}>{authorName}</div>
+                      <UserAvatar profile={author} name={authorName} size={44} />
+                      <div style={{ fontWeight: 900, fontSize: 20 }}>{authorName}</div>
                     </div>
                     <div style={{ marginTop: 6, color: '#374151' }}>{comment.body}</div>
                   </div>
