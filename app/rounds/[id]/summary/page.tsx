@@ -1,6 +1,7 @@
-﻿import type { CSSProperties } from 'react'
+import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import SummaryExportButton from '@/components/summary-export-button'
 import {
@@ -39,6 +40,11 @@ type SummaryPlayer = {
   holeScores: HoleScoreView[]
 }
 
+
+type OwnerProfileRow = {
+  email: string | null
+  display_name: string | null
+}
 function getPlayedRangeLabel(player: Pick<SummaryPlayer, 'activeFromHole' | 'activeToHole'>) {
   return `Spelat hål ${player.activeFromHole}–${player.activeToHole}`
 }
@@ -567,46 +573,121 @@ export default async function SummaryPage({
   const { id } = await params
   const resolvedSearchParams = await searchParams
 
-  const [{ data: round }, { data: players }, { data: scoreRows }] = await Promise.all([
-    supabase
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseAdmin =
+    supabaseUrl && serviceRoleKey
+      ? createAdminClient(supabaseUrl, serviceRoleKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        })
+      : null
+
+  const { data: roundFromUserClient } = await supabase
+    .from('rounds')
+    .select(
+      'id, owner_id, course_id, title, scoring_mode, status, holes_mode, start_hole, end_hole'
+    )
+    .eq('id', id)
+    .maybeSingle()
+
+  let round = roundFromUserClient
+
+  if (!round && supabaseAdmin) {
+    const { data: roundFromAdminClient } = await supabaseAdmin
       .from('rounds')
       .select(
         'id, owner_id, course_id, title, scoring_mode, status, holes_mode, start_hole, end_hole'
       )
       .eq('id', id)
-      .single(),
+      .maybeSingle()
+
+    round = roundFromAdminClient
+  }
+
+  if (!round) notFound()
+
+  const viewerEmail = String(user.email ?? '').trim().toLowerCase()
+  const viewerIsOwner = round.owner_id === user.id
+
+  const [{ data: membership }, { data: ownerProfileRaw }] = await Promise.all([
     supabase
+      .from('round_members')
+      .select('id')
+      .eq('round_id', id)
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    supabaseAdmin
+      ? supabaseAdmin
+          .from('profiles')
+          .select('email, display_name')
+          .eq('id', round.owner_id)
+          .maybeSingle()
+      : supabase
+          .from('profiles')
+          .select('email, display_name')
+          .eq('id', round.owner_id)
+          .maybeSingle(),
+  ])
+
+  let isFriendOfOwner = false
+
+  if (!viewerIsOwner && !membership && viewerEmail) {
+    const friendReadClient = supabaseAdmin ?? supabase
+    const ownerEmail = String((ownerProfileRaw as OwnerProfileRow | null)?.email ?? '')
+      .trim()
+      .toLowerCase()
+
+    const { data: directFriend } = await friendReadClient
+      .from('friends')
+      .select('id')
+      .eq('user_id', round.owner_id)
+      .eq('friend_email', viewerEmail)
+      .maybeSingle()
+
+    if (directFriend) {
+      isFriendOfOwner = true
+    } else if (ownerEmail) {
+      const { data: reverseFriend } = await friendReadClient
+        .from('friends')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('friend_email', ownerEmail)
+        .maybeSingle()
+
+      isFriendOfOwner = Boolean(reverseFriend)
+    }
+  }
+
+  if (!viewerIsOwner && !membership && !isFriendOfOwner) {
+    notFound()
+  }
+
+  const isFriendViewer = !viewerIsOwner && !membership && isFriendOfOwner
+  const dataReadClient = isFriendViewer && supabaseAdmin ? supabaseAdmin : supabase
+
+  const [{ data: players }, { data: scoreRows }] = await Promise.all([
+    dataReadClient
       .from('round_players')
       .select(
         'id, user_id, display_name, exact_handicap, playing_handicap, tee_key, active_from_hole, active_to_hole'
       )
       .eq('round_id', id)
       .order('sort_order'),
-    supabase
+    dataReadClient
       .from('hole_scores')
       .select('round_player_id, hole_number, strokes')
       .eq('round_id', id)
       .order('hole_number'),
   ])
 
-  if (!round || !players || !scoreRows) notFound()
-
-  if (round.owner_id !== user.id) {
-    const { data: membership } = await supabase
-      .from('round_members')
-      .select('id')
-      .eq('round_id', id)
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (!membership) {
-      notFound()
-    }
-  }
+  if (!players || !scoreRows) notFound()
 
   const [{ data: course }, { data: holes }] = await Promise.all([
-    supabase.from('courses').select('id, name').eq('id', round.course_id).single(),
-    supabase
+    dataReadClient.from('courses').select('id, name').eq('id', round.course_id).single(),
+    dataReadClient
       .from('course_holes')
       .select('hole_number, par, hcp_index')
       .eq('course_id', round.course_id)
