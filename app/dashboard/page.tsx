@@ -319,7 +319,9 @@ function getPlayerNameForFeedEvent(
 const dashboardStyles = {
   heroCard: {
     background:
-      'linear-gradient(135deg, #163b2a 0%, #1f6b45 55%, #38a169 100%)',
+      'linear-gradient(180deg, rgba(8, 20, 14, 0.62) 0%, rgba(13, 37, 26, 0.7) 44%, rgba(22, 59, 42, 0.82) 100%), url(/splash.png)',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
     border: '1px solid rgba(255,255,255,0.18)',
     borderRadius: 28,
     boxShadow: '0 24px 56px rgba(22, 59, 42, 0.28)',
@@ -527,7 +529,10 @@ function DashboardHeader({
 }) {
   const handicapLabel =
     typeof handicapIndex === 'number' && Number.isFinite(handicapIndex)
-      ? handicapIndex.toFixed(1)
+      ? new Intl.NumberFormat('sv-SE', {
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 1,
+        }).format(handicapIndex)
       : '—'
 
   return (
@@ -578,24 +583,8 @@ function DashboardHeader({
           }}
         >
           <div style={{ maxWidth: 720 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-              <UserAvatar profile={profile} name={displayName} size={68} />
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '10px 14px',
-                  borderRadius: 999,
-                  background: 'rgba(255,255,255,0.14)',
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  color: '#ffffff',
-                  fontWeight: 900,
-                  backdropFilter: 'blur(6px)',
-                }}
-              >
-                👋 Inloggad som {displayName}
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <UserAvatar profile={profile} name={displayName} size={74} />
             </div>
 
             <h1
@@ -623,8 +612,8 @@ function DashboardHeader({
                 color: 'rgba(255,255,255,0.88)',
               }}
             >
-              Redo för nästa runda? Starta snabbt, fortsätt en aktiv runda eller
-              följ dina golfvänner.
+              Redo för nästa runda? Starta snabbt, fortsätt en aktiv runda eller följ dina
+              golfvänner.
             </p>
 
             <div
@@ -637,13 +626,20 @@ function DashboardHeader({
                 maxWidth: 520,
               }}
             >
-              <div
+              <Link
+                href="/profile"
+                className="button secondary"
                 style={{
                   borderRadius: 18,
                   padding: '12px 14px',
                   border: '1px solid rgba(255,255,255,0.2)',
                   background: 'rgba(255,255,255,0.13)',
                   backdropFilter: 'blur(6px)',
+                  minHeight: 0,
+                  display: 'block',
+                  textAlign: 'left',
+                  color: 'inherit',
+                  boxShadow: 'none',
                 }}
               >
                 <div style={{ color: 'rgba(255,255,255,0.82)', fontSize: 12, fontWeight: 700 }}>
@@ -652,7 +648,7 @@ function DashboardHeader({
                 <div style={{ marginTop: 4, color: '#fff', fontSize: 28, fontWeight: 900 }}>
                   {friendCount}
                 </div>
-              </div>
+              </Link>
 
               <div
                 style={{
@@ -1745,7 +1741,11 @@ export default async function DashboardPage({
         'id, owner_id, title, course_id, status, current_hole, scoring_mode, holes_mode, created_at'
       )
       .order('created_at', { ascending: false }),
-    supabase.from('profiles').select('id, display_name').eq('id', user.id).single(),
+    supabase
+      .from('profiles')
+      .select('id, display_name, email, avatar_url, handicap_index')
+      .eq('id', user.id)
+      .single(),
     supabase.from('round_members').select('round_id, role').eq('user_id', user.id),
     isAdmin
       ? supabase.from('profiles').select('id').eq('is_approved', false)
