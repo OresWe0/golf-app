@@ -11,9 +11,25 @@ type SavePushSubscriptionInput = {
   auth: string
 }
 
+type UploadedAvatarFile = {
+  size: number
+  type: string
+}
+
 const AVATAR_BUCKET = 'avatars'
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024
 const ALLOWED_AVATAR_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+
+function isUploadedAvatarFile(value: FormDataEntryValue | null): value is File {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    'size' in value &&
+    'type' in value &&
+    typeof (value as UploadedAvatarFile).size === 'number' &&
+    typeof (value as UploadedAvatarFile).type === 'string'
+  )
+}
 
 function getAvatarFileExt(file: File) {
   if (file.type === 'image/png') return 'png'
@@ -39,11 +55,13 @@ export async function uploadAvatar(formData: FormData) {
     redirect('/login')
   }
 
-  const file = formData.get('avatar')
+  const fileEntry = formData.get('avatar')
 
-  if (!(file instanceof File) || file.size <= 0) {
+  if (!isUploadedAvatarFile(fileEntry) || fileEntry.size <= 0) {
     redirect('/profile?message=Valj en bild att ladda upp&type=error')
   }
+
+  const file = fileEntry
 
   if (!ALLOWED_AVATAR_TYPES.has(file.type)) {
     redirect('/profile?message=Anvand JPG, PNG eller WEBP&type=error')
