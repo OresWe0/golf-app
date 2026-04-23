@@ -148,15 +148,19 @@ async function runFeedAndPushInBackground(args: {
       const playerName =
         playerProfile?.display_name?.trim() || playerProfile?.email?.trim() || 'Okänd spelare'
 
-      const { error: insertFeedEventError } = await supabase.from('feed_events').insert({
-        user_id: roundPlayer.user_id,
-        round_id: roundId,
-        round_player_id: score.roundPlayerId,
-        event_type: eventType,
-        hole_number: holeNumber,
-        player_name: playerName,
-        course_name: courseDetails?.name ?? null,
-      })
+      const { data: insertedFeedEvent, error: insertFeedEventError } = await supabase
+        .from('feed_events')
+        .insert({
+          user_id: roundPlayer.user_id,
+          round_id: roundId,
+          round_player_id: score.roundPlayerId,
+          event_type: eventType,
+          hole_number: holeNumber,
+          player_name: playerName,
+          course_name: courseDetails?.name ?? null,
+        })
+        .select('id')
+        .single()
 
       if (insertFeedEventError) {
         console.error('[scores-api] warn_bg_feed_insert', {
@@ -239,24 +243,52 @@ async function runFeedAndPushInBackground(args: {
         continue
       }
 
-      let title = 'Ny aktivitet'
+      let pushTitle = 'Ny aktivitet'
       let pushBody = `${playerName} gjorde något bra!`
+      let inAppTitle = `${playerName} gjorde något bra`
 
-     if (eventType === 'birdie') {
-  title = '🐦 Birdie!'
-  pushBody = `${playerName} gjorde en birdie på hål ${holeNumber}`
-} else if (eventType === 'eagle') {
-  title = '🦅 Eagle!'
-  pushBody = `${playerName} gjorde en eagle på hål ${holeNumber}`
-} else if (eventType === 'hole_in_one') {
-  title = '🎯 Hole-in-one!'
-  pushBody = `${playerName} gjorde hole-in-one på hål ${holeNumber}!`
-}
+      if (eventType === 'birdie') {
+        pushTitle = '🐦 Birdie!'
+        pushBody = `${playerName} gjorde en birdie på hål ${holeNumber}`
+        inAppTitle = `🐦 ${playerName} gjorde birdie på hål ${holeNumber}`
+      } else if (eventType === 'eagle') {
+        pushTitle = '🦅 Eagle!'
+        pushBody = `${playerName} gjorde en eagle på hål ${holeNumber}`
+        inAppTitle = `🦅 ${playerName} gjorde eagle på hål ${holeNumber}`
+      } else if (eventType === 'hole_in_one') {
+        pushTitle = '🎯 Hole-in-one!'
+        pushBody = `${playerName} gjorde hole-in-one på hål ${holeNumber}!`
+        inAppTitle = `🎯 ${playerName} gjorde hole-in-one på hål ${holeNumber}`
+      }
+
+      if (insertedFeedEvent?.id) {
+        const rows = enabledFriendIds.map((friendId) => ({
+          user_id: friendId,
+          actor_user_id: roundPlayer.user_id,
+          type: 'feed_event',
+          title: inAppTitle,
+          feed_event_id: insertedFeedEvent.id,
+        }))
+
+        const { error: notificationInsertError } = await supabaseAdmin
+          .from('notifications')
+          .insert(rows)
+
+        if (notificationInsertError) {
+          console.error('[scores-api] warn_bg_notifications_insert', {
+            requestId,
+            roundId,
+            actorUserId,
+            holeNumber,
+            dbError: notificationInsertError.message,
+          })
+        }
+      }
 
       await Promise.allSettled(
         (subscriptions ?? []).map((sub: { endpoint: string; p256dh: string; auth: string }) =>
           sendPushNotification(sub, {
-            title,
+            title: pushTitle,
             body: pushBody,
             url: '/dashboard',
           })

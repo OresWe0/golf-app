@@ -13,12 +13,9 @@ export async function likeFeedEvent(formData: FormData) {
   if (!user) return
 
   const feedEventId = formData.get('feedEventId')
-
   if (typeof feedEventId !== 'string' || !feedEventId) return
 
-  await supabase
-  .from('feed_event_likes')
-  .upsert(
+  await supabase.from('feed_event_likes').upsert(
     {
       feed_event_id: feedEventId,
       user_id: user.id,
@@ -37,7 +34,7 @@ export async function likeFeedEvent(formData: FormData) {
       user_id: feedEvent.user_id,
       actor_user_id: user.id,
       type: 'like',
-      title: 'Någon gillade ditt event',
+      title: 'N\u00e5gon gillade ditt event',
       feed_event_id: feedEvent.id,
     })
   }
@@ -56,7 +53,6 @@ export async function unlikeFeedEvent(formData: FormData) {
   if (!user) return
 
   const feedEventId = formData.get('feedEventId')
-
   if (typeof feedEventId !== 'string' || !feedEventId) return
 
   await supabase
@@ -85,7 +81,6 @@ export async function addFeedEventComment(formData: FormData) {
   if (typeof body !== 'string') return
 
   const trimmedBody = body.trim()
-
   if (!trimmedBody) return
   if (trimmedBody.length > 200) return
 
@@ -125,7 +120,6 @@ export async function markNotificationAsRead(formData: FormData) {
   if (!user) return
 
   const notificationId = formData.get('notificationId')
-
   if (typeof notificationId !== 'string' || !notificationId) return
 
   await supabase

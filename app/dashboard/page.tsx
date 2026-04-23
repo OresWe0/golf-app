@@ -2,7 +2,6 @@
   likeFeedEvent,
   unlikeFeedEvent,
   markNotificationAsRead,
-  markAllNotificationsAsRead,
 } from './actions'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -534,7 +533,6 @@ function DashboardHeader({
   pendingCount,
   incomingFriendRequestsCount,
   notifications,
-  markAllNotificationsAsReadAction,
 }: {
   displayName: string
   profile: Profile | null
@@ -548,7 +546,6 @@ function DashboardHeader({
     createdAt: string
     href: string
   }>
-  markAllNotificationsAsReadAction: () => Promise<void>
 }) {
   return (
     <div className="card dashboard-hero" style={dashboardStyles.heroCard}>
@@ -604,7 +601,6 @@ function DashboardHeader({
             pendingCount={pendingCount}
             incomingFriendRequestsCount={incomingFriendRequestsCount}
             signOutAction={signOut}
-            markAllNotificationsAsReadAction={markAllNotificationsAsReadAction}
             notifications={notifications}
           />
         </div>
@@ -931,27 +927,35 @@ function getNotificationActorName(
 }
 
 function getNotificationSummary(notification: NotificationRow, actorName: string) {
+  const rawTitle = String(notification.title ?? '').trim()
+
+  if (notification.type === 'feed_event') {
+    return rawTitle.length > 0 ? rawTitle : `${actorName} har ny aktivitet`
+  }
+
   if (notification.type === 'like') {
     return `${actorName} gillade ditt event`
   }
 
-  const rawTitle = String(notification.title ?? '').trim()
+  if (notification.type === 'comment') {
+    if (rawTitle.startsWith('HejaropRound:')) {
+      const firstColon = rawTitle.indexOf(':')
+      const secondColon = rawTitle.indexOf(':', firstColon + 1)
+      const thirdColon = rawTitle.indexOf(':', secondColon + 1)
+      const cheerMessage = thirdColon >= 0 ? rawTitle.slice(thirdColon + 1).trim() : ''
 
-  if (rawTitle.startsWith('HejaropRound:')) {
-    const firstColon = rawTitle.indexOf(':')
-    const secondColon = rawTitle.indexOf(':', firstColon + 1)
-    const thirdColon = rawTitle.indexOf(':', secondColon + 1)
-    const cheerMessage = thirdColon >= 0 ? rawTitle.slice(thirdColon + 1).trim() : ''
+      return cheerMessage.length > 0
+        ? `${actorName} hejade: ${cheerMessage}`
+        : `${actorName} skickade ett hejarop`
+    }
 
-    return cheerMessage.length > 0
-      ? `${actorName} hejade: ${cheerMessage}`
-      : `${actorName} skickade ett hejarop`
+    const commentBody = rawTitle.replace('Ny kommentar: ', '').replace(/^"|"$/g, '').trim()
+    return commentBody.length > 0
+      ? `${actorName} kommenterade: ${commentBody}`
+      : `${actorName} kommenterade`
   }
 
-  const commentBody = rawTitle.replace('Ny kommentar: ', '').replace(/^"|"$/g, '').trim()
-  return commentBody.length > 0
-    ? `${actorName} kommenterade: ${commentBody}`
-    : `${actorName} kommenterade`
+  return rawTitle.length > 0 ? rawTitle : `${actorName} skickade en notis`
 }
 
 function FeedEventCard({
@@ -1906,7 +1910,7 @@ export default async function DashboardPage({
       title,
       createdAt: formatFeedEventTime(notification.created_at),
       href: notification.feed_event_id
-        ? `/feed/${notification.feed_event_id}`
+        ? `/feed/${notification.feed_event_id}?notificationId=${notification.id}`
         : '/dashboard#friend-feed',
     }
   })
@@ -2123,7 +2127,6 @@ export default async function DashboardPage({
             pendingCount={pendingCount}
             incomingFriendRequestsCount={incomingFriendRequestsCount}
             notifications={heroNotifications}
-            markAllNotificationsAsReadAction={markAllNotificationsAsRead}
           />
 
           <InstallAppPrompt />

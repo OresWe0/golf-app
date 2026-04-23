@@ -51,14 +51,12 @@ export default function DashboardHeroMenu({
   pendingCount,
   incomingFriendRequestsCount,
   signOutAction,
-  markAllNotificationsAsReadAction,
   notifications,
 }: {
   isAdmin: boolean
   pendingCount: number
   incomingFriendRequestsCount: number
   signOutAction: () => Promise<void>
-  markAllNotificationsAsReadAction: () => Promise<void>
   notifications: HeroNotificationItem[]
 }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -67,7 +65,7 @@ export default function DashboardHeroMenu({
   const [showHint, setShowHint] = useState(false)
   const [platform, setPlatform] = useState<'ios' | 'android' | 'other'>('other')
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const markAllReadFormRef = useRef<HTMLFormElement | null>(null)
+  const useFixedPopover = platform === 'ios' || platform === 'android'
   useEffect(() => {
     const ua = window.navigator.userAgent || ''
     if (/iPhone|iPad|iPod/i.test(ua)) {
@@ -143,21 +141,13 @@ export default function DashboardHeroMenu({
           aria-label="Öppna notiser"
           aria-expanded={isBellOpen}
           onClick={() => {
-            setIsBellOpen((prev) => {
-              const next = !prev
-              if (next) {
-                setBellUnreadCount(0)
-                markAllReadFormRef.current?.requestSubmit()
-              }
-              return next
-            })
+            setIsBellOpen((prev) => !prev)
             setIsOpen(false)
           }}
           style={iconButtonStyle}
         >
           🔔
         </button>
-        <form ref={markAllReadFormRef} action={markAllNotificationsAsReadAction} />
 
         {bellUnreadCount > 0 ? (
           <span
@@ -188,11 +178,17 @@ export default function DashboardHeroMenu({
 
         <div
           style={{
-            position: 'absolute',
-            top: platform === 'ios' ? 58 : 56,
-            right: 0,
-            width: 'min(86vw, 320px)',
-            zIndex: 20,
+            position: useFixedPopover ? 'fixed' : 'absolute',
+            top: useFixedPopover
+              ? platform === 'ios'
+                ? 'calc(env(safe-area-inset-top) + 80px)'
+                : 'calc(env(safe-area-inset-top) + 72px)'
+              : 56,
+            right: useFixedPopover ? 14 : 0,
+            width: useFixedPopover ? 'min(84vw, 320px)' : 'min(84vw, 300px)',
+            maxHeight: 'min(60vh, 420px)',
+            overflowY: 'auto',
+            zIndex: 30,
             borderRadius: 12,
             border: '1px solid rgba(255,255,255,0.24)',
             background: 'rgba(12, 35, 24, 0.96)',

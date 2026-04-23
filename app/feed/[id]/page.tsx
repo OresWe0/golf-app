@@ -46,6 +46,14 @@ type FriendProfileLite = {
   email: string | null
 }
 
+type SearchParams = Promise<{
+  notificationId?: string | string[]
+}>
+
+function getFirstParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value
+}
+
 function getAvatarInitial(name?: string | null) {
   const normalized = String(name ?? '').trim()
   return normalized ? normalized.charAt(0).toUpperCase() : 'G'
@@ -98,10 +106,7 @@ function UserAvatar({
 
 function formatFeedEventTime(value: string) {
   const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
-    return ''
-  }
+  if (Number.isNaN(date.getTime())) return ''
 
   const now = new Date()
   const sameDay =
@@ -123,7 +128,7 @@ function formatFeedEventTime(value: string) {
   })
 
   if (sameDay) return `Idag ${timeText}`
-  if (sameAsYesterday) return `Igår ${timeText}`
+  if (sameAsYesterday) return `Ig\u00e5r ${timeText}`
 
   return date.toLocaleString('sv-SE', {
     year: 'numeric',
@@ -147,10 +152,17 @@ function getProfileName(profile?: Profile | null) {
 
 export default async function FeedEventDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams?: SearchParams
 }) {
-  const { id } = await params
+  const fallbackSearchParams: { notificationId?: string | string[] } = {}
+  const [{ id }, resolvedSearchParams] = await Promise.all([
+    params,
+    searchParams ? searchParams : Promise.resolve(fallbackSearchParams),
+  ])
+  const notificationId = String(getFirstParam(resolvedSearchParams.notificationId) ?? '').trim()
   const supabase = await createClient()
 
   const {
@@ -159,6 +171,14 @@ export default async function FeedEventDetailPage({
 
   if (!user) {
     redirect('/login')
+  }
+
+  if (notificationId) {
+    await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', notificationId)
+      .eq('user_id', user.id)
   }
 
   const currentUserEmail = (user.email ?? '').trim().toLowerCase()
@@ -176,10 +196,7 @@ export default async function FeedEventDetailPage({
   }
 
   const event = (eventData as FeedEventRow | null) ?? null
-
-  if (!event) {
-    notFound()
-  }
+  if (!event) notFound()
 
   if (event.user_id !== user.id) {
     const [
@@ -204,7 +221,6 @@ export default async function FeedEventDetailPage({
       .filter((email) => email.length > 0)
 
     let friendUserIds: string[] = []
-
     if (friendEmails.length > 0) {
       const { data: friendProfilesData, error: friendProfilesError } = await supabase
         .from('profiles')
@@ -217,18 +233,15 @@ export default async function FeedEventDetailPage({
 
       friendUserIds = ((friendProfilesData as FriendProfileLite[] | null) ?? [])
         .map((profile) => profile.id)
-        .filter((id) => typeof id === 'string' && id.length > 0)
+        .filter((friendId) => typeof friendId === 'string' && friendId.length > 0)
     }
 
     const reverseFriendUserIds = ((reverseFriendsData as ReverseFriendRow[] | null) ?? [])
       .map((row) => String(row.user_id ?? '').trim())
-      .filter((id) => id.length > 0)
+      .filter((friendId) => friendId.length > 0)
 
     const allFriendUserIds = new Set([...friendUserIds, ...reverseFriendUserIds])
-
-    if (!allFriendUserIds.has(event.user_id)) {
-      notFound()
-    }
+    if (!allFriendUserIds.has(event.user_id)) notFound()
   }
 
   const [{ data: likesData }, { data: commentsData }] = await Promise.all([
@@ -255,7 +268,6 @@ export default async function FeedEventDetailPage({
   )
 
   let profiles: Profile[] = []
-
   if (profileIds.length > 0) {
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
@@ -270,26 +282,38 @@ export default async function FeedEventDetailPage({
   }
 
   const profileById = new Map(profiles.map((profile) => [profile.id, profile] as const))
-
   const likedByMe = likes.some((like) => like.user_id === user.id)
   const likesCount = likes.length
   const playerName =
     event.player_name?.trim() || getProfileName(profileById.get(event.user_id))
-  const courseName = event.course_name?.trim() || 'Okänd bana'
+  const courseName = event.course_name?.trim() || 'Ok\u00e4nd bana'
 
   const eventMeta =
     event.event_type === 'birdie'
-      ? { emoji: '🐦', text: 'birdie' }
+      ? { emoji: '\uD83D\uDC26', text: 'birdie' }
       : event.event_type === 'eagle'
-      ? { emoji: '🦅', text: 'eagle' }
-      : { emoji: '🎯', text: 'hole-in-one' }
+      ? { emoji: '\uD83E\uDD85', text: 'eagle' }
+      : { emoji: '\uD83C\uDFAF', text: 'hole-in-one' }
 
   return (
     <main>
       <div className="container" style={{ display: 'grid', gap: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-          <Link href="/dashboard#friend-feed" className="button secondary" style={{ minHeight: 46 }}>
-            Tillbaka till vänflöde
+          <Link
+            href="/dashboard#friend-feed"
+            className="button secondary"
+            style={{
+              minHeight: 44,
+              width: 'auto',
+              padding: '0 14px',
+              borderRadius: 14,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              fontWeight: 800,
+            }}
+          >
+            \u2190 Tillbaka till v\u00e4nfl\u00f6de
           </Link>
         </div>
 
@@ -302,7 +326,7 @@ export default async function FeedEventDetailPage({
           </div>
 
           <div className="muted">
-            Hål {event.hole_number} - {courseName}
+            H\u00e5l {event.hole_number} - {courseName}
           </div>
 
           <div className="muted" style={{ fontSize: 13 }}>
@@ -311,7 +335,7 @@ export default async function FeedEventDetailPage({
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <div className="muted" style={{ fontSize: 13 }}>
-              👍 {likesCount}
+              \uD83D\uDC4D {likesCount}
             </div>
 
             {likedByMe ? (
@@ -342,11 +366,11 @@ export default async function FeedEventDetailPage({
             }}
           >
             <h2 style={{ margin: 0, fontSize: 24 }}>Kommentarer</h2>
-            <div className="muted">💬 {comments.length}</div>
+            <div className="muted">\uD83D\uDCAC {comments.length}</div>
           </div>
 
           {comments.length === 0 ? (
-            <div className="notice">Ingen kommentar än. Skriv första.</div>
+            <div className="notice">Ingen kommentar \u00e4n. Skriv f\u00f6rsta.</div>
           ) : (
             <div style={{ display: 'grid', gap: 8 }}>
               {comments.map((comment) => {
