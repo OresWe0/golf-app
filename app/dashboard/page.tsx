@@ -701,7 +701,7 @@ function DashboardHeader({
 
               <form action={signOut}>
                 <button type="submit" style={menuItemStyle}>
-                  ↪ Ut
+                  ↪ Logga ut
                 </button>
               </form>
             </div>
