@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import {
   useEffect,
@@ -372,15 +372,40 @@ function HoleHeader({
       <div className="hp-grid-2">
         <div
           style={{
-            borderRadius: 20,
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: 22,
             background:
-              'linear-gradient(135deg, rgba(236,253,245,0.92) 0%, rgba(220,252,231,0.88) 100%)',
+              'linear-gradient(135deg, rgba(236,253,245,0.96) 0%, rgba(220,252,231,0.92) 100%)',
             border: '1px solid rgba(134, 239, 172, 0.65)',
-            padding: 12,
+            padding: 14,
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)',
           }}
         >
           <div
+            aria-hidden="true"
             style={{
+              position: 'absolute',
+              right: -18,
+              top: -18,
+              width: 92,
+              height: 92,
+              borderRadius: '50%',
+              background:
+                'radial-gradient(circle, rgba(34,197,94,0.18) 0%, rgba(34,197,94,0) 72%)',
+            }}
+          />
+
+          <div
+            style={{
+              position: 'relative',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '7px 10px',
+              borderRadius: 999,
+              background: 'rgba(255,255,255,0.65)',
+              border: '1px solid rgba(134, 239, 172, 0.55)',
               fontSize: 11,
               fontWeight: 900,
               color: '#166534',
@@ -388,31 +413,83 @@ function HoleHeader({
               textTransform: 'uppercase',
             }}
           >
-            Hålstatus
+            Bana & hål
           </div>
 
           <div
             style={{
-              marginTop: 4,
-              fontSize: 24,
-              fontWeight: 900,
-              lineHeight: 1.05,
+              position: 'relative',
+              marginTop: 10,
+              fontSize: 28,
+              fontWeight: 950,
+              lineHeight: 1.02,
+              letterSpacing: '-0.03em',
               color: '#0f172a',
             }}
           >
-            Hål {hole.hole_number} / {totalHoles}
+            Hål {hole.hole_number}
           </div>
 
           <div
             style={{
-              marginTop: 4,
-              fontSize: 14,
-              fontWeight: 800,
-              color: '#475569',
-              lineHeight: 1.35,
+              position: 'relative',
+              marginTop: 6,
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              alignItems: 'center',
             }}
           >
-            Par {hole.par} · Index {hole.hcp_index}
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 10px',
+                borderRadius: 999,
+                background: 'rgba(255,255,255,0.65)',
+                border: '1px solid rgba(134, 239, 172, 0.55)',
+                color: '#14532d',
+                fontWeight: 900,
+                fontSize: 13,
+              }}
+            >
+              Par {hole.par}
+            </span>
+
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 10px',
+                borderRadius: 999,
+                background: 'rgba(255,255,255,0.65)',
+                border: '1px solid rgba(134, 239, 172, 0.55)',
+                color: '#14532d',
+                fontWeight: 900,
+                fontSize: 13,
+              }}
+            >
+              Index {hole.hcp_index}
+            </span>
+
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 10px',
+                borderRadius: 999,
+                background: 'rgba(255,255,255,0.65)',
+                border: '1px solid rgba(134, 239, 172, 0.55)',
+                color: '#14532d',
+                fontWeight: 900,
+                fontSize: 13,
+              }}
+            >
+              {totalHoles} hål
+            </span>
           </div>
         </div>
 
@@ -421,19 +498,25 @@ function HoleHeader({
           onClick={onOpenHoleImage}
           style={{
             border: '1px solid rgba(22,101,52,0.10)',
-            borderRadius: 18,
-            padding: '12px 14px',
+            borderRadius: 20,
+            padding: '14px 16px',
             background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
             color: '#fff',
-            fontSize: 14,
+            fontSize: 15,
             fontWeight: 900,
             cursor: 'pointer',
-            boxShadow: '0 10px 24px rgba(34, 197, 94, 0.20)',
+            boxShadow: '0 14px 30px rgba(34, 197, 94, 0.22)',
             whiteSpace: 'nowrap',
-            minWidth: 110,
+            minWidth: 128,
+            minHeight: 84,
+            display: 'grid',
+            placeItems: 'center',
+            textAlign: 'center',
+            lineHeight: 1.2,
           }}
         >
-          ⛳ Se banan
+          <span>⛳ Visa</span>
+          <span>banvy</span>
         </button>
       </div>
     </div>
@@ -1602,6 +1685,37 @@ const dragStartRef = useRef<{ x: number; y: number } | null>(null)
   }, 0)
   const canInteract = !loading && !isSavingRef.current && !isNavigatingRef.current
 
+  const liveHeaderStyle: CSSProperties = {
+    position: 'relative',
+    overflow: 'hidden',
+    display: 'grid',
+    gap: 12,
+    padding: '16px 16px 18px',
+    borderRadius: 24,
+    background:
+      'linear-gradient(180deg, rgba(17,24,39,0.96) 0%, rgba(15,23,42,0.94) 100%)',
+    border: '1px solid rgba(148, 163, 184, 0.18)',
+    boxShadow: '0 22px 54px rgba(15, 23, 42, 0.18)',
+    marginBottom: 16,
+    color: '#fff',
+  }
+
+  const liveHeaderPillStyle: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '8px 12px',
+    borderRadius: 999,
+    background: 'rgba(255,255,255,0.08)',
+    border: '1px solid rgba(255,255,255,0.10)',
+    color: 'rgba(255,255,255,0.92)',
+    fontWeight: 800,
+    fontSize: 13,
+    whiteSpace: 'nowrap',
+  }
+
+  const liveProgress = Math.max(0, Math.min(100, (currentHole / totalHoles) * 100))
+
   const clearPostSaveTimeout = () => {
     if (postSaveTimeoutRef.current) {
       clearTimeout(postSaveTimeoutRef.current)
@@ -2118,6 +2232,24 @@ useEffect(() => {
           100% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
         }
 
+        @keyframes liveDotPulse {
+          0% {
+            box-shadow:
+              0 0 0 0 rgba(239, 68, 68, 0.42),
+              0 0 18px rgba(239, 68, 68, 0.18);
+          }
+          70% {
+            box-shadow:
+              0 0 0 10px rgba(239, 68, 68, 0),
+              0 0 20px rgba(239, 68, 68, 0.12);
+          }
+          100% {
+            box-shadow:
+              0 0 0 0 rgba(239, 68, 68, 0),
+              0 0 0 rgba(239, 68, 68, 0);
+          }
+        }
+
         @keyframes savedToastIn {
           0% { opacity: 0; transform: translateY(-10px) scale(0.96); }
           100% { opacity: 1; transform: translateY(0) scale(1); }
@@ -2201,6 +2333,10 @@ useEffect(() => {
             grid-template-columns: 1fr;
           }
 
+          .hp-live-hero-title {
+            font-size: 24px;
+          }
+
           .hp-bottom-actions {
             grid-template-columns: 90px 1fr;
             gap: 10px;
@@ -2230,6 +2366,193 @@ useEffect(() => {
         <StatusToast saveState={saveState} />
 
         <div style={{ display: 'grid', gap: 12 }}>
+          <div style={liveHeaderStyle}>
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                inset: '-18% auto auto -8%',
+                width: 180,
+                height: 180,
+                borderRadius: '50%',
+                background:
+                  'radial-gradient(circle, rgba(34,197,94,0.24) 0%, rgba(34,197,94,0.02) 55%, rgba(34,197,94,0) 72%)',
+                pointerEvents: 'none',
+              }}
+            />
+
+            <div
+              style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 12,
+                flexWrap: 'wrap',
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '8px 12px',
+                    borderRadius: 999,
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.10)',
+                    color: '#ffffff',
+                    fontWeight: 900,
+                    fontSize: 13,
+                    letterSpacing: '-0.01em',
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: 999,
+                      background: '#ef4444',
+                      boxShadow: '0 0 0 0 rgba(239, 68, 68, 0.42)',
+                      animation: 'liveDotPulse 1.8s ease-out infinite',
+                      flexShrink: 0,
+                    }}
+                  />
+                  Live nu
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 12,
+                    fontSize: 28,
+                    lineHeight: 1.05,
+                    fontWeight: 950,
+                    letterSpacing: '-0.03em',
+                    color: '#ffffff',
+                  }}
+                >
+                  Hål {currentHole} av {totalHoles}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 6,
+                    fontSize: 14,
+                    lineHeight: 1.45,
+                    color: 'rgba(255,255,255,0.74)',
+                    fontWeight: 700,
+                    maxWidth: 520,
+                  }}
+                >
+                  {players.length === 1
+                    ? 'Följ spelet live med tydlig status, score och bana i fokus.'
+                    : `${players.length} spelare är igång. Följ ställningen och uppdatera scorer i realtid.`}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gap: 8,
+                  minWidth: 120,
+                }}
+              >
+                <div
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: 18,
+                    background: 'linear-gradient(180deg, rgba(34,197,94,0.16) 0%, rgba(22,163,74,0.10) 100%)',
+                    border: '1px solid rgba(74, 222, 128, 0.24)',
+                    textAlign: 'right',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 900,
+                      letterSpacing: 0.7,
+                      textTransform: 'uppercase',
+                      color: 'rgba(255,255,255,0.60)',
+                    }}
+                  >
+                    Scorer
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 4,
+                      fontSize: 22,
+                      fontWeight: 950,
+                      color: '#ffffff',
+                      letterSpacing: '-0.03em',
+                    }}
+                  >
+                    {completedPlayersCount}/{players.length}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                position: 'relative',
+                display: 'flex',
+                gap: 8,
+                flexWrap: 'wrap',
+              }}
+            >
+              <span style={liveHeaderPillStyle}>Par {hole.par}</span>
+              <span style={liveHeaderPillStyle}>HCP {hole.hcp_index}</span>
+              <span style={liveHeaderPillStyle}>
+                {currentHole === totalHoles ? 'Sista hålet' : `${totalHoles - currentHole} hål kvar`}
+              </span>
+            </div>
+
+            <div
+              style={{
+                position: 'relative',
+                display: 'grid',
+                gap: 8,
+              }}
+            >
+              <div
+                style={{
+                  height: 8,
+                  borderRadius: 999,
+                  background: 'rgba(255,255,255,0.10)',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    width: `${liveProgress}%`,
+                    height: '100%',
+                    borderRadius: 999,
+                    background:
+                      'linear-gradient(90deg, #22c55e 0%, #34d399 45%, #60a5fa 100%)',
+                    boxShadow: '0 0 20px rgba(96, 165, 250, 0.30)',
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: 10,
+                  flexWrap: 'wrap',
+                  fontSize: 12,
+                  fontWeight: 800,
+                  color: 'rgba(255,255,255,0.62)',
+                }}
+              >
+                <span>Start</span>
+                <span>Spel pågår</span>
+                <span>Mål</span>
+              </div>
+            </div>
+          </div>
+
           <HoleHeader hole={hole} totalHoles={totalHoles} onOpenHoleImage={openHoleImage} />
           <LiveLeaderboard
             leaderboard={leaderboard}
