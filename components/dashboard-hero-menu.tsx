@@ -51,12 +51,14 @@ export default function DashboardHeroMenu({
   pendingCount,
   incomingFriendRequestsCount,
   signOutAction,
+  markAllNotificationsAsReadAction,
   notifications,
 }: {
   isAdmin: boolean
   pendingCount: number
   incomingFriendRequestsCount: number
   signOutAction: () => Promise<void>
+  markAllNotificationsAsReadAction: () => Promise<void>
   notifications: HeroNotificationItem[]
 }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -65,6 +67,7 @@ export default function DashboardHeroMenu({
   const [showHint, setShowHint] = useState(false)
   const [platform, setPlatform] = useState<'ios' | 'android' | 'other'>('other')
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const markAllReadFormRef = useRef<HTMLFormElement | null>(null)
   useEffect(() => {
     const ua = window.navigator.userAgent || ''
     if (/iPhone|iPad|iPod/i.test(ua)) {
@@ -144,6 +147,7 @@ export default function DashboardHeroMenu({
               const next = !prev
               if (next) {
                 setBellUnreadCount(0)
+                markAllReadFormRef.current?.requestSubmit()
               }
               return next
             })
@@ -153,6 +157,7 @@ export default function DashboardHeroMenu({
         >
           🔔
         </button>
+        <form ref={markAllReadFormRef} action={markAllNotificationsAsReadAction} />
 
         {bellUnreadCount > 0 ? (
           <span

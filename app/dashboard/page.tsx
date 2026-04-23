@@ -2,6 +2,7 @@
   likeFeedEvent,
   unlikeFeedEvent,
   markNotificationAsRead,
+  markAllNotificationsAsRead,
 } from './actions'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -533,6 +534,7 @@ function DashboardHeader({
   pendingCount,
   incomingFriendRequestsCount,
   notifications,
+  markAllNotificationsAsReadAction,
 }: {
   displayName: string
   profile: Profile | null
@@ -546,6 +548,7 @@ function DashboardHeader({
     createdAt: string
     href: string
   }>
+  markAllNotificationsAsReadAction: () => Promise<void>
 }) {
   return (
     <div className="card dashboard-hero" style={dashboardStyles.heroCard}>
@@ -601,6 +604,7 @@ function DashboardHeader({
             pendingCount={pendingCount}
             incomingFriendRequestsCount={incomingFriendRequestsCount}
             signOutAction={signOut}
+            markAllNotificationsAsReadAction={markAllNotificationsAsReadAction}
             notifications={notifications}
           />
         </div>
@@ -2119,6 +2123,7 @@ export default async function DashboardPage({
             pendingCount={pendingCount}
             incomingFriendRequestsCount={incomingFriendRequestsCount}
             notifications={heroNotifications}
+            markAllNotificationsAsReadAction={markAllNotificationsAsRead}
           />
 
           <InstallAppPrompt />
@@ -2235,5 +2240,7 @@ export default async function DashboardPage({
     </main>
   )
 }
+
+
 
 
