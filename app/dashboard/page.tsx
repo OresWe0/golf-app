@@ -978,114 +978,111 @@ function FeedEventCompactCard({
         : { emoji: '🎯', text: 'Hole-in-one', accent: '#4c1d95', tint: '#f5f3ff', border: '#ddd6fe' }
 
   return (
-    <Link
-      href={`/feed/${event.id}`}
+    <article
+      className="feed-compact-card"
       style={{
-        textDecoration: 'none',
-        color: 'inherit',
+        position: 'relative',
+        overflow: 'hidden',
+        border: `1px solid ${eventMeta.border}`,
+        borderRadius: 22,
+        background:
+          'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,249,0.98) 100%)',
+        padding: 14,
+        display: 'grid',
+        gap: 12,
+        boxShadow:
+          '0 14px 30px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.75)',
       }}
     >
-      <article
-        className="feed-compact-card"
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: '0 auto auto 0',
+          width: 84,
+          height: 84,
+          borderRadius: 999,
+          background: eventMeta.tint,
+          filter: 'blur(8px)',
+          transform: 'translate(-26px, -28px)',
+          opacity: 0.95,
+        }}
+      />
+
+      <div
         style={{
           position: 'relative',
-          overflow: 'hidden',
-          border: `1px solid ${eventMeta.border}`,
-          borderRadius: 22,
-          background:
-            'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,249,0.98) 100%)',
-          padding: 14,
-          display: 'grid',
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
           gap: 12,
-          boxShadow:
-            '0 14px 30px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.75)',
         }}
       >
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            inset: '0 auto auto 0',
-            width: 84,
-            height: 84,
-            borderRadius: 999,
-            background: eventMeta.tint,
-            filter: 'blur(8px)',
-            transform: 'translate(-26px, -28px)',
-            opacity: 0.95,
-          }}
-        />
-
-        <div
-          style={{
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: 12,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-            <div style={{ position: 'relative' }}>
-              <UserAvatar profile={playerProfile} name={playerName} size={34} />
-              <div
-                aria-hidden="true"
-                style={{
-                  position: 'absolute',
-                  right: -4,
-                  bottom: -3,
-                  minWidth: 20,
-                  height: 20,
-                  borderRadius: 999,
-                  padding: '0 5px',
-                  background: eventMeta.tint,
-                  border: `1px solid ${eventMeta.border}`,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 11,
-                  boxShadow: '0 4px 10px rgba(15, 23, 42, 0.06)',
-                }}
-              >
-                {eventMeta.emoji}
-              </div>
-            </div>
-
-            <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  fontWeight: 900,
-                  color: '#14281d',
-                  lineHeight: 1.2,
-                  fontSize: 15,
-                  wordBreak: 'break-word',
-                }}
-              >
-                {playerName}
-              </div>
-              <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
-                Hål {event.hole_number} · {courseName}
-              </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          <div style={{ position: 'relative' }}>
+            <UserAvatar profile={playerProfile} name={playerName} size={34} />
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                right: -4,
+                bottom: -3,
+                minWidth: 20,
+                height: 20,
+                borderRadius: 999,
+                padding: '0 5px',
+                background: eventMeta.tint,
+                border: `1px solid ${eventMeta.border}`,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                boxShadow: '0 4px 10px rgba(15, 23, 42, 0.06)',
+              }}
+            >
+              {eventMeta.emoji}
             </div>
           </div>
 
-          <div
-            style={{
-              flexShrink: 0,
-              whiteSpace: 'nowrap',
-              fontSize: 12,
-              fontWeight: 800,
-              color: '#486457',
-              padding: '7px 10px',
-              borderRadius: 999,
-              background: '#f3f7f4',
-              border: '1px solid #dde8e1',
-            }}
-          >
-            {formatFeedEventTime(event.created_at)}
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontWeight: 900,
+                color: '#14281d',
+                lineHeight: 1.2,
+                fontSize: 15,
+                wordBreak: 'break-word',
+              }}
+            >
+              {playerName}
+            </div>
+            <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
+              Hål {event.hole_number} · {courseName}
+            </div>
           </div>
         </div>
 
+        <div
+          style={{
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+            fontSize: 12,
+            fontWeight: 800,
+            color: '#486457',
+            padding: '7px 10px',
+            borderRadius: 999,
+            background: '#f3f7f4',
+            border: '1px solid #dde8e1',
+          }}
+        >
+          {formatFeedEventTime(event.created_at)}
+        </div>
+      </div>
+
+      <Link
+        href={`/feed/${event.id}`}
+        style={{ textDecoration: 'none', color: 'inherit' }}
+      >
         <div
           style={{
             position: 'relative',
@@ -1145,51 +1142,48 @@ function FeedEventCompactCard({
             ›
           </div>
         </div>
+      </Link>
 
-        <div
+      <div
+        style={{
+          position: 'relative',
+          display: 'grid',
+          gridTemplateColumns: '1fr auto',
+          gap: 10,
+        }}
+      >
+        <Link
+          href={`/rounds/${event.round_id}/live`}
+          className="button"
           style={{
-            position: 'relative',
-            display: 'grid',
-            gridTemplateColumns: '1fr auto',
-            gap: 10,
+            minHeight: 48,
+            borderRadius: 16,
+            fontWeight: 900,
+            letterSpacing: '-0.01em',
+            boxShadow: '0 10px 20px rgba(34, 197, 94, 0.18)',
           }}
         >
-          <Link
-            href={`/rounds/${event.round_id}/live`}
-            className="button"
-            style={{
-              minHeight: 48,
-              borderRadius: 16,
-              fontWeight: 900,
-              letterSpacing: '-0.01em',
-              boxShadow: '0 10px 20px rgba(34, 197, 94, 0.18)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            Följ live
-          </Link>
+          Följ live
+        </Link>
 
-          <Link
-            href={`/feed/${event.id}`}
-            className="button secondary"
-            style={{
-              minHeight: 48,
-              minWidth: 54,
-              borderRadius: 16,
-              paddingLeft: 16,
-              paddingRight: 16,
-              fontWeight: 900,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            Läs
-          </Link>
-        </div>
-      </article>
-    </Link>
+        <Link
+          href={`/feed/${event.id}`}
+          className="button secondary"
+          style={{
+            minHeight: 48,
+            minWidth: 54,
+            borderRadius: 16,
+            paddingLeft: 16,
+            paddingRight: 16,
+            fontWeight: 900,
+          }}
+        >
+          Läs
+        </Link>
+      </div>
+    </article>
   )
 }
-
 
 function FeedEventCard({
   event,
