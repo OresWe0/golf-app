@@ -180,45 +180,51 @@ export default function DashboardHeroMenu({
         </span>
       ) : null}
 
-      {isOpen ? (
-        <div
-          style={{
-            position: 'absolute',
-            top: platform === 'ios' ? 58 : 56,
-            right: 0,
-            minWidth: 186,
-            zIndex: 20,
-            borderRadius: 12,
-            border: '1px solid rgba(255,255,255,0.24)',
-            background: 'rgba(12, 35, 24, 0.96)',
-            backdropFilter: 'blur(10px)',
-            boxShadow: '0 18px 36px rgba(15, 23, 42, 0.35)',
-            padding: 8,
-            display: 'grid',
-            gap: 6,
-          }}
-        >
-          {isAdmin ? (
-            <Link href="/admin/users" style={menuItemStyle} onClick={() => setIsOpen(false)}>
-              Admin{pendingCount > 0 ? ` ${pendingCount}` : ''}
-            </Link>
-          ) : null}
-
-          <Link href="/profile" style={menuItemStyle} onClick={() => setIsOpen(false)}>
-            Profil
+      <div
+        style={{
+          position: 'absolute',
+          top: platform === 'ios' ? 58 : 56,
+          right: 0,
+          minWidth: 186,
+          zIndex: 20,
+          borderRadius: 12,
+          border: '1px solid rgba(255,255,255,0.24)',
+          background: 'rgba(12, 35, 24, 0.96)',
+          backdropFilter: 'blur(10px)',
+          boxShadow: isOpen
+            ? '0 18px 36px rgba(15, 23, 42, 0.35)'
+            : '0 0 0 rgba(15, 23, 42, 0)',
+          padding: 8,
+          display: 'grid',
+          gap: 6,
+          opacity: isOpen ? 1 : 0,
+          transform: isOpen ? 'translateY(0) scale(1)' : 'translateY(-8px) scale(0.98)',
+          transformOrigin: 'top right',
+          pointerEvents: isOpen ? 'auto' : 'none',
+          transition:
+            'opacity 180ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease',
+        }}
+      >
+        {isAdmin ? (
+          <Link href="/admin/users" style={menuItemStyle} onClick={() => setIsOpen(false)}>
+            Admin{pendingCount > 0 ? ` ${pendingCount}` : ''}
           </Link>
+        ) : null}
 
-          <Link href="/statistik" style={menuItemStyle} onClick={() => setIsOpen(false)}>
-            Statistik
-          </Link>
+        <Link href="/profile" style={menuItemStyle} onClick={() => setIsOpen(false)}>
+          Profil
+        </Link>
 
-          <form action={signOutAction}>
-            <button type="submit" style={{ ...menuItemStyle, cursor: 'pointer' }}>
-              Logga ut
-            </button>
-          </form>
-        </div>
-      ) : null}
+        <Link href="/statistik" style={menuItemStyle} onClick={() => setIsOpen(false)}>
+          Statistik
+        </Link>
+
+        <form action={signOutAction}>
+          <button type="submit" style={{ ...menuItemStyle, cursor: 'pointer' }}>
+            Logga ut
+          </button>
+        </form>
+      </div>
 
       <style jsx>{`
         @keyframes dashboardMenuPulse {
