@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import type { CSSProperties } from 'react'
 import { useEffect, useRef, useState } from 'react'
@@ -50,7 +50,20 @@ export default function DashboardHeroMenu({
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [showHint, setShowHint] = useState(false)
+  const [platform, setPlatform] = useState<'ios' | 'android' | 'other'>('other')
   const containerRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const ua = window.navigator.userAgent || ''
+    if (/iPhone|iPad|iPod/i.test(ua)) {
+      setPlatform('ios')
+      return
+    }
+    if (/Android/i.test(ua)) {
+      setPlatform('android')
+      return
+    }
+    setPlatform('other')
+  }, [])
 
   useEffect(() => {
     const storageKey = 'dashboard_menu_hint_seen_v1'
@@ -99,7 +112,7 @@ export default function DashboardHeroMenu({
     <div ref={containerRef} style={{ position: 'relative' }}>
       <button
         type="button"
-        aria-label="Oppna meny"
+        aria-label="Öppna meny"
         aria-expanded={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}
         style={{
@@ -118,8 +131,8 @@ export default function DashboardHeroMenu({
           aria-hidden="true"
           style={{
             position: 'absolute',
-            top: 4,
-            right: 56,
+            top: platform === 'ios' ? 8 : platform === 'android' ? 2 : 4,
+            right: platform === 'ios' ? 60 : platform === 'android' ? 54 : 56,
             padding: '6px 10px',
             borderRadius: 999,
             border: '1px solid rgba(255,255,255,0.24)',
@@ -140,7 +153,7 @@ export default function DashboardHeroMenu({
 
       {incomingFriendRequestsCount > 0 ? (
         <span
-          aria-label={`${incomingFriendRequestsCount} inkommande vanforfraganingar`}
+          aria-label={`${incomingFriendRequestsCount} inkommande vänförfrågningar`}
           style={{
             position: 'absolute',
             top: -4,
@@ -169,7 +182,7 @@ export default function DashboardHeroMenu({
         <div
           style={{
             position: 'absolute',
-            top: 56,
+            top: platform === 'ios' ? 58 : 56,
             right: 0,
             minWidth: 186,
             zIndex: 20,
@@ -238,3 +251,4 @@ export default function DashboardHeroMenu({
     </div>
   )
 }
+
