@@ -4,6 +4,13 @@ import type { CSSProperties } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 
+type HeroNotificationItem = {
+  id: string
+  title: string
+  createdAt: string
+  href: string
+}
+
 const iconButtonStyle: CSSProperties = {
   width: 48,
   height: 48,
@@ -44,13 +51,16 @@ export default function DashboardHeroMenu({
   pendingCount,
   incomingFriendRequestsCount,
   signOutAction,
+  notifications,
 }: {
   isAdmin: boolean
   pendingCount: number
   incomingFriendRequestsCount: number
   signOutAction: () => Promise<void>
+  notifications: HeroNotificationItem[]
 }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [isBellOpen, setIsBellOpen] = useState(false)
   const [showHint, setShowHint] = useState(false)
   const [platform, setPlatform] = useState<'ios' | 'android' | 'other'>('other')
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -85,18 +95,22 @@ export default function DashboardHeroMenu({
   }, [])
 
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen && !isBellOpen) return
 
     const handlePointerDown = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node | null
       if (!target) return
       if (!containerRef.current?.contains(target)) {
         setIsOpen(false)
+        setIsBellOpen(false)
       }
     }
 
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsOpen(false)
+      if (event.key === 'Escape') {
+        setIsOpen(false)
+        setIsBellOpen(false)
+      }
     }
 
     window.addEventListener('mousedown', handlePointerDown)
@@ -108,15 +122,132 @@ export default function DashboardHeroMenu({
       window.removeEventListener('touchstart', handlePointerDown)
       window.removeEventListener('keydown', handleEscape)
     }
-  }, [isOpen])
+  }, [isOpen, isBellOpen])
 
   return (
-    <div ref={containerRef} style={{ position: 'relative' }}>
+    <div
+      ref={containerRef}
+      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 10 }}
+    >
+      <div style={{ position: 'relative' }}>
+        <button
+          type="button"
+          aria-label="Öppna notiser"
+          aria-expanded={isBellOpen}
+          onClick={() => {
+            setIsBellOpen((prev) => !prev)
+            setIsOpen(false)
+          }}
+          style={iconButtonStyle}
+        >
+          🔔
+        </button>
+
+        {notifications.length > 0 ? (
+          <span
+            aria-label={`${notifications.length} olästa notiser`}
+            style={{
+              position: 'absolute',
+              top: -4,
+              right: -4,
+              minWidth: 20,
+              height: 20,
+              borderRadius: 999,
+              background: '#dc2626',
+              color: '#fff',
+              fontSize: 11,
+              fontWeight: 900,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0 6px',
+              boxShadow: '0 8px 18px rgba(220, 38, 38, 0.26)',
+              border: '2px solid #fff',
+              pointerEvents: 'none',
+            }}
+          >
+            {notifications.length}
+          </span>
+        ) : null}
+
+        <div
+          style={{
+            position: 'absolute',
+            top: platform === 'ios' ? 58 : 56,
+            right: 0,
+            width: 'min(86vw, 320px)',
+            zIndex: 20,
+            borderRadius: 12,
+            border: '1px solid rgba(255,255,255,0.24)',
+            background: 'rgba(12, 35, 24, 0.96)',
+            backdropFilter: 'blur(10px)',
+            boxShadow: isBellOpen
+              ? '0 18px 36px rgba(15, 23, 42, 0.35)'
+              : '0 0 0 rgba(15, 23, 42, 0)',
+            padding: 8,
+            display: 'grid',
+            gap: 6,
+            opacity: isBellOpen ? 1 : 0,
+            transform: isBellOpen ? 'translateY(0) scale(1)' : 'translateY(-8px) scale(0.98)',
+            transformOrigin: 'top right',
+            pointerEvents: isBellOpen ? 'auto' : 'none',
+            transition:
+              'opacity 180ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease',
+          }}
+        >
+          <div style={{ color: '#fff', fontSize: 13, fontWeight: 900, padding: '4px 4px 6px' }}>
+            Notiser
+          </div>
+          {notifications.length === 0 ? (
+            <div
+              style={{
+                color: 'rgba(255,255,255,0.78)',
+                fontSize: 13,
+                borderRadius: 10,
+                border: '1px solid rgba(255,255,255,0.16)',
+                background: 'rgba(255,255,255,0.06)',
+                padding: 10,
+              }}
+            >
+              Inga nya notiser just nu.
+            </div>
+          ) : (
+            notifications.map((notification) => (
+              <Link
+                key={notification.id}
+                href={notification.href}
+                onClick={() => setIsBellOpen(false)}
+                style={{
+                  textDecoration: 'none',
+                  color: '#fff',
+                  borderRadius: 10,
+                  border: '1px solid rgba(255,255,255,0.16)',
+                  background: 'rgba(255,255,255,0.07)',
+                  padding: 10,
+                  display: 'grid',
+                  gap: 4,
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.35 }}>
+                  {notification.title}
+                </div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)' }}>
+                  {notification.createdAt}
+                </div>
+              </Link>
+            ))
+          )}
+        </div>
+      </div>
+
       <button
         type="button"
         aria-label="Öppna meny"
         aria-expanded={isOpen}
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={() => {
+          setIsOpen((prev) => !prev)
+          setIsBellOpen(false)
+        }}
         style={{
           ...iconButtonStyle,
           animation: showHint ? 'dashboardMenuPulse 1s ease-in-out 7' : undefined,

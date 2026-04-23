@@ -532,6 +532,7 @@ function DashboardHeader({
   isAdmin,
   pendingCount,
   incomingFriendRequestsCount,
+  notifications,
 }: {
   displayName: string
   profile: Profile | null
@@ -539,6 +540,12 @@ function DashboardHeader({
   isAdmin: boolean
   pendingCount: number
   incomingFriendRequestsCount: number
+  notifications: Array<{
+    id: string
+    title: string
+    createdAt: string
+    href: string
+  }>
 }) {
   return (
     <div className="card dashboard-hero" style={dashboardStyles.heroCard}>
@@ -594,6 +601,7 @@ function DashboardHeader({
             pendingCount={pendingCount}
             incomingFriendRequestsCount={incomingFriendRequestsCount}
             signOutAction={signOut}
+            notifications={notifications}
           />
         </div>
 
@@ -1669,6 +1677,14 @@ export default async function DashboardPage({
   const incomingFriendRequestsCount =
     (incomingFriendRequests as FriendRequestRow[] | null)?.length ?? 0
   const notifications = (notificationsData as NotificationRow[] | null) ?? []
+  const heroNotifications = notifications.slice(0, 8).map((notification) => ({
+    id: notification.id,
+    title: notification.title,
+    createdAt: formatFeedEventTime(notification.created_at),
+    href: notification.feed_event_id
+      ? `/feed/${notification.feed_event_id}`
+      : '/dashboard#friend-feed',
+  }))
 
   const actorUserIds = notifications
     .map((n) => n.actor_user_id)
@@ -2096,6 +2112,7 @@ export default async function DashboardPage({
             isAdmin={isAdmin}
             pendingCount={pendingCount}
             incomingFriendRequestsCount={incomingFriendRequestsCount}
+            notifications={heroNotifications}
           />
 
           <InstallAppPrompt />
