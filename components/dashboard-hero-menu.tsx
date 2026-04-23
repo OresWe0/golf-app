@@ -74,7 +74,7 @@ export default function DashboardHeroMenu({
         const timer = window.setTimeout(() => {
           setShowHint(false)
           window.localStorage.setItem(storageKey, '1')
-        }, 2200)
+        }, 4200)
         return () => window.clearTimeout(timer)
       }
     } catch {
@@ -117,7 +117,7 @@ export default function DashboardHeroMenu({
         onClick={() => setIsOpen((prev) => !prev)}
         style={{
           ...iconButtonStyle,
-          animation: showHint ? 'dashboardMenuPulse 1s ease-in-out 4' : undefined,
+          animation: showHint ? 'dashboardMenuPulse 1s ease-in-out 7' : undefined,
           boxShadow: showHint
             ? '0 0 0 2px rgba(34, 197, 94, 0.65), 0 12px 26px rgba(34, 197, 94, 0.28)'
             : iconButtonStyle.boxShadow,
@@ -143,7 +143,7 @@ export default function DashboardHeroMenu({
             whiteSpace: 'nowrap',
             backdropFilter: 'blur(8px)',
             boxShadow: '0 10px 20px rgba(15, 23, 42, 0.25)',
-            animation: 'dashboardMenuHintFade 2.2s ease forwards',
+            animation: 'dashboardMenuHintFade 4.2s ease forwards',
             pointerEvents: 'none',
           }}
         >
