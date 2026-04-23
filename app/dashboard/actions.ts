@@ -34,7 +34,7 @@ export async function likeFeedEvent(formData: FormData) {
       user_id: feedEvent.user_id,
       actor_user_id: user.id,
       type: 'like',
-      title: 'N\u00e5gon gillade ditt event',
+      title: 'Någon gillade ditt event',
       feed_event_id: feedEvent.id,
     })
   }

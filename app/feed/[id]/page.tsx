@@ -128,7 +128,7 @@ function formatFeedEventTime(value: string) {
   })
 
   if (sameDay) return `Idag ${timeText}`
-  if (sameAsYesterday) return `Ig\u00e5r ${timeText}`
+  if (sameAsYesterday) return `Igår ${timeText}`
 
   return date.toLocaleString('sv-SE', {
     year: 'numeric',
@@ -286,14 +286,14 @@ export default async function FeedEventDetailPage({
   const likesCount = likes.length
   const playerName =
     event.player_name?.trim() || getProfileName(profileById.get(event.user_id))
-  const courseName = event.course_name?.trim() || 'Ok\u00e4nd bana'
+  const courseName = event.course_name?.trim() || 'Okänd bana'
 
   const eventMeta =
     event.event_type === 'birdie'
-      ? { emoji: '\uD83D\uDC26', text: 'birdie' }
+      ? { emoji: '🐦', text: 'birdie' }
       : event.event_type === 'eagle'
-      ? { emoji: '\uD83E\uDD85', text: 'eagle' }
-      : { emoji: '\uD83C\uDFAF', text: 'hole-in-one' }
+      ? { emoji: '🦅', text: 'eagle' }
+      : { emoji: '🎯', text: 'hole-in-one' }
 
   return (
     <main>
@@ -313,7 +313,7 @@ export default async function FeedEventDetailPage({
               fontWeight: 800,
             }}
           >
-            \u2190 Tillbaka till v\u00e4nfl\u00f6de
+            ← Tillbaka till vänflöde
           </Link>
         </div>
 
@@ -326,7 +326,7 @@ export default async function FeedEventDetailPage({
           </div>
 
           <div className="muted">
-            H\u00e5l {event.hole_number} - {courseName}
+            Hål {event.hole_number} - {courseName}
           </div>
 
           <div className="muted" style={{ fontSize: 13 }}>
@@ -335,7 +335,7 @@ export default async function FeedEventDetailPage({
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <div className="muted" style={{ fontSize: 13 }}>
-              \uD83D\uDC4D {likesCount}
+              👍 {likesCount}
             </div>
 
             {likedByMe ? (
@@ -366,11 +366,11 @@ export default async function FeedEventDetailPage({
             }}
           >
             <h2 style={{ margin: 0, fontSize: 24 }}>Kommentarer</h2>
-            <div className="muted">\uD83D\uDCAC {comments.length}</div>
+            <div className="muted">💬 {comments.length}</div>
           </div>
 
           {comments.length === 0 ? (
-            <div className="notice">Ingen kommentar \u00e4n. Skriv f\u00f6rsta.</div>
+            <div className="notice">Ingen kommentar än. Skriv första.</div>
           ) : (
             <div style={{ display: 'grid', gap: 8 }}>
               {comments.map((comment) => {
