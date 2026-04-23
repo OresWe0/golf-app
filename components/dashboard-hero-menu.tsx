@@ -61,6 +61,7 @@ export default function DashboardHeroMenu({
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isBellOpen, setIsBellOpen] = useState(false)
+  const [bellUnreadCount, setBellUnreadCount] = useState(notifications.length)
   const [showHint, setShowHint] = useState(false)
   const [platform, setPlatform] = useState<'ios' | 'android' | 'other'>('other')
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -93,6 +94,10 @@ export default function DashboardHeroMenu({
       // Ignore localStorage errors in private mode.
     }
   }, [])
+
+  useEffect(() => {
+    setBellUnreadCount(notifications.length)
+  }, [notifications])
 
   useEffect(() => {
     if (!isOpen && !isBellOpen) return
@@ -135,7 +140,13 @@ export default function DashboardHeroMenu({
           aria-label="Öppna notiser"
           aria-expanded={isBellOpen}
           onClick={() => {
-            setIsBellOpen((prev) => !prev)
+            setIsBellOpen((prev) => {
+              const next = !prev
+              if (next) {
+                setBellUnreadCount(0)
+              }
+              return next
+            })
             setIsOpen(false)
           }}
           style={iconButtonStyle}
@@ -143,9 +154,9 @@ export default function DashboardHeroMenu({
           🔔
         </button>
 
-        {notifications.length > 0 ? (
+        {bellUnreadCount > 0 ? (
           <span
-            aria-label={`${notifications.length} olästa notiser`}
+            aria-label={`${bellUnreadCount} olästa notiser`}
             style={{
               position: 'absolute',
               top: -4,
@@ -166,7 +177,7 @@ export default function DashboardHeroMenu({
               pointerEvents: 'none',
             }}
           >
-            {notifications.length}
+            {bellUnreadCount}
           </span>
         ) : null}
 
