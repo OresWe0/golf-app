@@ -1,15 +1,14 @@
-import {
+﻿import {
   likeFeedEvent,
   unlikeFeedEvent,
   markNotificationAsRead,
 } from './actions'
-import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { signOut } from '@/app/login/actions'
 import InstallAppPrompt from '@/components/install-app-prompt'
+import DashboardHeroMenu from '@/components/dashboard-hero-menu'
 import type { Course, Profile, Round } from '@/lib/types'
 
 const ADMIN_EMAIL = 'sigge@dufvander.se'
@@ -176,13 +175,13 @@ function buildDashboardHref(params: {
 }
 
 function getRoleLabel(role?: Membership['role']) {
-  if (role === 'owner') return 'Ägare'
+  if (role === 'owner') return 'Ã„gare'
   if (role === 'player') return 'Spelare'
   return 'Ej deltagare'
 }
 
 function getScoringLabel(scoringMode: Round['scoring_mode']) {
-  return scoringMode === 'stableford' ? 'Poängbogey' : 'Slagspel'
+  return scoringMode === 'stableford' ? 'PoÃ¤ngbogey' : 'Slagspel'
 }
 
 function getRoundHref(round: Round) {
@@ -190,9 +189,9 @@ function getRoundHref(round: Round) {
 }
 
 function getFeedEventLabel(eventType: FeedEvent['event_type']) {
-  if (eventType === 'birdie') return '🐦 Birdie'
-  if (eventType === 'eagle') return '🦅 Eagle'
-  return '🎯 Hole-in-one'
+  if (eventType === 'birdie') return 'ðŸ¦ Birdie'
+  if (eventType === 'eagle') return 'ðŸ¦… Eagle'
+  return 'ðŸŽ¯ Hole-in-one'
 }
 
 function formatFeedEventTime(value: string) {
@@ -227,7 +226,7 @@ function formatFeedEventTime(value: string) {
   }
 
   if (sameAsYesterday) {
-    return `Igår ${timeText}`
+    return `IgÃ¥r ${timeText}`
   }
 
   return date.toLocaleString('sv-SE', {
@@ -281,10 +280,10 @@ function getCourseNameForFeedEvent(
   }
 
   const round = rounds.find((item) => item.id === event.round_id)
-  if (!round) return 'Okänd bana'
+  if (!round) return 'OkÃ¤nd bana'
 
   const course = courses.find((item) => item.id === round.course_id)
-  return course?.name || 'Okänd bana'
+  return course?.name || 'OkÃ¤nd bana'
 }
 
 function getPlayerNameForFeedEvent(
@@ -314,7 +313,7 @@ function getPlayerNameForFeedEvent(
     return matchingUser.display_name.trim()
   }
 
-  return 'Okänd spelare'
+  return 'OkÃ¤nd spelare'
 }
 
 const dashboardStyles = {
@@ -365,7 +364,7 @@ function getTimeGreetingSvSE(now = new Date()) {
 
   if (hour >= 5 && hour < 10) return 'God morgon'
   if (hour >= 10 && hour < 17) return 'God dag'
-  return 'God kväll'
+  return 'God kvÃ¤ll'
 }
 
 function SectionEmptyState({
@@ -500,10 +499,10 @@ function FriendRequestNotice({
     >
       <div>
         <div style={{ fontWeight: 900, marginBottom: 4, color: '#1f3327' }}>
-          📨 Du har en ny vänförfrågan
+          ðŸ“¨ Du har en ny vÃ¤nfÃ¶rfrÃ¥gan
         </div>
         <div className="muted" style={{ color: '#7c5a12' }}>
-          Du har {incomingFriendRequestsCount} inkommande vänförfrågan
+          Du har {incomingFriendRequestsCount} inkommande vÃ¤nfÃ¶rfrÃ¥gan
           {incomingFriendRequestsCount > 1 ? 'ar' : ''} att hantera i Min profil.
         </div>
       </div>
@@ -519,7 +518,7 @@ function FriendRequestNotice({
           background: '#fffef8',
         }}
       >
-        Öppna Min profil
+        Ã–ppna Min profil
       </Link>
     </div>
   )
@@ -540,40 +539,6 @@ function DashboardHeader({
   pendingCount: number
   incomingFriendRequestsCount: number
 }) {
-  const iconButtonStyle: CSSProperties = {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: '1px solid rgba(255,255,255,0.24)',
-    background: 'rgba(12, 35, 24, 0.36)',
-    color: '#fff',
-    backdropFilter: 'blur(8px)',
-    boxShadow: '0 8px 22px rgba(15, 23, 42, 0.2)',
-    fontSize: 22,
-    lineHeight: 1,
-  }
-
-  const menuItemStyle: CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    justifyContent: 'flex-start',
-    width: '100%',
-    minHeight: 38,
-    padding: '8px 10px',
-    borderRadius: 10,
-    border: '1px solid rgba(255,255,255,0.18)',
-    background: 'rgba(255,255,255,0.09)',
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 800,
-    textDecoration: 'none',
-    boxSizing: 'border-box',
-  }
-
   return (
     <div className="card dashboard-hero" style={dashboardStyles.heroCard}>
       <div
@@ -623,89 +588,11 @@ function DashboardHeader({
             zIndex: 4,
           }}
         >
-          <div style={{ position: 'relative' }}>
-            <Link href="/profile" aria-label="Öppna profil" style={iconButtonStyle}>
-              👤
-            </Link>
-
-            {incomingFriendRequestsCount > 0 ? (
-              <span
-                aria-label={`${incomingFriendRequestsCount} inkommande vänförfrågningar`}
-                style={{
-                  position: 'absolute',
-                  top: -4,
-                  right: -4,
-                  minWidth: 20,
-                  height: 20,
-                  borderRadius: 999,
-                  background: '#dc2626',
-                  color: '#fff',
-                  fontSize: 11,
-                  fontWeight: 900,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '0 6px',
-                  boxShadow: '0 8px 18px rgba(220, 38, 38, 0.26)',
-                  border: '2px solid #fff',
-                }}
-              >
-                {incomingFriendRequestsCount}
-              </span>
-            ) : null}
-          </div>
-
-          <details style={{ position: 'relative' }}>
-            <summary
-              aria-label="Öppna meny"
-              style={{
-                ...iconButtonStyle,
-                listStyle: 'none',
-                cursor: 'pointer',
-                WebkitAppearance: 'none',
-              }}
-            >
-              ☰
-            </summary>
-
-            <div
-              style={{
-                position: 'absolute',
-                top: 52,
-                right: 0,
-                minWidth: 172,
-                zIndex: 6,
-                borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.24)',
-                background: 'rgba(12, 35, 24, 0.92)',
-                backdropFilter: 'blur(10px)',
-                boxShadow: '0 18px 36px rgba(15, 23, 42, 0.35)',
-                padding: 8,
-                display: 'grid',
-                gap: 6,
-              }}
-            >
-              {isAdmin ? (
-                <Link href="/admin/users" style={menuItemStyle}>
-                  🛠 Admin{pendingCount > 0 ? ` ${pendingCount}` : ''}
-                </Link>
-              ) : null}
-
-              <Link href="/profile" style={menuItemStyle}>
-                👤 Profil
-              </Link>
-
-              <Link href="/statistik" style={menuItemStyle}>
-                📈 Stats
-              </Link>
-
-              <form action={signOut}>
-                <button type="submit" style={menuItemStyle}>
-                  ↪ Logga ut
-                </button>
-              </form>
-            </div>
-          </details>
+          <DashboardHeroMenu
+            isAdmin={isAdmin}
+            pendingCount={pendingCount}
+            incomingFriendRequestsCount={incomingFriendRequestsCount}
+          />
         </div>
 
         <div
@@ -748,8 +635,8 @@ function DashboardHeader({
                 color: 'rgba(255,255,255,0.88)',
               }}
             >
-              Redo för nästa runda? Starta snabbt, fortsätt en aktiv runda eller följ dina
-              golfvänner.
+              Redo fÃ¶r nÃ¤sta runda? Starta snabbt, fortsÃ¤tt en aktiv runda eller fÃ¶lj dina
+              golfvÃ¤nner.
             </p>
           </div>
         </div>
@@ -770,7 +657,7 @@ function DashboardHeader({
               border: '1px solid rgba(255,255,255,0.12)',
             }}
           >
-            ⛳ Starta ny runda
+            â›³ Starta ny runda
           </Link>
         </div>
       </div>
@@ -791,7 +678,7 @@ function NotificationsSection({
     <div className="card" style={dashboardStyles.sectionCard}>
       <SectionHeader
         title="Notiser"
-        description="Det senaste som hänt i ditt flöde."
+        description="Det senaste som hÃ¤nt i ditt flÃ¶de."
         count={notifications.length}
         countTone="slate"
       />
@@ -844,7 +731,7 @@ function NotificationsSection({
                   className="button secondary"
                   style={{ minWidth: 120 }}
                 >
-                  ✓ Klart
+                  âœ“ Klart
                 </button>
               </form>
             </div>
@@ -879,10 +766,10 @@ function AdminPendingBanner({
     >
       <div>
         <div style={{ fontWeight: 900, marginBottom: 4, color: '#1f3327' }}>
-          ⏳ Väntande användare
+          â³ VÃ¤ntande anvÃ¤ndare
         </div>
         <div className="muted">
-          {pendingCount} användare väntar på att bli godkända.
+          {pendingCount} anvÃ¤ndare vÃ¤ntar pÃ¥ att bli godkÃ¤nda.
         </div>
       </div>
 
@@ -897,7 +784,7 @@ function AdminPendingBanner({
           background: '#fffef8',
         }}
       >
-        Öppna admin
+        Ã–ppna admin
       </Link>
     </div>
   )
@@ -924,30 +811,30 @@ function DashboardHighlights({
       }}
     >
       <HighlightCard
-        label="🏆 Bästa 9 hål"
-        value={bestRound9Score ?? 'Ingen ännu'}
-        sublabel="Lägsta registrerade score på 9 hål"
+        label="ðŸ† BÃ¤sta 9 hÃ¥l"
+        value={bestRound9Score ?? 'Ingen Ã¤nnu'}
+        sublabel="LÃ¤gsta registrerade score pÃ¥ 9 hÃ¥l"
         tone="green"
       />
 
       <HighlightCard
-        label="🏆 Bästa 18 hål"
-        value={bestRound18Score ?? 'Ingen ännu'}
-        sublabel="Lägsta registrerade score på 18 hål"
+        label="ðŸ† BÃ¤sta 18 hÃ¥l"
+        value={bestRound18Score ?? 'Ingen Ã¤nnu'}
+        sublabel="LÃ¤gsta registrerade score pÃ¥ 18 hÃ¥l"
         tone="blue"
       />
 
       <HighlightCard
-        label="📅 Spelade rundor i år"
+        label="ðŸ“… Spelade rundor i Ã¥r"
         value={roundsThisYearCount}
-        sublabel="Avslutade rundor under innevarande år"
+        sublabel="Avslutade rundor under innevarande Ã¥r"
         tone="blue"
       />
 
       <HighlightCard
-        label="📍 Senaste bana"
+        label="ðŸ“ Senaste bana"
         value={latestCourseName}
-        sublabel="Från din senast avslutade runda"
+        sublabel="FrÃ¥n din senast avslutade runda"
         tone="slate"
       />
     </div>
@@ -1072,10 +959,10 @@ function FeedEventCard({
 }) {
   const eventMeta =
   event.event_type === 'birdie'
-    ? { emoji: '🐦', text: 'gjorde en birdie' }
+    ? { emoji: 'ðŸ¦', text: 'gjorde en birdie' }
     : event.event_type === 'eagle'
-      ? { emoji: '🦅', text: 'gjorde en eagle' }
-      : { emoji: '🎯', text: 'gjorde hole-in-one' }
+      ? { emoji: 'ðŸ¦…', text: 'gjorde en eagle' }
+      : { emoji: 'ðŸŽ¯', text: 'gjorde hole-in-one' }
 
   const timeLabel = formatFeedEventTime(event.created_at)
 
@@ -1098,7 +985,7 @@ function FeedEventCard({
         </div>
       </div>
 
-      <div className="muted">Hål {event.hole_number} - {courseName}</div>
+      <div className="muted">HÃ¥l {event.hole_number} - {courseName}</div>
 
       <div className="muted" style={{ fontSize: 13 }}>
         {timeLabel}
@@ -1118,7 +1005,7 @@ function FeedEventCard({
         </div>
 
         <Link href={`/rounds/${event.round_id}/live`} className="button secondary">
-          Följ live
+          FÃ¶lj live
         </Link>
 
         {likedByMe ? (
@@ -1138,7 +1025,7 @@ function FeedEventCard({
         )}
 
         <Link href={`/feed/${event.id}`} className="button secondary">
-          Öppna detaljer
+          Ã–ppna detaljer
         </Link>
       </div>
 
@@ -1147,7 +1034,7 @@ function FeedEventCard({
           Kommentarer {comments.length}
         </div>
         <div className="muted" style={{ fontSize: 13 }}>
-          Öppna detaljer för att läsa och skriva kommentarer.
+          Ã–ppna detaljer fÃ¶r att lÃ¤sa och skriva kommentarer.
         </div>
       </div>
     </div>
@@ -1202,7 +1089,7 @@ function ActiveRoundCard({
           </div>
 
           <div className="muted" style={{ lineHeight: 1.5 }}>
-            {scoring} · Aktuellt hål {round.current_hole} · {role}
+            {scoring} Â· Aktuellt hÃ¥l {round.current_hole} Â· {role}
           </div>
         </div>
 
@@ -1213,7 +1100,7 @@ function ActiveRoundCard({
             color: '#166534',
           }}
         >
-          Pågår
+          PÃ¥gÃ¥r
         </div>
       </div>
 
@@ -1262,7 +1149,7 @@ function ActiveRoundCard({
           }}
         >
           <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
-            Hål
+            HÃ¥l
           </div>
           <div style={{ fontWeight: 900, color: '#1f3327' }}>
             {round.current_hole}
@@ -1296,7 +1183,7 @@ function ActiveRoundCard({
             boxSizing: 'border-box',
           }}
         >
-          Fortsätt runda
+          FortsÃ¤tt runda
         </Link>
 
         <Link
@@ -1361,7 +1248,7 @@ function CompletedRoundCard({
           </div>
 
           <div className="muted" style={{ marginTop: 5, lineHeight: 1.45 }}>
-            {scoring} · {role}
+            {scoring} Â· {role}
           </div>
           {roundDate ? (
             <div className="muted" style={{ marginTop: 2, fontSize: 13 }}>
@@ -1426,15 +1313,15 @@ function ActiveRoundsSection({
     <div className="card dashboard-mobile-card" style={dashboardStyles.sectionCard}>
       <SectionHeader
         title="Aktiva rundor"
-        description="Rundor som pågår just nu."
+        description="Rundor som pÃ¥gÃ¥r just nu."
         count={rounds.length}
         countTone="green"
       />
 
       {rounds.length === 0 ? (
         <SectionEmptyState
-          title="Inga aktiva rundor ännu"
-          description="Starta en ny runda för att komma igång."
+          title="Inga aktiva rundor Ã¤nnu"
+          description="Starta en ny runda fÃ¶r att komma igÃ¥ng."
         />
       ) : (
         <div style={{ display: 'grid', gap: 12 }}>
@@ -1463,7 +1350,7 @@ function ActiveRoundsSection({
                   className="button secondary"
                   style={{ minWidth: 190, textAlign: 'center' }}
                 >
-                  Visa färre aktiva
+                  Visa fÃ¤rre aktiva
                 </Link>
               ) : (
                 <Link
@@ -1523,8 +1410,8 @@ function CompletedRoundsSection({
 
       {rounds.length === 0 ? (
         <SectionEmptyState
-          title="Inga avslutade rundor ännu"
-          description="När du avslutar en runda visas den här."
+          title="Inga avslutade rundor Ã¤nnu"
+          description="NÃ¤r du avslutar en runda visas den hÃ¤r."
         />
       ) : (
         <div style={{ display: 'grid', gap: 10 }}>
@@ -1553,7 +1440,7 @@ function CompletedRoundsSection({
                   className="button secondary"
                   style={{ minWidth: 210, textAlign: 'center' }}
                 >
-                  Visa färre avslutade
+                  Visa fÃ¤rre avslutade
                 </Link>
               ) : (
                 <Link
@@ -1585,22 +1472,22 @@ function FriendActiveRoundsSection({
   return (
     <div className="card dashboard-mobile-card" style={dashboardStyles.sectionCard}>
       <SectionHeader
-        title="Vänners aktiva rundor"
-        description="Följ vännernas spel live direkt när de är ute på banan."
+        title="VÃ¤nners aktiva rundor"
+        description="FÃ¶lj vÃ¤nnernas spel live direkt nÃ¤r de Ã¤r ute pÃ¥ banan."
         count={rounds.length}
         countTone="slate"
       />
 
       {rounds.length === 0 ? (
         <SectionEmptyState
-          title="Inga vänrundor live just nu"
-          description="När en vän startar en runda dyker den upp här."
+          title="Inga vÃ¤nrundor live just nu"
+          description="NÃ¤r en vÃ¤n startar en runda dyker den upp hÃ¤r."
         />
       ) : (
         <div style={{ display: 'grid', gap: 10 }}>
           {rounds.map((round) => {
-            const ownerName = friendNameById.get(round.owner_id) ?? 'Din vän'
-            const courseName = coursesById.get(round.course_id) ?? 'Okänd bana'
+            const ownerName = friendNameById.get(round.owner_id) ?? 'Din vÃ¤n'
+            const courseName = coursesById.get(round.course_id) ?? 'OkÃ¤nd bana'
 
             return (
               <div
@@ -1636,7 +1523,7 @@ function FriendActiveRoundsSection({
                       {round.title}
                     </div>
                     <div className="muted" style={{ marginTop: 6 }}>
-                      {ownerName} · {courseName} · Hål {round.current_hole ?? 1}
+                      {ownerName} Â· {courseName} Â· HÃ¥l {round.current_hole ?? 1}
                     </div>
                   </div>
 
@@ -1662,7 +1549,7 @@ function FriendActiveRoundsSection({
                   className="button secondary"
                   style={{ width: '100%', textAlign: 'center', boxSizing: 'border-box' }}
                 >
-                  Följ live
+                  FÃ¶lj live
                 </Link>
               </div>
             )
@@ -1840,7 +1727,7 @@ export default async function DashboardPage({
   const friendNameById = new Map(
     friendProfiles.map((profile) => [
       profile.id,
-      profile.display_name?.trim() || profile.email?.trim() || 'Din vän',
+      profile.display_name?.trim() || profile.email?.trim() || 'Din vÃ¤n',
     ])
   )
   const coursesById = new Map(allCourses.map((course) => [course.id, course.name]))
@@ -2121,8 +2008,8 @@ export default async function DashboardPage({
   const latestRound = completedRounds[0] ?? null
 
   const latestCourseName = latestRound
-    ? allCourses.find((c) => c.id === latestRound.course_id)?.name || 'Okänd bana'
-    : 'Ingen ännu'
+    ? allCourses.find((c) => c.id === latestRound.course_id)?.name || 'OkÃ¤nd bana'
+    : 'Ingen Ã¤nnu'
 
   return (
     <main style={{ width: '100%', overflowX: 'hidden' }}>
@@ -2233,8 +2120,8 @@ export default async function DashboardPage({
         <div className="dashboard-lower-stack" style={{ display: 'grid', gap: 18 }}>
           <div id="friend-feed" className="card" style={dashboardStyles.sectionCard}>
             <SectionHeader
-              title="📊 Din statistik"
-              description="Din genomsnittliga score baserat på avslutade rundor."
+              title="ðŸ“Š Din statistik"
+              description="Din genomsnittliga score baserat pÃ¥ avslutade rundor."
               count={completedRounds.length}
               countTone="slate"
             />
@@ -2247,9 +2134,9 @@ export default async function DashboardPage({
               }}
             >
               <HighlightCard
-                label="📊 Snittscore"
+                label="ðŸ“Š Snittscore"
                 value={
-                  averageScore !== null ? Math.round(averageScore).toString() : '—'
+                  averageScore !== null ? Math.round(averageScore).toString() : 'â€”'
                 }
                 sublabel="Genomsnittligt antal slag"
                 tone="purple"
@@ -2265,16 +2152,16 @@ export default async function DashboardPage({
 
           <div className="card dashboard-mobile-card" style={dashboardStyles.sectionCard}>
             <SectionHeader
-              title="Vänflöde"
-              description="Senaste höjdpunkterna i spelet."
+              title="VÃ¤nflÃ¶de"
+              description="Senaste hÃ¶jdpunkterna i spelet."
               count={feedEvents.length}
               countTone="slate"
             />
 
             {feedEvents.length === 0 ? (
               <SectionEmptyState
-                title="Inga höjdpunkter ännu"
-                description="Birdies, eagles och hole-in-one dyker upp här."
+                title="Inga hÃ¶jdpunkter Ã¤nnu"
+                description="Birdies, eagles och hole-in-one dyker upp hÃ¤r."
               />
             ) : (
               <div style={{ display: 'grid', gap: 10 }}>
