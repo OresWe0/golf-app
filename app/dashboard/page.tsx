@@ -534,6 +534,10 @@ function DashboardHeader({
   pendingCount,
   incomingFriendRequestsCount,
   notifications,
+  liveRound,
+  liveRoundOwnerName,
+  liveRoundCourseName,
+  liveRoundsCount,
 }: {
   displayName: string
   profile: Profile | null
@@ -547,6 +551,10 @@ function DashboardHeader({
     createdAt: string
     href: string
   }>
+  liveRound: RoundWithCreatedAt | null
+  liveRoundOwnerName: string
+  liveRoundCourseName: string
+  liveRoundsCount: number
 }) {
   return (
     <div className="card dashboard-hero" style={dashboardStyles.heroCard}>
@@ -649,6 +657,136 @@ function DashboardHeader({
               Redo för nästa runda? Starta snabbt, fortsätt en aktiv runda eller följ dina
               golfvänner.
             </p>
+
+            {liveRound ? (
+              <Link
+                href={`/rounds/${liveRound.id}/live`}
+                className="dashboard-live-hook"
+                style={{
+                  marginTop: 16,
+                  display: 'grid',
+                  gap: 10,
+                  textDecoration: 'none',
+                  color: '#fff',
+                  padding: '15px 16px',
+                  borderRadius: 22,
+                  border: '1px solid rgba(255,255,255,0.16)',
+                  background:
+                    'linear-gradient(180deg, rgba(18,37,28,0.50) 0%, rgba(16,31,24,0.34) 100%)',
+                  boxShadow:
+                    '0 16px 32px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255,255,255,0.10)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  maxWidth: 720,
+                  overflow: 'hidden',
+                  position: 'relative',
+                }}
+              >
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    inset: '-30% auto auto -8%',
+                    width: 130,
+                    height: 130,
+                    borderRadius: '50%',
+                    background:
+                      'radial-gradient(circle, rgba(34,197,94,0.20) 0%, rgba(34,197,94,0) 72%)',
+                    pointerEvents: 'none',
+                  }}
+                />
+
+                <div
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      minWidth: 0,
+                    }}
+                  >
+                    <span
+                      className="dashboard-live-hook-dot"
+                      aria-hidden="true"
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: 999,
+                        background: '#ef4444',
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontWeight: 900,
+                        fontSize: 15,
+                        letterSpacing: '-0.01em',
+                        color: '#ffffff',
+                      }}
+                    >
+                      {liveRoundsCount}{' '}
+                      {liveRoundsCount === 1 ? 'vän spelar just nu' : 'vänner spelar just nu'}
+                    </span>
+                  </div>
+
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '8px 12px',
+                      borderRadius: 999,
+                      background: 'rgba(255,255,255,0.10)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      color: '#ffffff',
+                      fontSize: 13,
+                      fontWeight: 900,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Följ live
+                    <span aria-hidden="true">→</span>
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    position: 'relative',
+                    display: 'grid',
+                    gap: 4,
+                    color: 'rgba(255,255,255,0.90)',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 800,
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    {liveRoundOwnerName}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      lineHeight: 1.45,
+                      color: 'rgba(255,255,255,0.78)',
+                    }}
+                  >
+                    {liveRoundCourseName} · Hål {liveRound.current_hole ?? 1}
+                  </div>
+                </div>
+              </Link>
+            ) : null}
           </div>
         </div>
 
@@ -2292,6 +2430,44 @@ export default async function DashboardPage({
           min-width: 0;
         }
 
+        .dashboard-live-hook {
+          transition:
+            transform 180ms ease,
+            box-shadow 180ms ease,
+            border-color 180ms ease,
+            background 180ms ease;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .dashboard-live-hook:active {
+          transform: scale(0.992);
+        }
+
+        .dashboard-live-hook-dot {
+          box-shadow:
+            0 0 0 0 rgba(239, 68, 68, 0.34),
+            0 0 22px rgba(239, 68, 68, 0.20);
+          animation: dashboardLivePulse 1.8s ease-out infinite;
+        }
+
+        @keyframes dashboardLivePulse {
+          0% {
+            box-shadow:
+              0 0 0 0 rgba(239, 68, 68, 0.34),
+              0 0 18px rgba(239, 68, 68, 0.18);
+          }
+          70% {
+            box-shadow:
+              0 0 0 10px rgba(239, 68, 68, 0),
+              0 0 22px rgba(239, 68, 68, 0.12);
+          }
+          100% {
+            box-shadow:
+              0 0 0 0 rgba(239, 68, 68, 0),
+              0 0 0 rgba(239, 68, 68, 0);
+          }
+        }
+
         @media (max-width: 820px) {
           .dashboard-header-actions {
             flex-wrap: nowrap !important;
@@ -2362,6 +2538,11 @@ export default async function DashboardPage({
             border-radius: 18px !important;
           }
 
+          .dashboard-live-hook {
+            border-radius: 20px !important;
+            padding: 14px 14px !important;
+          }
+
           .dashboard-mobile-card .button.secondary {
             min-height: 46px;
             padding-top: 10px;
@@ -2385,6 +2566,10 @@ export default async function DashboardPage({
           .feed-drawer-summary {
             align-items: flex-start !important;
           }
+
+          .dashboard-live-hook {
+            gap: 9px !important;
+          }
         }
       `}</style>
 
@@ -2406,6 +2591,18 @@ export default async function DashboardPage({
             pendingCount={pendingCount}
             incomingFriendRequestsCount={incomingFriendRequestsCount}
             notifications={heroNotifications}
+            liveRound={friendActiveRounds[0] ?? null}
+            liveRoundOwnerName={
+              friendActiveRounds[0]
+                ? friendNameById.get(friendActiveRounds[0].owner_id) ?? 'Din vän'
+                : ''
+            }
+            liveRoundCourseName={
+              friendActiveRounds[0]
+                ? coursesById.get(friendActiveRounds[0].course_id) ?? 'Okänd bana'
+                : ''
+            }
+            liveRoundsCount={friendActiveRounds.length}
           />
 
           <InstallAppPrompt />
