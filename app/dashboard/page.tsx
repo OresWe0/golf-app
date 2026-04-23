@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { signOut } from '@/app/login/actions'
 import InstallAppPrompt from '@/components/install-app-prompt'
 import DashboardHeroMenu from '@/components/dashboard-hero-menu'
 import type { Course, Profile, Round } from '@/lib/types'
@@ -592,6 +593,7 @@ function DashboardHeader({
             isAdmin={isAdmin}
             pendingCount={pendingCount}
             incomingFriendRequestsCount={incomingFriendRequestsCount}
+            signOutAction={signOut}
           />
         </div>
 

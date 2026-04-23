@@ -43,10 +43,12 @@ export default function DashboardHeroMenu({
   isAdmin,
   pendingCount,
   incomingFriendRequestsCount,
+  signOutAction,
 }: {
   isAdmin: boolean
   pendingCount: number
   incomingFriendRequestsCount: number
+  signOutAction: () => Promise<void>
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [showHint, setShowHint] = useState(false)
@@ -210,9 +212,11 @@ export default function DashboardHeroMenu({
             Statistik
           </Link>
 
-          <Link href="/logout" style={menuItemStyle} onClick={() => setIsOpen(false)}>
-            Logga ut
-          </Link>
+          <form action={signOutAction}>
+            <button type="submit" style={{ ...menuItemStyle, cursor: 'pointer' }}>
+              Logga ut
+            </button>
+          </form>
         </div>
       ) : null}
 
