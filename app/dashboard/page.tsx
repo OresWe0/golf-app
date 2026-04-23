@@ -1,4 +1,4 @@
-﻿import {
+import {
   likeFeedEvent,
   unlikeFeedEvent,
   markNotificationAsRead,
@@ -15,6 +15,7 @@ import type { Course, Profile, Round } from '@/lib/types'
 const ADMIN_EMAIL = 'sigge@dufvander.se'
 const ACTIVE_ROUNDS_PREVIEW_COUNT = 5
 const COMPLETED_ROUNDS_PREVIEW_COUNT = 10
+const FEED_EVENTS_PREVIEW_COUNT = 3
 
 type DashboardSearchParams = {
   showActive?: string | string[]
@@ -957,6 +958,238 @@ function getNotificationSummary(notification: NotificationRow, actorName: string
 
   return rawTitle.length > 0 ? rawTitle : `${actorName} skickade en notis`
 }
+
+function FeedEventCompactCard({
+  event,
+  playerName,
+  playerProfile,
+  courseName,
+}: {
+  event: FeedEvent
+  playerName: string
+  playerProfile?: Profile | null
+  courseName: string
+}) {
+  const eventMeta =
+    event.event_type === 'birdie'
+      ? { emoji: '🐦', text: 'Birdie', accent: '#166534', tint: '#ecfdf3', border: '#bbf7d0' }
+      : event.event_type === 'eagle'
+        ? { emoji: '🦅', text: 'Eagle', accent: '#7c2d12', tint: '#fff7ed', border: '#fed7aa' }
+        : { emoji: '🎯', text: 'Hole-in-one', accent: '#4c1d95', tint: '#f5f3ff', border: '#ddd6fe' }
+
+  return (
+    <Link
+      href={`/feed/${event.id}`}
+      style={{
+        textDecoration: 'none',
+        color: 'inherit',
+      }}
+    >
+      <article
+        className="feed-compact-card"
+        style={{
+          position: 'relative',
+          overflow: 'hidden',
+          border: `1px solid ${eventMeta.border}`,
+          borderRadius: 22,
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,249,0.98) 100%)',
+          padding: 14,
+          display: 'grid',
+          gap: 12,
+          boxShadow:
+            '0 14px 30px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.75)',
+        }}
+      >
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: '0 auto auto 0',
+            width: 84,
+            height: 84,
+            borderRadius: 999,
+            background: eventMeta.tint,
+            filter: 'blur(8px)',
+            transform: 'translate(-26px, -28px)',
+            opacity: 0.95,
+          }}
+        />
+
+        <div
+          style={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <div style={{ position: 'relative' }}>
+              <UserAvatar profile={playerProfile} name={playerName} size={34} />
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  right: -4,
+                  bottom: -3,
+                  minWidth: 20,
+                  height: 20,
+                  borderRadius: 999,
+                  padding: '0 5px',
+                  background: eventMeta.tint,
+                  border: `1px solid ${eventMeta.border}`,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 11,
+                  boxShadow: '0 4px 10px rgba(15, 23, 42, 0.06)',
+                }}
+              >
+                {eventMeta.emoji}
+              </div>
+            </div>
+
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontWeight: 900,
+                  color: '#14281d',
+                  lineHeight: 1.2,
+                  fontSize: 15,
+                  wordBreak: 'break-word',
+                }}
+              >
+                {playerName}
+              </div>
+              <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
+                Hål {event.hole_number} · {courseName}
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
+              fontSize: 12,
+              fontWeight: 800,
+              color: '#486457',
+              padding: '7px 10px',
+              borderRadius: 999,
+              background: '#f3f7f4',
+              border: '1px solid #dde8e1',
+            }}
+          >
+            {formatFeedEventTime(event.created_at)}
+          </div>
+        </div>
+
+        <div
+          style={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 11px',
+              borderRadius: 999,
+              background: eventMeta.tint,
+              border: `1px solid ${eventMeta.border}`,
+              color: eventMeta.accent,
+              fontWeight: 900,
+              fontSize: 13,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            <span aria-hidden="true">{eventMeta.emoji}</span>
+            <span>{eventMeta.text}</span>
+          </div>
+
+          <div
+            style={{
+              minWidth: 0,
+              flex: 1,
+              fontSize: 13,
+              fontWeight: 700,
+              color: '#1f3327',
+            }}
+          >
+            {playerName} gjorde något fint 💚
+          </div>
+
+          <div
+            aria-hidden="true"
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 999,
+              background: '#f3f7f4',
+              border: '1px solid #dde8e1',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 16,
+              color: '#1f3327',
+              flexShrink: 0,
+            }}
+          >
+            ›
+          </div>
+        </div>
+
+        <div
+          style={{
+            position: 'relative',
+            display: 'grid',
+            gridTemplateColumns: '1fr auto',
+            gap: 10,
+          }}
+        >
+          <Link
+            href={`/rounds/${event.round_id}/live`}
+            className="button"
+            style={{
+              minHeight: 48,
+              borderRadius: 16,
+              fontWeight: 900,
+              letterSpacing: '-0.01em',
+              boxShadow: '0 10px 20px rgba(34, 197, 94, 0.18)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            Följ live
+          </Link>
+
+          <Link
+            href={`/feed/${event.id}`}
+            className="button secondary"
+            style={{
+              minHeight: 48,
+              minWidth: 54,
+              borderRadius: 16,
+              paddingLeft: 16,
+              paddingRight: 16,
+              fontWeight: 900,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            Läs
+          </Link>
+        </div>
+      </article>
+    </Link>
+  )
+}
+
 
 function FeedEventCard({
   event,
@@ -2092,6 +2325,40 @@ export default async function DashboardPage({
           }
         }
 
+        .feed-drawer summary::-webkit-details-marker {
+          display: none;
+        }
+
+        .feed-drawer[open] .feed-drawer-chevron {
+          transform: rotate(180deg);
+        }
+
+        .feed-drawer-chevron {
+          transition: transform 180ms ease;
+          display: inline-block;
+        }
+
+        .feed-compact-card {
+          transition:
+            transform 180ms ease,
+            box-shadow 180ms ease,
+            border-color 180ms ease;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .feed-compact-card:active {
+          transform: scale(0.988);
+        }
+
+        @media (hover: hover) {
+          .feed-compact-card:hover {
+            transform: translateY(-1px);
+            box-shadow:
+              0 18px 34px rgba(15, 23, 42, 0.08),
+              inset 0 1px 0 rgba(255,255,255,0.8);
+          }
+        }
+
         @media (max-width: 720px) {
           .dashboard-lower-stack {
             gap: 12px !important;
@@ -2105,6 +2372,24 @@ export default async function DashboardPage({
             min-height: 46px;
             padding-top: 10px;
             padding-bottom: 10px;
+          }
+
+          .feed-compact-grid {
+            gap: 10px !important;
+          }
+
+          .feed-drawer {
+            border-radius: 22px !important;
+          }
+
+          .feed-drawer-summary {
+            padding: 14px 14px 16px !important;
+          }
+        }
+
+        @media (max-width: 520px) {
+          .feed-drawer-summary {
+            align-items: flex-start !important;
           }
         }
       `}</style>
@@ -2197,31 +2482,181 @@ export default async function DashboardPage({
                 description="Birdies, eagles och hole-in-one dyker upp här."
               />
             ) : (
-              <div style={{ display: 'grid', gap: 10 }}>
-                {feedEvents.map((event) => {
-                  const likes = likesByEventId.get(event.id) ?? []
-                  const comments = commentsByEventId.get(event.id) ?? []
-                  const likesCount = likes.length
-                  const likedByMe = likes.some((like) => like.user_id === user.id)
+              <>
+                <div
+                  style={{
+                    display: 'grid',
+                    gap: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      flexWrap: 'wrap',
+                      padding: '4px 2px 0',
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 18,
+                          fontWeight: 900,
+                          color: '#14281d',
+                          letterSpacing: '-0.02em',
+                        }}
+                      >
+                        Senaste höjdpunkterna 🔥
+                      </div>
+                      <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
+                        Snabb, mobilvänlig överblick med fokus på det viktigaste just nu.
+                      </div>
+                    </div>
 
-                  return (
-                    <FeedEventCard
-                      key={event.id}
-                      event={event}
-                      playerName={getPlayerNameForFeedEvent(event, allRoundPlayers)}
-                      playerProfile={profileById.get(event.user_id) ?? null}
-                      courseName={getCourseNameForFeedEvent(
-                        event,
-                        allRounds,
-                        allCourses
-                      )}
-                      likesCount={likesCount}
-                      likedByMe={likedByMe}
-                      comments={comments}
-                    />
-                  )
-                })}
-              </div>
+                    {feedEvents.length > FEED_EVENTS_PREVIEW_COUNT ? (
+                      <div
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: 999,
+                          background: '#f3f7f4',
+                          border: '1px solid #dde8e1',
+                          fontSize: 12,
+                          fontWeight: 900,
+                          color: '#345245',
+                        }}
+                      >
+                        +{feedEvents.length - FEED_EVENTS_PREVIEW_COUNT} fler
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="feed-compact-grid" style={{ display: 'grid', gap: 12 }}>
+                    {feedEvents
+                      .slice(0, FEED_EVENTS_PREVIEW_COUNT)
+                      .map((event) => (
+                        <FeedEventCompactCard
+                          key={event.id}
+                          event={event}
+                          playerName={getPlayerNameForFeedEvent(event, allRoundPlayers)}
+                          playerProfile={profileById.get(event.user_id) ?? null}
+                          courseName={getCourseNameForFeedEvent(
+                            event,
+                            allRounds,
+                            allCourses
+                          )}
+                        />
+                      ))}
+                  </div>
+                </div>
+
+                {feedEvents.length > FEED_EVENTS_PREVIEW_COUNT ? (
+                  <details
+                    className="feed-drawer"
+                    style={{
+                      marginTop: 14,
+                      border: '1px solid #dbe7df',
+                      borderRadius: 24,
+                      background:
+                        'linear-gradient(180deg, #f7fbf8 0%, #eef7f1 100%)',
+                      boxShadow:
+                        '0 18px 40px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255,255,255,0.72)',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <summary
+                      className="feed-drawer-summary"
+                      style={{
+                        cursor: 'pointer',
+                        listStyle: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                        padding: '16px 16px 18px',
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontWeight: 900,
+                            color: '#14281d',
+                            fontSize: 16,
+                            letterSpacing: '-0.02em',
+                          }}
+                        >
+                          Visa fler höjdpunkter
+                        </div>
+                        <div className="muted" style={{ fontSize: 13, marginTop: 3 }}>
+                          Öppna resten i en mjuk rullgardin med mer detaljer.
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          padding: '10px 12px',
+                          borderRadius: 999,
+                          background: '#ffffff',
+                          border: '1px solid #dbe7df',
+                          boxShadow: '0 8px 18px rgba(15, 23, 42, 0.05)',
+                          fontWeight: 900,
+                          color: '#1f3327',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <span>{feedEvents.length - FEED_EVENTS_PREVIEW_COUNT}</span>
+                        <span className="feed-drawer-chevron" aria-hidden="true">
+                          ↓
+                        </span>
+                      </div>
+                    </summary>
+
+                    <div
+                      style={{
+                        padding: '0 12px 12px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: 1,
+                          background: 'linear-gradient(90deg, rgba(31,51,39,0) 0%, rgba(31,51,39,0.12) 20%, rgba(31,51,39,0.12) 80%, rgba(31,51,39,0) 100%)',
+                          margin: '0 8px 12px',
+                        }}
+                      />
+
+                      <div style={{ display: 'grid', gap: 10 }}>
+                        {feedEvents.slice(FEED_EVENTS_PREVIEW_COUNT).map((event) => {
+                          const likes = likesByEventId.get(event.id) ?? []
+                          const comments = commentsByEventId.get(event.id) ?? []
+                          const likesCount = likes.length
+                          const likedByMe = likes.some((like) => like.user_id === user.id)
+
+                          return (
+                            <FeedEventCard
+                              key={event.id}
+                              event={event}
+                              playerName={getPlayerNameForFeedEvent(event, allRoundPlayers)}
+                              playerProfile={profileById.get(event.user_id) ?? null}
+                              courseName={getCourseNameForFeedEvent(
+                                event,
+                                allRounds,
+                                allCourses
+                              )}
+                              likesCount={likesCount}
+                              likedByMe={likedByMe}
+                              comments={comments}
+                            />
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </details>
+                ) : null}
+              </>
             )}
           </div>
 
