@@ -708,58 +708,96 @@ function ScoreButton({
 }) {
   const tone = getScoreTone(score, par)
   const label = getLabel(score, par)
+  const diff = score - par
+  const isPositive = diff < 0
+  const isNegative = diff > 0
+
+  const statusEmoji = score === 1 ? '🎯' : isPositive ? '✨' : isNegative ? '•' : '✓'
 
   return (
-  <button
-  type="button"
-  onClick={onClick}
-  onTouchStart={(e) => {
-    e.currentTarget.style.transform = 'scale(0.97)'
-  }}
-  onTouchEnd={(e) => {
-    e.currentTarget.style.transform = isSelected ? 'scale(1.03)' : 'scale(1)'
-  }}
-  onMouseDown={(e) => {
-    e.currentTarget.style.transform = 'scale(0.96)'
-  }}
-  onMouseUp={(e) => {
-    e.currentTarget.style.transform = isSelected ? 'scale(1.03)' : 'scale(1)'
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.transform = isSelected ? 'scale(1.03)' : 'scale(1)'
-  }}
-  style={{
-    position: 'relative',
-    overflow: 'hidden',
-    borderRadius: 22,
-    padding: '16px 8px',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    minHeight: 100,
-    display: 'grid',
-    placeItems: 'center',
-    gap: 4,
-    touchAction: 'manipulation',
-    userSelect: 'none',
-    WebkitUserSelect: 'none',
-    background: isSelected ? tone.background : 'rgba(255,255,255,0.78)',
-    border: isSelected ? tone.border : '1px solid #d1d5db',
-    color: isSelected ? tone.color : '#0f172a',
-    boxShadow: isSelected
-      ? `0 0 0 3px ${tone.glow}, 0 14px 30px rgba(15, 23, 42, 0.16)`
-      : '0 3px 10px rgba(15, 23, 42, 0.04)',
-    transform: isSelected ? 'scale(1.03)' : 'scale(1)',
-    transition:
-      'transform 0.14s ease, box-shadow 0.18s ease, background 0.18s ease, border 0.18s ease, color 0.18s ease',
-    animation: isSelected ? 'scorePop 0.22s ease, softPulse 0.5s ease' : 'none',
-    opacity: disabled ? 0.9 : 1,
-  }}
-  disabled={disabled}
->
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={isSelected}
+      aria-label={`Registrera ${score} slag, ${label}`}
+      className={isSelected ? 'hp-score-button hp-score-button-selected' : 'hp-score-button'}
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius: 22,
+        padding: '14px 8px 13px',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        minHeight: 96,
+        display: 'grid',
+        placeItems: 'center',
+        alignContent: 'center',
+        gap: 6,
+        touchAction: 'manipulation',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        background: isSelected
+          ? tone.background
+          : 'linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,250,252,0.86) 100%)',
+        border: isSelected ? tone.border : '1px solid rgba(203,213,225,0.95)',
+        color: isSelected ? tone.color : '#0f172a',
+        boxShadow: isSelected
+          ? `0 0 0 3px ${tone.glow}, 0 16px 34px rgba(15, 23, 42, 0.18)`
+          : '0 8px 18px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255,255,255,0.92)',
+        transform: isSelected ? 'translateY(-2px) scale(1.025)' : 'translateY(0) scale(1)',
+        transition:
+          'transform 160ms cubic-bezier(.2,.8,.2,1), box-shadow 180ms ease, background 180ms ease, border 180ms ease, color 180ms ease, opacity 160ms ease',
+        animation: isSelected ? 'scoreSelectPop 260ms cubic-bezier(.2,.9,.25,1.25)' : 'none',
+        opacity: disabled ? 0.72 : 1,
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: 22,
+          background: isSelected
+            ? 'linear-gradient(135deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.08) 38%, rgba(255,255,255,0) 68%)'
+            : 'linear-gradient(135deg, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0) 54%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {isSelected ? (
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            width: 22,
+            height: 22,
+            borderRadius: 999,
+            display: 'grid',
+            placeItems: 'center',
+            background: 'rgba(255,255,255,0.24)',
+            border: '1px solid rgba(255,255,255,0.38)',
+            color: '#fff',
+            fontSize: 12,
+            fontWeight: 900,
+            boxShadow: '0 6px 14px rgba(15,23,42,0.12)',
+            animation: 'scoreCheckIn 180ms ease both',
+          }}
+        >
+          {statusEmoji}
+        </span>
+      ) : null}
+
       <div
         style={{
-          fontSize: 18,
-          fontWeight: 900,
+          position: 'relative',
+          zIndex: 1,
+          fontSize: 24,
+          fontWeight: 950,
           lineHeight: 1,
+          letterSpacing: '-0.04em',
+          fontVariantNumeric: 'tabular-nums',
         }}
       >
         {score}
@@ -767,27 +805,18 @@ function ScoreButton({
 
       <div
         style={{
-          fontSize: 10,
-          fontWeight: 800,
+          position: 'relative',
+          zIndex: 1,
+          fontSize: 9,
+          fontWeight: 900,
           textAlign: 'center',
-          opacity: isSelected ? 1 : 0.75,
-          letterSpacing: 0.2,
+          opacity: isSelected ? 0.92 : 0.54,
+          letterSpacing: 0.45,
+          textTransform: 'uppercase',
         }}
       >
         {label}
       </div>
-
-      <span
-        style={{
-          position: 'absolute',
-          inset: 0,
-          borderRadius: 22,
-          background: isSelected
-            ? 'linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 55%)'
-            : 'transparent',
-          pointerEvents: 'none',
-        }}
-      />
     </button>
   )
 }
@@ -2216,20 +2245,20 @@ useEffect(() => {
   return (
     <>
       <style>{`
-        @keyframes scorePop {
-          0% { transform: scale(0.92); }
-          55% { transform: scale(1.07); }
-          100% { transform: scale(1.03); }
+        @keyframes scoreSelectPop {
+          0% { transform: translateY(0) scale(0.94); }
+          58% { transform: translateY(-3px) scale(1.055); }
+          100% { transform: translateY(-2px) scale(1.025); }
+        }
+
+        @keyframes scoreCheckIn {
+          0% { opacity: 0; transform: scale(0.55) rotate(-10deg); }
+          100% { opacity: 1; transform: scale(1) rotate(0deg); }
         }
 
         @keyframes fadeSlideUp {
           0% { opacity: 0; transform: translateY(8px); }
           100% { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes softPulse {
-          0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.22); }
-          100% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
         }
 
         @keyframes liveDotPulse {
@@ -2274,6 +2303,19 @@ useEffect(() => {
         @keyframes ctaReadyPulse {
           0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.22); }
           100% { box-shadow: 0 0 0 12px rgba(34, 197, 94, 0); }
+        }
+
+        .hp-score-button:active {
+          transform: translateY(1px) scale(0.97) !important;
+        }
+
+        .hp-score-button:focus-visible {
+          outline: 3px solid rgba(34, 197, 94, 0.34);
+          outline-offset: 3px;
+        }
+
+        .hp-score-button-selected:active {
+          transform: translateY(0) scale(0.99) !important;
         }
 
         .hp-grid-2 {
