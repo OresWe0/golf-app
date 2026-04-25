@@ -1337,15 +1337,26 @@ function FeedEventCard({
   return (
     <div
       style={{
-        border: '1px solid #e5e7eb',
-        borderRadius: 18,
-        background: 'linear-gradient(180deg, #ffffff 0%, #fafbfc 100%)',
+        position: 'relative',
+        overflow: 'hidden',
+        border: '1px solid #d7e8db',
+        borderRadius: 20,
+        background: 'linear-gradient(180deg, #ffffff 0%, #f7fbf8 100%)',
         padding: 14,
         display: 'grid',
-        gap: 8,
-        boxShadow: '0 12px 28px rgba(15, 23, 42, 0.04)',
+        gap: 10,
+        boxShadow: '0 16px 34px rgba(15, 23, 42, 0.05)',
       }}
     >
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: '0 auto 0 0',
+          width: 5,
+          background: 'linear-gradient(180deg, #22c55e 0%, #15803d 100%)',
+        }}
+      />
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <UserAvatar profile={playerProfile} name={playerName} size={34} />
         <div style={{ fontWeight: 900, color: '#1f3327' }}>
@@ -1353,7 +1364,9 @@ function FeedEventCard({
         </div>
       </div>
 
-      <div className="muted">Hål {event.hole_number} - {courseName}</div>
+      <div className="muted" style={{ fontWeight: 600 }}>
+        Hål {event.hole_number} - {courseName}
+      </div>
 
       <div className="muted" style={{ fontSize: 13 }}>
         {timeLabel}
@@ -1365,34 +1378,63 @@ function FeedEventCard({
           alignItems: 'center',
           gap: 10,
           flexWrap: 'wrap',
-          marginTop: 4,
+          marginTop: 2,
         }}
       >
-        <div className="muted" style={{ fontSize: 13 }}>
+        <div
+          className="muted"
+          style={{
+            fontSize: 13,
+            padding: '6px 10px',
+            borderRadius: 999,
+            background: '#f4faf5',
+            border: '1px solid #d7e8db',
+          }}
+        >
           Likes {likesCount}
         </div>
 
-        <Link href={`/rounds/${event.round_id}/live`} className="button secondary">
+        <Link
+          href={`/rounds/${event.round_id}/live`}
+          className="button"
+          style={{
+            background: 'linear-gradient(180deg, #1f8f4c 0%, #18753f 100%)',
+            borderColor: '#166534',
+            boxShadow: '0 12px 24px rgba(21, 128, 61, 0.18)',
+          }}
+        >
           Följ live
         </Link>
 
         {likedByMe ? (
           <form action={unlikeFeedEvent}>
             <input type="hidden" name="feedEventId" value={event.id} />
-            <button type="submit" className="button secondary">
+            <button
+              type="submit"
+              className="button secondary"
+              style={{ borderColor: '#bde3c7', background: '#f3fbf5' }}
+            >
               Gillat
             </button>
           </form>
         ) : (
           <form action={likeFeedEvent}>
             <input type="hidden" name="feedEventId" value={event.id} />
-            <button type="submit" className="button secondary">
+            <button
+              type="submit"
+              className="button secondary"
+              style={{ borderColor: '#d7e8db', background: '#fbfdfb' }}
+            >
               Gilla
             </button>
           </form>
         )}
 
-        <Link href={`/feed/${event.id}`} className="button secondary">
+        <Link
+          href={`/feed/${event.id}`}
+          className="button secondary"
+          style={{ borderColor: '#d7e8db', background: '#ffffff' }}
+        >
           Öppna detaljer
         </Link>
       </div>
@@ -1874,7 +1916,15 @@ function CompletedRoundsSection({
   })
 
   return (
-    <div className="card dashboard-mobile-card" style={dashboardStyles.sectionCard}>
+    <div
+      className="card dashboard-mobile-card"
+      style={{
+        ...dashboardStyles.sectionCard,
+        border: '1px solid #d6eadc',
+        background: 'linear-gradient(180deg, #ffffff 0%, #f8fcf9 100%)',
+        boxShadow: '0 20px 42px rgba(21, 128, 61, 0.08)',
+      }}
+    >
       <SectionHeader
         title="Avslutade rundor"
         description="Tidigare spelade rundor och sammanfattningar."
@@ -1971,7 +2021,15 @@ function FriendActiveRoundsSection({
   friendNameById: Map<string, string>
 }) {
   return (
-    <div className="card dashboard-mobile-card" style={dashboardStyles.sectionCard}>
+    <div
+      className="card dashboard-mobile-card"
+      style={{
+        ...dashboardStyles.sectionCard,
+        border: '1px solid #d6eadc',
+        background: 'linear-gradient(180deg, #ffffff 0%, #f8fcf9 100%)',
+        boxShadow: '0 20px 42px rgba(21, 128, 61, 0.08)',
+      }}
+    >
       <SectionHeader
         title="Vänners aktiva rundor"
         description="Följ vännernas spel live direkt när de är ute på banan."
@@ -1994,15 +2052,26 @@ function FriendActiveRoundsSection({
               <div
                 key={round.id}
                 style={{
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 18,
-                  background: 'linear-gradient(180deg, #ffffff 0%, #fafbfc 100%)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  border: '1px solid #d6eadc',
+                  borderRadius: 20,
+                  background: 'linear-gradient(180deg, #ffffff 0%, #f6fcf8 100%)',
                   padding: 14,
                   display: 'grid',
                   gap: 10,
-                  boxShadow: '0 12px 28px rgba(15, 23, 42, 0.04)',
+                  boxShadow: '0 16px 34px rgba(21, 128, 61, 0.07)',
                 }}
               >
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    inset: '0 auto 0 0',
+                    width: 5,
+                    background: 'linear-gradient(180deg, #22c55e 0%, #15803d 100%)',
+                  }}
+                />
                 <div
                   style={{
                     display: 'flex',
@@ -2031,8 +2100,10 @@ function FriendActiveRoundsSection({
                   <div
                     style={{
                       ...dashboardStyles.pill,
-                      background: '#ecfdf3',
+                      background: 'linear-gradient(180deg, #dcfce7 0%, #bbf7d0 100%)',
                       color: '#166534',
+                      border: '1px solid #9ee6b3',
+                      boxShadow: '0 10px 20px rgba(34, 197, 94, 0.12)',
                     }}
                   >
                     Live
@@ -2047,8 +2118,15 @@ function FriendActiveRoundsSection({
 
                 <Link
                   href={`/rounds/${round.id}/live`}
-                  className="button secondary"
-                  style={{ width: '100%', textAlign: 'center', boxSizing: 'border-box' }}
+                  className="button"
+                  style={{
+                    width: '100%',
+                    textAlign: 'center',
+                    boxSizing: 'border-box',
+                    background: 'linear-gradient(180deg, #1f8f4c 0%, #18753f 100%)',
+                    borderColor: '#166534',
+                    boxShadow: '0 14px 26px rgba(21, 128, 61, 0.18)',
+                  }}
                 >
                   Följ live
                 </Link>
@@ -2846,7 +2924,15 @@ export default async function DashboardPage({
             friendNameById={friendNameById}
           />
 
-          <div className="card dashboard-mobile-card" style={dashboardStyles.sectionCard}>
+          <div
+            className="card dashboard-mobile-card"
+            style={{
+              ...dashboardStyles.sectionCard,
+              border: '1px solid #dbe7df',
+              background: 'linear-gradient(180deg, #ffffff 0%, #f9fcfa 100%)',
+              boxShadow: '0 20px 42px rgba(15, 23, 42, 0.06)',
+            }}
+          >
             <SectionHeader
               title="Vänflöde"
               description="Senaste höjdpunkterna i spelet."
@@ -2898,8 +2984,8 @@ export default async function DashboardPage({
                         style={{
                           padding: '8px 12px',
                           borderRadius: 999,
-                          background: '#f3f7f4',
-                          border: '1px solid #dde8e1',
+                          background: 'linear-gradient(180deg, #f6faf7 0%, #edf5ef 100%)',
+                          border: '1px solid #d6e3da',
                           fontSize: 12,
                           fontWeight: 900,
                           color: '#345245',
@@ -2978,9 +3064,9 @@ export default async function DashboardPage({
                           gap: 10,
                           padding: '10px 12px',
                           borderRadius: 999,
-                          background: '#ffffff',
-                          border: '1px solid #dbe7df',
-                          boxShadow: '0 8px 18px rgba(15, 23, 42, 0.05)',
+                          background: 'linear-gradient(180deg, #ffffff 0%, #f7faf8 100%)',
+                          border: '1px solid #d6e3da',
+                          boxShadow: '0 10px 20px rgba(15, 23, 42, 0.06)',
                           fontWeight: 900,
                           color: '#1f3327',
                           flexShrink: 0,
