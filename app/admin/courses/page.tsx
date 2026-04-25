@@ -178,12 +178,14 @@ export default async function AdminCoursesPage({
       const message = error instanceof Error ? error.message : 'Ogiltig JSON.'
       redirect(`/admin/courses?type=error&message=${encodeURIComponent(message)}`)
     }
-
-    const { data: createdCourse, error: courseError } = await supabase
-      .from('courses')
-      .insert({ name: parsed.name })
-      .select('id')
-      .single()
+const { data: createdCourse, error: courseError } = await supabase
+  .from('courses')
+  .insert({
+    name: parsed.name,
+    club_name: parsed.club_name ?? parsed.name,
+  })
+  .select('id')
+  .single()
 
     if (courseError || !createdCourse?.id) {
       redirect(
