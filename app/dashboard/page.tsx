@@ -1110,10 +1110,10 @@ function FeedEventCompactCard({
 }) {
   const eventMeta =
     event.event_type === 'birdie'
-      ? { emoji: '🐦', text: 'Birdie', accent: '#166534', tint: '#ecfdf3', border: '#bbf7d0' }
+      ? { text: 'Birdie', accent: '#166534', tint: '#ecfdf3', border: '#bbf7d0' }
       : event.event_type === 'eagle'
-        ? { emoji: '🦅', text: 'Eagle', accent: '#7c2d12', tint: '#fff7ed', border: '#fed7aa' }
-        : { emoji: '🎯', text: 'Hole-in-one', accent: '#4c1d95', tint: '#f5f3ff', border: '#ddd6fe' }
+        ? { text: 'Eagle', accent: '#7c2d12', tint: '#fff7ed', border: '#fed7aa' }
+        : { text: 'Hole-in-one', accent: '#4c1d95', tint: '#f5f3ff', border: '#ddd6fe' }
 
   return (
     <article
@@ -1157,30 +1157,7 @@ function FeedEventCompactCard({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          <div style={{ position: 'relative' }}>
-            <UserAvatar profile={playerProfile} name={playerName} size={34} />
-            <div
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                right: -4,
-                bottom: -3,
-                minWidth: 20,
-                height: 20,
-                borderRadius: 999,
-                padding: '0 5px',
-                background: eventMeta.tint,
-                border: `1px solid ${eventMeta.border}`,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 11,
-                boxShadow: '0 4px 10px rgba(15, 23, 42, 0.06)',
-              }}
-            >
-              {eventMeta.emoji}
-            </div>
-          </div>
+          <UserAvatar profile={playerProfile} name={playerName} size={38} />
 
           <div style={{ minWidth: 0 }}>
             <div
@@ -2762,10 +2739,17 @@ export default async function DashboardPage({
         </div>
 
         <div className="dashboard-lower-stack" style={{ display: 'grid', gap: 18 }}>
+          <CompletedRoundsSection
+            rounds={completedRounds}
+            membershipByRoundId={membershipByRoundId}
+            showAll={showAllCompleted}
+            showAllActive={showAllActive}
+          />
+
           <div id="friend-feed" className="card" style={dashboardStyles.sectionCard}>
             <SectionHeader
-              title="📊 Din statistik"
-              description="Din genomsnittliga score baserat på avslutade rundor."
+              title="Din statistik"
+              description="Snabb oversikt. Oppna statistik for filter och full analys."
               count={completedRounds.length}
               countTone="slate"
             />
@@ -2777,14 +2761,17 @@ export default async function DashboardPage({
                 gap: 12,
               }}
             >
-              <HighlightCard
-                label="📊 Snittscore"
-                value={
-                  averageScore !== null ? Math.round(averageScore).toString() : '—'
-                }
-                sublabel="Genomsnittligt antal slag"
-                tone="purple"
-              />
+              <Link
+                href="/statistik"
+                className="button secondary"
+                style={{
+                  width: '100%',
+                  textAlign: 'center',
+                  boxSizing: 'border-box',
+                }}
+              >
+                Oppna statistik
+              </Link>
             </div>
           </div>
 
@@ -2993,12 +2980,6 @@ export default async function DashboardPage({
             showAllCompleted={showAllCompleted}
           />
 
-          <CompletedRoundsSection
-            rounds={completedRounds}
-            membershipByRoundId={membershipByRoundId}
-            showAll={showAllCompleted}
-            showAllActive={showAllActive}
-          />
         </div>
       </div>
     </main>
