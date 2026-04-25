@@ -333,7 +333,7 @@ const dashboardStyles = {
   },
   sectionCard: {
     borderRadius: 24,
-    boxShadow: '0 16px 42px rgba(15, 23, 42, 0.06)',
+    boxShadow: '0 18px 44px rgba(15, 23, 42, 0.07)',
     border: '1px solid #e5e7eb',
     background: '#ffffff',
   },
@@ -1009,12 +1009,16 @@ function SectionHeader({
   const badgeStyle =
     countTone === 'green'
       ? {
-          background: '#f0fdf4',
+          background: 'linear-gradient(180deg, #dcfce7 0%, #bbf7d0 100%)',
           color: '#166534',
+          border: '1px solid #9ee6b3',
+          boxShadow: '0 10px 22px rgba(34, 197, 94, 0.14)',
         }
       : {
-          background: '#f3f4f6',
+          background: 'linear-gradient(180deg, #f8fafc 0%, #e8eef6 100%)',
           color: '#334155',
+          border: '1px solid #d5dee9',
+          boxShadow: '0 10px 20px rgba(71, 85, 105, 0.10)',
         }
 
   return (
@@ -1662,16 +1666,28 @@ function CompletedRoundSwipeCard({
   return (
     <div
       style={{
-        border: '1px solid #dbeedc',
+        border: '1px solid #bfe6c8',
         borderRadius: 22,
-        background: 'linear-gradient(180deg, #f9fdf9 0%, #f3faf5 100%)',
+        background:
+          'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(241,252,245,0.98) 100%), radial-gradient(circle at top right, rgba(34,197,94,0.16) 0%, rgba(34,197,94,0) 36%)',
         padding: 16,
         display: 'grid',
         gap: 10,
-        boxShadow: '0 16px 32px rgba(34, 197, 94, 0.08)',
+        boxShadow: '0 20px 40px rgba(22, 101, 52, 0.12)',
         minHeight: 210,
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: '0 auto 0 0',
+          width: 6,
+          background: 'linear-gradient(180deg, #22c55e 0%, #15803d 100%)',
+        }}
+      />
       <div
         style={{
           display: 'flex',
@@ -1703,8 +1719,9 @@ function CompletedRoundSwipeCard({
         <div
           style={{
             ...dashboardStyles.pill,
-            background: '#ecfdf3',
+            background: 'linear-gradient(180deg, #dcfce7 0%, #bbf7d0 100%)',
             color: '#166534',
+            border: '1px solid #9ee6b3',
             flexShrink: 0,
           }}
         >
@@ -1717,13 +1734,16 @@ function CompletedRoundSwipeCard({
       </div>
 
       <Link
-        className="button secondary"
+        className="button"
         href={`/rounds/${round.id}/summary`}
         style={{
           width: '100%',
           textAlign: 'center',
           boxSizing: 'border-box',
           marginTop: 4,
+          background: 'linear-gradient(180deg, #1db954 0%, #159947 100%)',
+          borderColor: '#12803d',
+          boxShadow: '0 14px 28px rgba(21, 153, 71, 0.22)',
         }}
       >
         Visa summary
@@ -1759,7 +1779,15 @@ function ActiveRoundsSection({
   })
 
   return (
-    <div className="card dashboard-mobile-card" style={dashboardStyles.sectionCard}>
+    <div
+      className="card dashboard-mobile-card"
+      style={{
+        ...dashboardStyles.sectionCard,
+        border: '1px solid #dbe7dd',
+        background: 'linear-gradient(180deg, #ffffff 0%, #fbfefb 100%)',
+        boxShadow: '0 22px 48px rgba(22, 59, 42, 0.09)',
+      }}
+    >
       <SectionHeader
         title="Aktiva rundor"
         description="Rundor som pågår just nu."
@@ -2770,7 +2798,17 @@ export default async function DashboardPage({
             showAllActive={showAllActive}
           />
 
-          <div id="friend-feed" className="card" style={dashboardStyles.sectionCard}>
+          <div
+            id="friend-feed"
+            className="card"
+            style={{
+              ...dashboardStyles.sectionCard,
+              border: '1px solid #d7e3f2',
+              background:
+                'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(246,249,255,1) 100%)',
+              boxShadow: '0 22px 46px rgba(37, 99, 235, 0.08)',
+            }}
+          >
             <SectionHeader
               title="Din statistik"
               description="Öppna statistik for filter och full analys."
@@ -2787,11 +2825,14 @@ export default async function DashboardPage({
             >
               <Link
                 href="/statistik"
-                className="button secondary"
+                className="button"
                 style={{
                   width: '100%',
                   textAlign: 'center',
                   boxSizing: 'border-box',
+                  background: 'linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%)',
+                  borderColor: '#1d4ed8',
+                  boxShadow: '0 16px 30px rgba(37, 99, 235, 0.20)',
                 }}
               >
                 Öppna statistik
