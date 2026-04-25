@@ -297,11 +297,30 @@ export default async function FeedEventDetailPage({
 
   return (
     <main>
+      <style>{`
+        .feed-detail-topbar {
+          padding-top: max(4px, env(safe-area-inset-top));
+        }
+
+        @media (max-width: 720px) {
+          .feed-detail-topbar {
+            padding-top: calc(env(safe-area-inset-top) + 10px);
+          }
+
+          .feed-detail-back-link {
+            width: 100%;
+            justify-content: flex-start;
+          }
+        }
+      `}</style>
       <div className="container" style={{ display: 'grid', gap: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+        <div
+          className="feed-detail-topbar"
+          style={{ display: 'flex', justifyContent: 'flex-start' }}
+        >
           <Link
             href="/dashboard#friend-feed"
-            className="button secondary"
+            className="button secondary feed-detail-back-link"
             style={{
               minHeight: 44,
               width: 'auto',
