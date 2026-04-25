@@ -30,7 +30,7 @@ type RoundPlayer = {
   display_name?: string
   exact_handicap?: number | null
   playing_handicap?: number | null
-  tee_key?: string | null
+  tee_key?: string 
   active_from_hole?: number | null
   active_to_hole?: number | null
 }
@@ -670,6 +670,7 @@ export default async function RoundPage({
   const players = (playersData ?? []).map((player) => ({
   ...player,
   display_name: player.display_name ?? undefined,
+  tee_key: player.tee_key ?? undefined,
 })) as RoundPlayer[]
   const course = courseData as CourseLike
   const holes = holesData as HoleLike[]
