@@ -25,7 +25,7 @@ type ImportedHole = {
 
 type ImportedTee = {
   tee_key: string
-  label?: string
+  label: string
   course_rating: number | null
   slope_rating: number | null
   par_total: number | null
@@ -86,6 +86,12 @@ function teeKey(value: unknown) {
   if (key === 'gul') return 'yellow'
   if (key === 'röd' || key === 'rod') return 'red'
   return key
+}
+
+function teeLabel(key: string) {
+  if (key === 'yellow') return 'Gul'
+  if (key === 'red') return 'Röd'
+  return key.charAt(0).toUpperCase() + key.slice(1)
 }
 
 function requireUniqueNumbers(values: number[], label: string) {
@@ -210,13 +216,13 @@ function parseImportedCourse(raw: string): ParsedCourse {
 
           return {
             tee_key: key,
-            label: text(tee.label),
+            label: text(tee.label) || teeLabel(key),
             course_rating: courseRating,
             slope_rating: slopeRating == null ? null : Math.floor(slopeRating),
             par_total: parTotal == null ? null : Math.floor(parTotal),
           }
         })
-        .filter((tee): tee is ImportedTee => tee !== null)
+        .filter((tee): tee is NonNullable<typeof tee> => tee !== null)
     : []
 
   requireUniqueStrings(
