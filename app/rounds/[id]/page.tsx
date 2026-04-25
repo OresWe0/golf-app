@@ -1,4 +1,4 @@
-﻿import Link from 'next/link'
+import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { HolePlay } from '@/components/hole-play'
@@ -16,6 +16,7 @@ type HoleLike = {
 
 type LeaderboardEntry = {
   playerId: string
+  playerName?: string
   position: number
   scoreText?: string
   totalPoints?: number
@@ -26,7 +27,10 @@ type LeaderboardEntry = {
 
 type RoundPlayer = {
   id: string
+  display_name?: string | null
+  exact_handicap?: number | null
   playing_handicap?: number | null
+  tee_key?: string | null
   active_from_hole?: number | null
   active_to_hole?: number | null
 }
@@ -108,6 +112,19 @@ function isPlayerActiveOnHole(
   return holeNumber >= activeFrom && holeNumber <= activeTo
 }
 
+function formatToPar(value?: number) {
+  if (value == null) return 'E'
+  if (value === 0) return 'E'
+  return value > 0 ? `+${value}` : `${value}`
+}
+
+function getMedal(position: number) {
+  if (position === 1) return '🥇'
+  if (position === 2) return '🥈'
+  if (position === 3) return '🥉'
+  return `#${position}`
+}
+
 function buildLeaderboard(params: {
   players: RoundPlayer[]
   scoreRows: HoleScoreRow[]
@@ -126,6 +143,8 @@ function buildLeaderboard(params: {
     startHole,
     endHole,
   } = params
+
+  const playerById = new Map(players.map((player) => [String(player.id), player]))
 
   const leaderboardBase = players.map((player) => {
     const rows = scoreRows.filter(
@@ -198,6 +217,7 @@ function buildLeaderboard(params: {
     const position = sameAsPrevious ? lastPosition : index + 1
     lastPosition = position
 
+    const player = playerById.get(entry.playerId)
     const scoreText =
       scoringMode === 'stableford'
         ? `${entry.totalPoints} p`
@@ -205,6 +225,7 @@ function buildLeaderboard(params: {
 
     leaderboard.push({
       playerId: entry.playerId,
+      playerName: player?.display_name ?? 'Spelare',
       position,
       scoreText,
       totalPoints: entry.totalPoints,
@@ -217,6 +238,187 @@ function buildLeaderboard(params: {
   return leaderboard
 }
 
+function PremiumLeaderboard({
+  leaderboard,
+  roundId,
+  currentHoleNumber,
+}: {
+  leaderboard: LeaderboardEntry[]
+  roundId: string
+  currentHoleNumber: number
+}) {
+  const leader = leaderboard[0]
+  const podium = leaderboard.slice(0, 5)
+
+  return (
+    <section
+      aria-label="Leaderboard"
+      style={{
+        background: 'linear-gradient(135deg, #12231d 0%, #1f7a3a 100%)',
+        color: '#fff',
+        borderRadius: 24,
+        padding: 16,
+        boxShadow: '0 18px 45px rgba(21, 90, 45, 0.22)',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background:
+            'radial-gradient(circle at top right, rgba(255,255,255,0.18), transparent 34%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      <div style={{ position: 'relative', display: 'grid', gap: 14 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            gap: 12,
+            alignItems: 'flex-start',
+          }}
+        >
+          <div>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 7,
+                padding: '5px 10px',
+                borderRadius: 999,
+                background: 'rgba(255,255,255,0.16)',
+                fontSize: 12,
+                fontWeight: 800,
+                letterSpacing: 0.3,
+                textTransform: 'uppercase',
+              }}
+            >
+              <span>🔴</span>
+              <span>Live leaderboard</span>
+            </div>
+
+            <h2
+              style={{
+                margin: '10px 0 2px',
+                fontSize: 25,
+                lineHeight: 1,
+                fontWeight: 950,
+              }}
+            >
+              {leader?.playerName ?? 'Leaderboard'}
+            </h2>
+
+            <p style={{ margin: 0, color: 'rgba(255,255,255,0.76)', fontSize: 13 }}>
+              {leader
+                ? `Leder just nu på ${leader.scoreText ?? '0'}`
+                : 'Ställningen visas här så fort spelare finns.'}
+            </p>
+          </div>
+
+          <Link
+            href={`/rounds/${roundId}/summary?hole=${currentHoleNumber}`}
+            style={{
+              color: '#fff',
+              textDecoration: 'none',
+              background: 'rgba(255,255,255,0.15)',
+              border: '1px solid rgba(255,255,255,0.22)',
+              borderRadius: 999,
+              padding: '8px 11px',
+              fontSize: 12,
+              fontWeight: 900,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Visa allt
+          </Link>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            gap: 10,
+            overflowX: 'auto',
+            paddingBottom: 3,
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          {podium.map((entry) => (
+            <div
+              key={entry.playerId}
+              style={{
+                minWidth: 122,
+                borderRadius: 18,
+                padding: 12,
+                background: entry.isLeader
+                  ? 'rgba(255,255,255,0.22)'
+                  : 'rgba(255,255,255,0.11)',
+                border: entry.isLeader
+                  ? '1px solid rgba(255,255,255,0.38)'
+                  : '1px solid rgba(255,255,255,0.18)',
+                boxShadow: entry.isLeader
+                  ? 'inset 0 1px 0 rgba(255,255,255,0.2)'
+                  : undefined,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 8,
+                  marginBottom: 8,
+                }}
+              >
+                <span style={{ fontSize: 18 }}>{getMedal(entry.position)}</span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 900,
+                    color: 'rgba(255,255,255,0.7)',
+                  }}
+                >
+                  {formatToPar(entry.totalToPar)}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  fontSize: 15,
+                  fontWeight: 950,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {entry.playerName}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 4,
+                  fontSize: 20,
+                  fontWeight: 950,
+                  letterSpacing: -0.4,
+                }}
+              >
+                {entry.scoreText}
+              </div>
+
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)' }}>
+                {entry.totalStrokes ?? 0} slag totalt
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function RoundHero({
   roundTitle,
   courseName,
@@ -226,6 +428,7 @@ function RoundHero({
   par,
   hcpIndex,
   roundId,
+  leaderboard,
 }: {
   roundTitle: string
   courseName: string
@@ -235,109 +438,143 @@ function RoundHero({
   par: number
   hcpIndex: number
   roundId: string
+  leaderboard: LeaderboardEntry[]
 }) {
   return (
     <div
-      className="card round-hero"
       style={{
-        padding: 22,
+        display: 'grid',
+        gap: 14,
       }}
     >
-      <div style={{ display: 'grid', gap: 18 }}>
-        <div
-          className="round-hero-top"
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            gap: 16,
-            flexWrap: 'wrap',
-          }}
-        >
-          <div style={{ maxWidth: 820, display: 'grid', gap: 12 }}>
-            <div
+      <div
+        className="card round-hero"
+        style={{
+          padding: 18,
+          borderRadius: 26,
+          background:
+            'linear-gradient(145deg, rgba(244,252,246,0.98), rgba(255,255,255,0.96))',
+          boxShadow: '0 16px 42px rgba(20, 77, 43, 0.10)',
+          border: '1px solid rgba(36, 122, 67, 0.12)',
+        }}
+      >
+        <div style={{ display: 'grid', gap: 15 }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              gap: 12,
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ display: 'grid', gap: 9 }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <span className="badge">🏌️ Runda</span>
+                <span className="badge">{modeLabel}</span>
+                <span className="badge">Hål {currentHoleNumber}/{totalHoles}</span>
+              </div>
+
+              <div style={{ display: 'grid', gap: 4 }}>
+                <h1
+                  className="title"
+                  style={{
+                    margin: 0,
+                    fontSize: 'clamp(26px, 8vw, 38px)',
+                    lineHeight: 0.98,
+                    letterSpacing: -1.2,
+                  }}
+                >
+                  {roundTitle}
+                </h1>
+
+                <p className="muted meta" style={{ margin: 0 }}>
+                  {courseName}
+                </p>
+              </div>
+            </div>
+
+            <Link
+              className="button secondary"
+              href={`/rounds/${roundId}/players`}
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                flexWrap: 'wrap',
+                borderRadius: 999,
+                minHeight: 38,
+                paddingInline: 14,
+                whiteSpace: 'nowrap',
               }}
             >
-              <span className="badge">🏌️ Runda</span>
-              <span className="badge">{modeLabel}</span>
-            </div>
-
-            <div style={{ display: 'grid', gap: 6 }}>
-              <h1 className="title" style={{ margin: 0 }}>
-                {roundTitle}
-              </h1>
-
-              <p className="muted meta" style={{ margin: 0 }}>
-                {courseName}
-              </p>
-            </div>
-
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 10,
-              }}
-            >
-              <div className="card" style={{ padding: '10px 14px' }}>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  Aktuellt hål
-                </div>
-                <div style={{ fontSize: 20, fontWeight: 800 }}>
-                  Hål {currentHoleNumber}
-                </div>
-              </div>
-
-              <div className="card" style={{ padding: '10px 14px' }}>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  Par
-                </div>
-                <div style={{ fontSize: 20, fontWeight: 800 }}>{par}</div>
-              </div>
-
-              <div className="card" style={{ padding: '10px 14px' }}>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  Index
-                </div>
-                <div style={{ fontSize: 20, fontWeight: 800 }}>{hcpIndex}</div>
-              </div>
-
-              <div className="card" style={{ padding: '10px 14px' }}>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  Hålvy
-                </div>
-                <div style={{ fontSize: 20, fontWeight: 800 }}>
-                  {currentHoleNumber} / {totalHoles}
-                </div>
-              </div>
-            </div>
+              Hantera spelare
+            </Link>
           </div>
 
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              flexWrap: 'wrap',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+              gap: 9,
             }}
           >
-            <Link
-              className="button leaderboard-button"
-              href={`/rounds/${roundId}/summary?hole=${currentHoleNumber}`}
+            <div
+              style={{
+                padding: '11px 12px',
+                borderRadius: 18,
+                background: '#fff',
+                border: '1px solid rgba(20, 77, 43, 0.10)',
+                boxShadow: '0 8px 20px rgba(20, 77, 43, 0.06)',
+              }}
             >
-              🏆 Leaderboard
-            </Link>
-            <Link className="button secondary" href={`/rounds/${roundId}/players`}>
-              Hantera spelare
-            </Link>
+              <div className="muted" style={{ fontSize: 11, fontWeight: 800 }}>
+                Aktuellt hål
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 950 }}>Hål {currentHoleNumber}</div>
+            </div>
+
+            <div
+              style={{
+                padding: '11px 12px',
+                borderRadius: 18,
+                background: '#fff',
+                border: '1px solid rgba(20, 77, 43, 0.10)',
+                boxShadow: '0 8px 20px rgba(20, 77, 43, 0.06)',
+              }}
+            >
+              <div className="muted" style={{ fontSize: 11, fontWeight: 800 }}>
+                Par
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 950 }}>{par}</div>
+            </div>
+
+            <div
+              style={{
+                padding: '11px 12px',
+                borderRadius: 18,
+                background: '#fff',
+                border: '1px solid rgba(20, 77, 43, 0.10)',
+                boxShadow: '0 8px 20px rgba(20, 77, 43, 0.06)',
+              }}
+            >
+              <div className="muted" style={{ fontSize: 11, fontWeight: 800 }}>
+                Index
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 950 }}>{hcpIndex}</div>
+            </div>
           </div>
         </div>
       </div>
+
+      <PremiumLeaderboard
+        leaderboard={leaderboard}
+        roundId={roundId}
+        currentHoleNumber={currentHoleNumber}
+      />
     </div>
   )
 }
@@ -402,7 +639,9 @@ export default async function RoundPage({
   ] = await Promise.all([
     supabase
       .from('round_players')
-      .select('id, display_name, exact_handicap, playing_handicap, tee_key, active_from_hole, active_to_hole')
+      .select(
+        'id, display_name, exact_handicap, playing_handicap, tee_key, active_from_hole, active_to_hole'
+      )
       .eq('round_id', id)
       .order('sort_order'),
     supabase.from('courses').select('id, name').eq('id', round.course_id).single(),
@@ -469,7 +708,9 @@ export default async function RoundPage({
   const activePlayerIds = new Set(playersForHole.map((player) => player.id))
 
   const currentHoleScores = scoreRows.filter(
-    (row) => row.hole_number === currentHole.hole_number && activePlayerIds.has(row.round_player_id)
+    (row) =>
+      row.hole_number === currentHole.hole_number &&
+      activePlayerIds.has(row.round_player_id)
   )
 
   const leaderboard = buildLeaderboard({
@@ -486,7 +727,7 @@ export default async function RoundPage({
 
   return (
     <main>
-      <div className="container" style={{ display: 'grid', gap: 18 }}>
+      <div className="container" style={{ display: 'grid', gap: 16 }}>
         <RoundHero
           roundTitle={round.title}
           courseName={course.name}
@@ -496,6 +737,7 @@ export default async function RoundPage({
           par={currentHole.par}
           hcpIndex={currentHole.hcp_index}
           roundId={id}
+          leaderboard={leaderboard}
         />
 
         <HolePlay
@@ -516,4 +758,3 @@ export default async function RoundPage({
     </main>
   )
 }
-
