@@ -27,7 +27,7 @@ type LeaderboardEntry = {
 
 type RoundPlayer = {
   id: string
-  display_name?: string | null
+  display_name?: string
   exact_handicap?: number | null
   playing_handicap?: number | null
   tee_key?: string | null
@@ -667,7 +667,10 @@ export default async function RoundPage({
     notFound()
   }
 
-  const players = playersData as RoundPlayer[]
+  const players = (playersData ?? []).map((player) => ({
+  ...player,
+  display_name: player.display_name ?? undefined,
+})) as RoundPlayer[]
   const course = courseData as CourseLike
   const holes = holesData as HoleLike[]
   const scoreRows = (allScoreRowsData ?? []) as HoleScoreRow[]
