@@ -2646,13 +2646,13 @@ export default async function DashboardPage({
 
         @media (max-width: 720px) {
           .dashboard-hero-inner {
-            padding-top: calc(env(safe-area-inset-top) + 12px);
+            padding-top: calc(env(safe-area-inset-top) + 6px);
           }
 
           .dashboard-hero-topbar {
             position: static !important;
             justify-content: flex-end;
-            margin-bottom: 6px;
+            margin-bottom: 2px;
           }
 
           .dashboard-hero-content {
@@ -2660,6 +2660,7 @@ export default async function DashboardPage({
           }
 
           .dashboard-hero-intro {
+            margin-top: -6px;
             max-width: none !important;
           }
 
