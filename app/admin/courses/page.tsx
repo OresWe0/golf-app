@@ -25,7 +25,7 @@ type ImportedHole = {
 
 type ImportedTee = {
   tee_key: string
-  label: string
+  label?: string
   course_rating: number | null
   slope_rating: number | null
   par_total: number | null
@@ -43,6 +43,7 @@ type ImportedCoursePayload = {
 type ParsedCourse = {
   name: string
   club_name: string
+  total_par: number
   holes: ImportedHole[]
   tees: ImportedTee[]
 }
@@ -215,7 +216,7 @@ function parseImportedCourse(raw: string): ParsedCourse {
             par_total: parTotal == null ? null : Math.floor(parTotal),
           }
         })
-        .filter((tee): tee is NonNullable<typeof tee> => tee !== null)
+        .filter((tee): tee is ImportedTee => tee !== null)
     : []
 
   requireUniqueStrings(
@@ -223,7 +224,19 @@ function parseImportedCourse(raw: string): ParsedCourse {
     'Tees'
   )
 
-  return { name, club_name: clubName, holes, tees }
+  const calculatedPar = holes.reduce((sum, hole) => sum + hole.par, 0)
+  const jsonParTotal = tees.find((tee) => tee.par_total != null)?.par_total ?? null
+  const totalPar = jsonParTotal ?? calculatedPar
+
+  if (!Number.isFinite(totalPar) || totalPar <= 0) {
+    throw new Error('Kunde inte räkna ut total_par från hål eller tees.')
+  }
+
+  if (jsonParTotal != null && jsonParTotal !== calculatedPar) {
+    throw new Error(`total_par/par_total (${jsonParTotal}) matchar inte hålens par (${calculatedPar}).`)
+  }
+
+  return { name, club_name: clubName, total_par: totalPar, holes, tees }
 }
 
 export default async function AdminCoursesPage({
@@ -245,7 +258,7 @@ export default async function AdminCoursesPage({
 
     const { data, error } = await supabase
       .from('courses')
-      .insert({ name, club_name: clubName || name })
+      .insert({ name, club_name: clubName || name, total_par: 72 })
       .select('id')
       .single()
 
@@ -275,7 +288,7 @@ export default async function AdminCoursesPage({
 
     const { data: createdCourse, error: courseError } = await supabase
       .from('courses')
-      .insert({ name: parsed.name, club_name: parsed.club_name })
+      .insert({ name: parsed.name, club_name: parsed.club_name, total_par: parsed.total_par })
       .select('id')
       .single()
 
@@ -354,7 +367,7 @@ export default async function AdminCoursesPage({
     fail(
       `/admin/courses/${courseId}/holes`,
       'success',
-      `${parsed.name} importerad med ${parsed.holes.length} hål och ${parsed.tees.length} tees.`
+      `${parsed.name} importerad med ${parsed.holes.length} hål, par ${parsed.total_par} och ${parsed.tees.length} tees.`
     )
   }
 
