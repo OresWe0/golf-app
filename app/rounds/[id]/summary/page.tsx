@@ -64,13 +64,13 @@ function getScoreMarker(strokes: number | null, par: number) {
 
 function markerStyle(marker: string | null): CSSProperties {
   const base: CSSProperties = {
-    width: 28,
-    height: 28,
+    width: 26,
+    height: 26,
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontWeight: 800,
-    fontSize: 14,
+    fontSize: 13,
     background: '#fff',
     margin: '0 auto',
     flexShrink: 0,
@@ -117,6 +117,19 @@ function markerStyle(marker: string | null): CSSProperties {
 
 function formatVsPar(value: number) {
   return value > 0 ? `+${value}` : `${value}`
+}
+
+function formatRoundDate(value?: string | null) {
+  if (!value) return ''
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+
+  return date.toLocaleDateString('sv-SE', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
 }
 
 function sumPar(holes: Array<{ par: number }>) {
@@ -304,9 +317,9 @@ function ScoreTable({
           <table
             style={{
               width: '100%',
-              minWidth: 620,
+              minWidth: 560,
               borderCollapse: 'collapse',
-              fontSize: 15,
+              fontSize: 14,
             }}
           >
             <tbody>
@@ -315,8 +328,8 @@ function ScoreTable({
                   style={{
                     ...stickyBase,
                     textAlign: 'left',
-                    padding: '12px 14px',
-                    fontSize: 16,
+                     padding: '10px 12px',
+                     fontSize: 15,
                     fontWeight: 800,
                     whiteSpace: 'nowrap',
                     background: '#f8fbf7',
@@ -330,10 +343,10 @@ function ScoreTable({
                     key={`hole-${score.holeNumber}`}
                     style={{
                       textAlign: 'center',
-                      padding: '12px 8px',
-                      fontSize: 16,
+                      padding: '10px 6px',
+                      fontSize: 15,
                       fontWeight: 800,
-                      minWidth: 38,
+                      minWidth: 34,
                       color: '#1f3327',
                     }}
                   >
@@ -343,8 +356,8 @@ function ScoreTable({
                 <th
                   style={{
                     textAlign: 'center',
-                    padding: '12px 10px',
-                    fontSize: 15,
+                     padding: '10px 8px',
+                     fontSize: 14,
                     fontWeight: 800,
                     whiteSpace: 'nowrap',
                     color: '#166534',
@@ -359,7 +372,7 @@ function ScoreTable({
                 <td
                   style={{
                     ...stickyBase,
-                    padding: '11px 14px',
+                     padding: '10px 12px',
                     fontSize: 13,
                     fontWeight: 600,
                     whiteSpace: 'nowrap',
@@ -374,7 +387,7 @@ function ScoreTable({
                   <td
                     key={`hcp-${score.holeNumber}`}
                     style={{
-                      padding: '11px 8px',
+                      padding: '10px 6px',
                       textAlign: 'center',
                       color: '#64748b',
                       borderTop: '1px solid #e5e7eb',
@@ -385,7 +398,7 @@ function ScoreTable({
                 ))}
                 <td
                   style={{
-                    padding: '11px 10px',
+                     padding: '10px 8px',
                     textAlign: 'center',
                     color: '#94a3b8',
                     borderTop: '1px solid #e5e7eb',
@@ -401,7 +414,7 @@ function ScoreTable({
                 <td
                   style={{
                     ...stickyBase,
-                    padding: '11px 14px',
+                     padding: '10px 12px',
                     fontSize: 13,
                     fontWeight: 600,
                     whiteSpace: 'nowrap',
@@ -416,7 +429,7 @@ function ScoreTable({
                   <td
                     key={`par-${score.holeNumber}`}
                     style={{
-                      padding: '11px 8px',
+                      padding: '10px 6px',
                       textAlign: 'center',
                       color: '#334155',
                       borderTop: '1px solid #e5e7eb',
@@ -427,7 +440,7 @@ function ScoreTable({
                 ))}
                 <td
                   style={{
-                    padding: '11px 10px',
+                     padding: '10px 8px',
                     textAlign: 'center',
                     fontWeight: 800,
                     borderTop: '1px solid #e5e7eb',
@@ -443,7 +456,7 @@ function ScoreTable({
                 <td
                   style={{
                     ...stickyBase,
-                    padding: '12px 14px',
+                     padding: '10px 12px',
                     fontWeight: 800,
                     whiteSpace: 'nowrap',
                     borderTop: '2px solid #d1fae5',
@@ -458,7 +471,7 @@ function ScoreTable({
                   <td
                     key={`res-${score.holeNumber}`}
                     style={{
-                      padding: '12px 8px',
+                      padding: '10px 6px',
                       textAlign: 'center',
                       borderTop: '2px solid #d1fae5',
                       fontWeight: 800,
@@ -473,10 +486,10 @@ function ScoreTable({
                 ))}
                 <td
                   style={{
-                    padding: '12px 10px',
-                    textAlign: 'center',
-                    fontWeight: 900,
-                    fontSize: 20,
+                     padding: '10px 8px',
+                     textAlign: 'center',
+                     fontWeight: 900,
+                     fontSize: 18,
                     borderTop: '2px solid #d1fae5',
                     background: '#f0fdf4',
                     color: '#166534',
@@ -491,7 +504,7 @@ function ScoreTable({
                   <td
                     style={{
                       ...stickyBase,
-                      padding: '12px 14px',
+                       padding: '10px 12px',
                       fontWeight: 800,
                       whiteSpace: 'nowrap',
                       borderTop: '1px solid #dbeafe',
@@ -506,7 +519,7 @@ function ScoreTable({
                     <td
                       key={`points-${scores[index].holeNumber}`}
                       style={{
-                        padding: '12px 8px',
+                        padding: '10px 6px',
                         textAlign: 'center',
                         borderTop: '1px solid #dbeafe',
                         color: '#0f172a',
@@ -522,10 +535,10 @@ function ScoreTable({
                   ))}
                   <td
                     style={{
-                      padding: '12px 10px',
-                      textAlign: 'center',
-                      fontWeight: 900,
-                      fontSize: 20,
+                       padding: '10px 8px',
+                        textAlign: 'center',
+                        fontWeight: 900,
+                        fontSize: 18,
                       borderTop: '1px solid #dbeafe',
                       background: '#eff6ff',
                       color: '#1d4ed8',
@@ -588,7 +601,7 @@ export default async function SummaryPage({
   const { data: roundFromUserClient } = await supabase
     .from('rounds')
     .select(
-      'id, owner_id, course_id, title, scoring_mode, status, holes_mode, start_hole, end_hole'
+      'id, owner_id, course_id, title, scoring_mode, status, holes_mode, start_hole, end_hole, created_at'
     )
     .eq('id', id)
     .maybeSingle()
@@ -599,7 +612,7 @@ export default async function SummaryPage({
     const { data: roundFromAdminClient } = await supabaseAdmin
       .from('rounds')
       .select(
-        'id, owner_id, course_id, title, scoring_mode, status, holes_mode, start_hole, end_hole'
+        'id, owner_id, course_id, title, scoring_mode, status, holes_mode, start_hole, end_hole, created_at'
       )
       .eq('id', id)
       .maybeSingle()
@@ -901,10 +914,154 @@ export default async function SummaryPage({
     null
 
   const mySummaryPlayerId = mySummaryPlayer?.id ?? null
+  const ownerProfile = (ownerProfileRaw as OwnerProfileRow | null) ?? null
+  const ownerName =
+    ownerProfile?.display_name?.trim() || ownerProfile?.email?.trim() || 'Rundans värd'
+  const roundDateLabel = formatRoundDate((round as { created_at?: string | null }).created_at)
+  const selectedPosition = selectedIndex >= 0 ? selectedIndex + 1 : 1
+  const selectedPrimaryStat =
+    scoringMode === 'stableford'
+      ? `${selectedPlayer?.points ?? 0} p`
+      : `${selectedPlayer?.strokes ?? 0}`
+  const winnerPrimaryStat =
+    scoringMode === 'stableford'
+      ? `${winner?.points ?? 0} p`
+      : `${winner?.strokes ?? 0}`
 
   return (
     <main>
-      <div className="container">
+      <style>{`
+        .summary-shell {
+          display: grid;
+          gap: 14px;
+        }
+
+        .summary-top-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.95fr);
+          gap: 14px;
+          align-items: start;
+        }
+
+        .summary-overview-card {
+          border: 1px solid #dbe7dd;
+          background:
+            radial-gradient(circle at top right, rgba(187,247,208,0.34), transparent 30%),
+            linear-gradient(180deg, #f7fcf8 0%, #ffffff 100%);
+        }
+
+        .summary-badge-row,
+        .summary-meta-row {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .summary-tools-card,
+        .summary-overview-card {
+          margin-bottom: 0 !important;
+        }
+
+        .summary-kpi-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .summary-kpi-card {
+          border-radius: 16px;
+          border: 1px solid #e5e7eb;
+          background: rgba(255,255,255,0.92);
+          padding: 14px;
+        }
+
+        .summary-kpi-value {
+          margin-top: 6px;
+          font-size: clamp(1.5rem, 5vw, 2.15rem);
+          font-weight: 900;
+          line-height: 1;
+          color: #163322;
+        }
+
+        .summary-score-header {
+          display: grid;
+          gap: 12px;
+        }
+
+        .summary-score-top {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          align-items: flex-start;
+          flex-wrap: wrap;
+        }
+
+        .summary-player-switcher {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+          gap: 10px;
+        }
+
+        .summary-score-highlights {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .summary-score-highlight {
+          border-radius: 14px;
+          border: 1px solid #e5e7eb;
+          background: #fff;
+          padding: 10px;
+          text-align: center;
+        }
+
+        .summary-anchor-nav {
+          position: sticky;
+          top: 8px;
+          z-index: 20;
+          padding: 8px;
+          border-radius: 12px;
+          background: rgba(255,255,255,0.95);
+          border: 1px solid #dbe7dd;
+          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+          backdrop-filter: blur(4px);
+        }
+
+        @media (max-width: 960px) {
+          .summary-top-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 720px) {
+          .summary-kpi-grid,
+          .summary-score-highlights {
+            grid-template-columns: 1fr 1fr;
+          }
+
+          .summary-player-switcher {
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(220px, 82%);
+            overflow-x: auto;
+            padding-bottom: 4px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .summary-player-switcher > * {
+            scroll-snap-align: start;
+          }
+        }
+
+        @media (max-width: 520px) {
+          .summary-kpi-grid,
+          .summary-score-highlights {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+      <div className="container summary-shell">
         <div
           style={{
             display: 'grid',
@@ -912,55 +1069,128 @@ export default async function SummaryPage({
             marginBottom: 14,
           }}
         >
-          <div>
-            <h1
-              style={{
-                marginBottom: 6,
-                ...TYPE.pageTitle,
-              }}
-            >
-              {round.title}
-            </h1>
-            <p
-              style={{
-                margin: 0,
-                ...TYPE.meta,
-              }}
-            >
-              {course.name}
-            </p>
-          </div>
+          <div className="summary-top-grid">
+            <div className="card summary-overview-card">
+              <div style={{ display: 'grid', gap: 14 }}>
+              <div className="summary-badge-row">
+                <span className="badge">{roundTypeLabel}</span>
+                <span className="badge">{holesLabel}</span>
+                <span className="badge">{isRoundFinished ? 'Avslutad' : 'Pågår'}</span>
+              </div>
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-              gap: 10,
-            }}
-          >
-            <Link
-              className="button secondary"
-              href={`/rounds/${id}?hole=${returnHole}`}
-              style={{
-                width: '100%',
-                minHeight: 54,
-                ...TYPE.buttonText,
-              }}
-            >
-              Till rundan
-            </Link>
+              <div>
+                {roundDateLabel ? (
+                  <div style={{ marginBottom: 6, ...TYPE.meta }}>{roundDateLabel}</div>
+                ) : null}
+                <h1
+                  style={{
+                    marginBottom: 6,
+                    ...TYPE.pageTitle,
+                  }}
+                >
+                  {round.title}
+                </h1>
+                <p
+                  style={{
+                    margin: 0,
+                    ...TYPE.meta,
+                  }}
+                >
+                  {course.name} · Värd {ownerName}
+                </p>
+              </div>
 
-            <Link
-              className="button secondary"
-              href="/dashboard"
-              style={{
-                width: '100%',
-                minHeight: 54,
-                ...TYPE.buttonText,
-              }}
-            >
-              Till startsidan 🏠
-            </Link>
+              <div className="summary-kpi-grid">
+                <div className="summary-kpi-card">
+                  <div style={TYPE.label}>Vald spelare</div>
+                  <div className="summary-kpi-value">{selectedPlayer?.name ?? 'Spelare'}</div>
+                  <div style={{ marginTop: 8, ...TYPE.meta }}>
+                    {selectedPlayer
+                      ? `${selectedPlayer.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Spel-HCP ${selectedPlayer.playingHandicap ?? 0}`
+                      : 'Ingen spelare vald'}
+                  </div>
+                </div>
+
+                <div className="summary-kpi-card">
+                  <div style={TYPE.label}>Resultat</div>
+                  <div className="summary-kpi-value">{selectedPrimaryStat}</div>
+                  <div style={{ marginTop: 8, ...TYPE.meta }}>
+                    {selectedPlayer ? `${formatVsPar(selectedPlayer.vsPar)} mot par` : ''}
+                  </div>
+                </div>
+
+                <div className="summary-kpi-card">
+                  <div style={TYPE.label}>Placering</div>
+                  <div className="summary-kpi-value">
+                    {selectedPosition}/{summary.length}
+                  </div>
+                  <div style={{ marginTop: 8, ...TYPE.meta }}>
+                    {winner ? `Ledare: ${winner.name} · ${winnerPrimaryStat}` : `${totalPar} par`}
+                  </div>
+                </div>
+              </div>
+
+              {winner && selectedPlayer && winner.id !== selectedPlayer.id ? (
+                <div
+                  style={{
+                    padding: 14,
+                    borderRadius: 16,
+                    border: '1px solid #dbe7dd',
+                    background: 'rgba(255,255,255,0.92)',
+                  }}
+                >
+                  <div style={{ marginBottom: 4, ...TYPE.labelStrong, color: '#166534' }}>
+                    Vinnare
+                  </div>
+                  <div style={TYPE.cardTitleMd}>{winner.name}</div>
+                  <div style={{ marginTop: 6, ...TYPE.meta }}>
+                    {winnerPrimaryStat} · {formatVsPar(winner.vsPar)} · {getPlayedRangeLabel(winner)}
+                  </div>
+                </div>
+              ) : null}
+              </div>
+            </div>
+
+            <div className="card summary-tools-card" style={{ padding: 14 }}>
+              <div style={{ display: 'grid', gap: 10 }}>
+                <div>
+                  <div style={{ marginBottom: 4, ...TYPE.cardTitleMd }}>Snabbval</div>
+                  <div style={TYPE.meta}>
+                    Tillbaka till rundan, startsidan eller exportera resultatet.
+                  </div>
+                </div>
+                <Link
+                  className="button secondary"
+                  href={`/rounds/${id}?hole=${returnHole}`}
+                  style={{
+                    width: '100%',
+                    minHeight: 54,
+                    ...TYPE.buttonText,
+                  }}
+                >
+                  Till rundan
+                </Link>
+
+                <Link
+                  className="button secondary"
+                  href="/dashboard"
+                  style={{
+                    width: '100%',
+                    minHeight: 54,
+                    ...TYPE.buttonText,
+                  }}
+                >
+                  Till startsidan
+                </Link>
+                <SummaryExportButton
+                  roundTitle={round.title}
+                  courseName={course.name}
+                  modeLabel={holesLabel}
+                  players={exportPlayers}
+                  myPlayerId={mySummaryPlayerId}
+                />
+              </div>
+            </div>
           </div>
 
           {isRoundFinished && (
@@ -1189,16 +1419,6 @@ export default async function SummaryPage({
           </div>
         ) : null}
 
-        <div className="card" style={{ marginBottom: 14, padding: 12 }}>
-          <SummaryExportButton
-            roundTitle={round.title}
-            courseName={course.name}
-            modeLabel={holesLabel}
-            players={exportPlayers}
-            myPlayerId={mySummaryPlayerId}
-          />
-        </div>
-
         <details className="card" style={{ marginBottom: 14 }}>
           <summary
             style={{
@@ -1368,23 +1588,31 @@ export default async function SummaryPage({
         </details>
         {selectedPlayer ? (
           <div className="card">
-            <div style={{ marginBottom: 12 }}>
-              <h2
-                style={{
-                  marginTop: 0,
-                  marginBottom: 8,
-                  ...TYPE.sectionTitle,
-                }}
-              >
-                Scorekort
-              </h2>
+            <div className="summary-score-header" style={{ marginBottom: 12 }}>
+              <div className="summary-score-top">
+                <div style={{ minWidth: 0 }}>
+                  <h2
+                    style={{
+                      marginTop: 0,
+                      marginBottom: 8,
+                      ...TYPE.sectionTitle,
+                    }}
+                  >
+                    Rundsammanfattning
+                  </h2>
+                  <div style={TYPE.meta}>
+                    Välj spelare och se helheten innan du dyker ner i hela scorekortet.
+                  </div>
+                </div>
+
+                <div className="summary-meta-row">
+                  <span className="badge">{scorecardModeLabel}</span>
+                  <span className="badge">{summary.length} spelare</span>
+                </div>
+              </div>
 
               <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-                  gap: 10,
-                }}
+                className="summary-player-switcher"
               >
                 {summary.map((player) => {
                   const isActive = player.id === selectedPlayer.id
@@ -1438,115 +1666,83 @@ export default async function SummaryPage({
                   borderBottom: '1px solid #e5e7eb',
                 }}
               >
-                <div
-                  style={{
-                    marginBottom: 6,
-                    wordBreak: 'break-word',
-                    ...TYPE.cardTitleLg,
-                  }}
-                >
-                  {selectedPlayer.name}
-                </div>
+                <div className="summary-score-top" style={{ marginBottom: 12 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="summary-meta-row" style={{ marginBottom: 8 }}>
+                      <span className="badge">Vald spelare</span>
+                      {selectedPosition === 1 ? <span className="badge">Leder</span> : null}
+                    </div>
 
-                <div
-                  style={{
-                    marginBottom: 12,
-                    ...TYPE.meta,
-                  }}
-                >
-                  {selectedPlayer.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Spel-HCP{' '}
-                  {selectedPlayer.playingHandicap ?? 0}
-                </div>
-                <div style={{ marginBottom: 12, ...TYPE.meta }}>
-                  {getPlayedRangeLabel(selectedPlayer)}
-                </div>
+                    <div
+                      style={{
+                        marginBottom: 6,
+                        wordBreak: 'break-word',
+                        ...TYPE.cardTitleLg,
+                      }}
+                    >
+                      {selectedPlayer.name}
+                    </div>
 
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
-                    gap: 8,
-                  }}
-                >
-                  <div
-                    style={{
-                      background: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: 12,
-                      padding: 10,
-                      textAlign: 'center',
-                    }}
-                  >
-                    <div style={TYPE.label}>Tot</div>
-                    <div style={{ marginTop: 4, ...TYPE.statValueMd }}>
-                      {selectedPlayer.strokes}
+                    <div style={TYPE.meta}>
+                      {selectedPlayer.teeKey === 'red' ? 'Röd tee' : 'Gul tee'} · Spel-HCP{' '}
+                      {selectedPlayer.playingHandicap ?? 0} · {getPlayedRangeLabel(selectedPlayer)}
                     </div>
                   </div>
 
-                  <div
-                    style={{
-                      background: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: 12,
-                      padding: 10,
-                      textAlign: 'center',
-                    }}
-                  >
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={TYPE.label}>Resultat</div>
+                    <div
+                      style={{
+                        marginTop: 4,
+                        whiteSpace: 'nowrap',
+                        ...TYPE.statValueLg,
+                        color: '#166534',
+                      }}
+                    >
+                      {round.scoring_mode === 'stableford'
+                        ? `${selectedPlayer.points} p`
+                        : `${selectedPlayer.strokes}`}
+                    </div>
+                    <div style={{ marginTop: 4, ...TYPE.meta }}>
+                      {formatVsPar(selectedPlayer.vsPar)} mot par
+                    </div>
+                  </div>
+                </div>
+
+                <div className="summary-score-highlights">
+                  <div className="summary-score-highlight">
+                    <div style={TYPE.label}>Slag</div>
+                    <div style={{ marginTop: 4, ...TYPE.statValueMd }}>{selectedPlayer.strokes}</div>
+                  </div>
+
+                  <div className="summary-score-highlight">
+                    <div style={TYPE.label}>Poäng</div>
+                    <div style={{ marginTop: 4, ...TYPE.statValueMd }}>{selectedPlayer.points}</div>
+                  </div>
+
+                  <div className="summary-score-highlight">
                     <div style={TYPE.label}>Till par</div>
                     <div style={{ marginTop: 4, ...TYPE.statValueMd }}>
                       {formatVsPar(selectedPlayer.vsPar)}
                     </div>
                   </div>
 
-                  <div
-                    style={{
-                      background: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: 12,
-                      padding: 10,
-                      textAlign: 'center',
-                    }}
-                  >
-                    <div style={TYPE.label}>P</div>
-                    <div style={{ marginTop: 4, ...TYPE.statValueMd }}>
-                      {selectedPlayer.points}
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      background: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: 12,
-                      padding: 10,
-                      textAlign: 'center',
-                    }}
-                  >
-                    <div style={TYPE.label}>Pos</div>
-                    <div style={{ marginTop: 4, ...TYPE.statValueMd }}>
-                      {selectedIndex + 1}
-                    </div>
+                  <div className="summary-score-highlight">
+                    <div style={TYPE.label}>Placering</div>
+                    <div style={{ marginTop: 4, ...TYPE.statValueMd }}>{selectedPosition}</div>
                   </div>
                 </div>
               </div>
 
               <div style={{ padding: 14, display: 'grid', gap: 12 }}>
                 <div
+                  className="summary-anchor-nav"
                   style={{
-                    position: 'sticky',
-                    top: 8,
-                    zIndex: 20,
                     display: 'grid',
                     gridTemplateColumns: isNineHoleRound
                       ? '1fr 1fr'
                       : 'repeat(3, minmax(0, 1fr))',
                     gap: 8,
-                    padding: 8,
-                    borderRadius: 12,
-                    background: 'rgba(255,255,255,0.95)',
-                    border: '1px solid #dbe7dd',
-                    boxShadow: '0 10px 24px rgba(15, 23, 42, 0.08)',
-                    backdropFilter: 'blur(4px)',
                   }}
                 >
                   <a href="#score-front" className="button secondary" style={{ minHeight: 42 }}>
