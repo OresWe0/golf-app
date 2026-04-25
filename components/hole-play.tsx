@@ -534,162 +534,114 @@ function LiveLeaderboard({
   startHole: number
   endHole: number
 }) {
-  const topLeaderboard = useMemo(() => {
-    return [...leaderboard]
-      .sort((a, b) => {
-        if (a.position !== b.position) return a.position - b.position
-        const aPoints = a.totalPoints ?? -999
-        const bPoints = b.totalPoints ?? -999
-        return bPoints - aPoints
-      })
-      .slice(0, 3)
+  const sortedLeaderboard = useMemo(() => {
+    return [...leaderboard].sort((a, b) => {
+      if (a.position !== b.position) return a.position - b.position
+
+      const aPoints = a.totalPoints ?? -999
+      const bPoints = b.totalPoints ?? -999
+      if (aPoints !== bPoints) return bPoints - aPoints
+
+      const aToPar = a.totalToPar ?? 999
+      const bToPar = b.totalToPar ?? 999
+      return aToPar - bToPar
+    })
   }, [leaderboard])
 
-  if (!topLeaderboard.length) return null
+  if (!sortedLeaderboard.length) return null
+
+  const leader = sortedLeaderboard[0]
+  const leaderPlayer = players.find((p) => String(p.id) === String(leader.playerId))
+
+  const getPositionBadge = (position: number) => {
+    if (position === 1) return '🥇'
+    if (position === 2) return '🥈'
+    if (position === 3) return '🥉'
+    return `#${position}`
+  }
 
   return (
-    <div
-      style={{
-        borderRadius: 18,
-        padding: 10,
-        background:
-          'linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(30,41,59,0.90) 100%)',
-        color: '#fff',
-        display: 'grid',
-        gap: 8,
-        boxShadow: '0 18px 36px rgba(15, 23, 42, 0.16)',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          gap: 12,
-          alignItems: 'center',
-          flexWrap: 'wrap',
-        }}
-      >
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 900, opacity: 0.72, letterSpacing: 0.4 }}>
-            LIVE LEADERBOARD
-          </div>
-          <div style={{ fontSize: 15, fontWeight: 900, marginTop: 2 }}>Topp 3 just nu</div>
-        </div>
-
-        <div
-          style={{
-            fontSize: 12,
-            fontWeight: 800,
-            opacity: 0.72,
-          }}
-        >
-          Live
-        </div>
-      </div>
-
-      <div className="hp-top3">
-        {topLeaderboard.map((entry) => {
-          const player = players.find((p) => String(p.id) === String(entry.playerId))
-          const isLeader = entry.position === 1
-          const activeFrom = player?.active_from_hole ?? startHole
-          const activeTo = player?.active_to_hole ?? endHole
-          const isPartialRound = activeFrom > startHole || activeTo < endHole
-
-          return (
-            <div
-              key={`lb-${entry.playerId}`}
-              style={{
-                borderRadius: 14,
-                padding: isLeader ? 11 : 9,
-                background: isLeader
-                  ? 'linear-gradient(135deg, rgba(34,197,94,0.26) 0%, rgba(22,163,74,0.18) 100%)'
-                  : 'rgba(255,255,255,0.06)',
-                border: isLeader
-                  ? '1px solid rgba(74, 222, 128, 0.50)'
-                  : '1px solid rgba(255,255,255,0.06)',
-                minWidth: 0,
-                boxShadow: isLeader ? '0 10px 24px rgba(34, 197, 94, 0.18)' : 'none',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 11,
-                  opacity: 0.78,
-                  fontWeight: 800,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                }}
-              >
-                {isLeader ? '🔑' : null} #{entry.position}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 4,
-                  fontWeight: 900,
-                  fontSize: isLeader ? 14 : 13,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {player?.display_name ?? 'Spelare'}
-              </div>
-
-              {isPartialRound ? (
-                <div
-                  style={{
-                    marginTop: 4,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    padding: '2px 8px',
-                    borderRadius: 999,
-                    background: 'rgba(187,247,208,0.18)',
-                    border: '1px solid rgba(187,247,208,0.38)',
-                    color: '#bbf7d0',
-                    fontSize: 10,
-                    fontWeight: 800,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Delrunda {activeFrom}-{activeTo}
-                </div>
-              ) : null}
-
-              <div
-                style={{
-                  marginTop: 4,
-                  opacity: 0.86,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {entry.totalPoints != null
-                  ? `${entry.totalPoints} p · ${formatToPar(entry.totalToPar)}`
-                  : entry.scoreText ?? '-'}
-              </div>
-
-              {isLeader ? (
-                <div
-                  style={{
-                    marginTop: 6,
-                    fontSize: 10,
-                    fontWeight: 800,
-                    color: '#bbf7d0',
-                  }}
-                >
-                  Leder just nu
-                </div>
-              ) : null}
+    <section className="hp-leaderboard-shell" aria-label="Live leaderboard">
+      <div className="hp-leaderboard-card">
+        <div className="hp-leaderboard-hero">
+          <div style={{ minWidth: 0 }}>
+            <div className="hp-eyebrow">
+              <span className="hp-live-dot" />
+              PGA-style leaderboard
             </div>
-          )
-        })}
+
+            <h2 className="hp-leaderboard-title">Leaderboard</h2>
+
+            <p className="hp-leaderboard-subtitle">
+              {leaderPlayer?.display_name ?? 'Ledaren'} leder just nu
+              {leader.totalPoints != null ? ` på ${leader.totalPoints} poäng` : ''}.
+            </p>
+          </div>
+
+          <div className="hp-leaderboard-leaderbox">
+            <div className="hp-leaderbox-label">Ledare</div>
+            <div className="hp-leaderbox-name">{leaderPlayer?.display_name ?? 'Spelare'}</div>
+            <div className="hp-leaderbox-score">
+              <span>{leader.totalPoints ?? '-'} p</span>
+              <span>{formatToPar(leader.totalToPar)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="hp-leaderboard-table" role="table" aria-label="Aktuell ställning">
+          <div className="hp-leaderboard-head" role="row">
+            <div>Pos</div>
+            <div>Spelare</div>
+            <div className="hp-text-right">Poäng</div>
+            <div className="hp-text-right">Par</div>
+            <div className="hp-text-right">Slag</div>
+          </div>
+
+          <div className="hp-leaderboard-rows">
+            {sortedLeaderboard.map((entry) => {
+              const player = players.find((p) => String(p.id) === String(entry.playerId))
+              const isLeader = entry.position === 1
+              const activeFrom = player?.active_from_hole ?? startHole
+              const activeTo = player?.active_to_hole ?? endHole
+              const isPartialRound = activeFrom > startHole || activeTo < endHole
+
+              return (
+                <div
+                  key={`leaderboard-${entry.playerId}`}
+                  className={isLeader ? 'hp-leaderboard-row is-leader' : 'hp-leaderboard-row'}
+                  role="row"
+                >
+                  <div className="hp-position-pill">{getPositionBadge(entry.position)}</div>
+
+                  <div className="hp-player-cell">
+                    <div className="hp-player-name">{player?.display_name ?? 'Spelare'}</div>
+                    <div className="hp-player-meta">
+                      {isLeader ? 'Leder' : `Placering ${entry.position}`}
+                      {isPartialRound ? ` · Hål ${activeFrom}-${activeTo}` : ''}
+                    </div>
+                  </div>
+
+                  <div className="hp-stat-cell hp-text-right">
+                    <strong>{entry.totalPoints ?? '-'}</strong>
+                    <span>p</span>
+                  </div>
+
+                  <div className="hp-stat-cell hp-text-right">
+                    <strong>{formatToPar(entry.totalToPar)}</strong>
+                    <span>tot</span>
+                  </div>
+
+                  <div className="hp-stat-cell hp-text-right">
+                    <strong>{entry.totalStrokes ?? '-'}</strong>
+                    <span>slag</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -2305,6 +2257,227 @@ useEffect(() => {
           100% { box-shadow: 0 0 0 12px rgba(34, 197, 94, 0); }
         }
 
+
+        .hp-leaderboard-shell {
+          position: sticky;
+          top: 8px;
+          z-index: 24;
+          margin: 0 0 14px;
+        }
+
+        .hp-leaderboard-card {
+          position: relative;
+          overflow: hidden;
+          border-radius: 28px;
+          background:
+            radial-gradient(circle at top left, rgba(34,197,94,0.26), transparent 36%),
+            linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(17,24,39,0.96) 100%);
+          border: 1px solid rgba(148, 163, 184, 0.18);
+          color: #fff;
+          box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+        }
+
+        .hp-leaderboard-card::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent 38%);
+        }
+
+        .hp-leaderboard-hero {
+          position: relative;
+          z-index: 1;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 14px;
+          align-items: stretch;
+          padding: 16px;
+        }
+
+        .hp-eyebrow {
+          display: inline-flex;
+          align-items: center;
+          gap: 9px;
+          padding: 7px 10px;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.10);
+          color: rgba(255,255,255,0.82);
+          font-size: 11px;
+          font-weight: 950;
+          letter-spacing: 0.7px;
+          text-transform: uppercase;
+        }
+
+        .hp-live-dot {
+          width: 9px;
+          height: 9px;
+          border-radius: 999px;
+          background: #ef4444;
+          animation: liveDotPulse 1.8s ease-out infinite;
+          flex-shrink: 0;
+        }
+
+        .hp-leaderboard-title {
+          margin: 10px 0 0;
+          font-size: 28px;
+          line-height: 1;
+          font-weight: 950;
+          letter-spacing: -0.04em;
+        }
+
+        .hp-leaderboard-subtitle {
+          margin: 7px 0 0;
+          max-width: 540px;
+          color: rgba(255,255,255,0.68);
+          font-size: 13px;
+          font-weight: 750;
+          line-height: 1.4;
+        }
+
+        .hp-leaderboard-leaderbox {
+          min-width: 156px;
+          border-radius: 22px;
+          padding: 14px;
+          background: linear-gradient(180deg, rgba(34,197,94,0.22), rgba(22,163,74,0.12));
+          border: 1px solid rgba(74,222,128,0.32);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+
+        .hp-leaderbox-label {
+          font-size: 10px;
+          font-weight: 950;
+          letter-spacing: 0.8px;
+          text-transform: uppercase;
+          color: rgba(255,255,255,0.58);
+        }
+
+        .hp-leaderbox-name {
+          margin-top: 5px;
+          font-size: 15px;
+          font-weight: 950;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 190px;
+        }
+
+        .hp-leaderbox-score {
+          margin-top: 8px;
+          display: flex;
+          justify-content: space-between;
+          gap: 10px;
+          font-size: 13px;
+          font-weight: 950;
+          color: #bbf7d0;
+        }
+
+        .hp-leaderboard-table {
+          position: relative;
+          z-index: 1;
+          padding: 0 10px 10px;
+        }
+
+        .hp-leaderboard-head,
+        .hp-leaderboard-row {
+          display: grid;
+          grid-template-columns: 54px minmax(128px, 1fr) 70px 62px 62px;
+          gap: 8px;
+          align-items: center;
+        }
+
+        .hp-leaderboard-head {
+          padding: 0 10px 7px;
+          color: rgba(255,255,255,0.48);
+          font-size: 10px;
+          font-weight: 950;
+          letter-spacing: 0.7px;
+          text-transform: uppercase;
+        }
+
+        .hp-leaderboard-rows {
+          display: grid;
+          gap: 6px;
+          max-height: 286px;
+          overflow: auto;
+          padding-right: 2px;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .hp-leaderboard-row {
+          min-height: 58px;
+          padding: 9px 10px;
+          border-radius: 18px;
+          background: rgba(255,255,255,0.065);
+          border: 1px solid rgba(255,255,255,0.07);
+        }
+
+        .hp-leaderboard-row.is-leader {
+          background: linear-gradient(135deg, rgba(34,197,94,0.26), rgba(22,163,74,0.13));
+          border-color: rgba(74,222,128,0.38);
+          box-shadow: 0 12px 26px rgba(34,197,94,0.12);
+        }
+
+        .hp-position-pill {
+          min-width: 42px;
+          height: 36px;
+          display: inline-grid;
+          place-items: center;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.10);
+          border: 1px solid rgba(255,255,255,0.10);
+          font-size: 13px;
+          font-weight: 950;
+        }
+
+        .hp-player-cell {
+          min-width: 0;
+        }
+
+        .hp-player-name {
+          color: #fff;
+          font-size: 14px;
+          font-weight: 950;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .hp-player-meta {
+          margin-top: 2px;
+          color: rgba(255,255,255,0.52);
+          font-size: 11px;
+          font-weight: 800;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .hp-stat-cell {
+          display: grid;
+          gap: 1px;
+        }
+
+        .hp-stat-cell strong {
+          color: #fff;
+          font-size: 15px;
+          font-weight: 950;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .hp-stat-cell span {
+          color: rgba(255,255,255,0.48);
+          font-size: 10px;
+          font-weight: 850;
+        }
+
+        .hp-text-right {
+          text-align: right;
+        }
+
         .hp-score-button:active {
           transform: translateY(1px) scale(0.97) !important;
         }
@@ -2368,6 +2541,43 @@ useEffect(() => {
         }
 
         @media (max-width: 720px) {
+          .hp-leaderboard-shell {
+            top: 6px;
+            margin-left: -4px;
+            margin-right: -4px;
+          }
+
+          .hp-leaderboard-card {
+            border-radius: 24px;
+          }
+
+          .hp-leaderboard-hero {
+            grid-template-columns: 1fr;
+            padding: 14px;
+          }
+
+          .hp-leaderboard-leaderbox {
+            min-width: 0;
+          }
+
+          .hp-leaderbox-name {
+            max-width: none;
+          }
+
+          .hp-leaderboard-table {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .hp-leaderboard-head,
+          .hp-leaderboard-row {
+            min-width: 540px;
+          }
+
+          .hp-leaderboard-rows {
+            max-height: 220px;
+          }
+
           .hp-grid-2,
           .hp-selected-row,
           .hp-modal-actions,

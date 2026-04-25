@@ -747,3 +747,84 @@ button.danger,
     animation: none !important;
   }
 }
+
+/* ===== MINI SCORECARD ===== */
+
+.hole {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.hole.empty {
+  background: #f3f3f3;
+  color: #aaa;
+}
+
+.hole.par {
+  background: #eee;
+}
+
+.hole.birdie {
+  background: #d4f8d4;
+  color: #1b7a1b;
+}
+
+.hole.eagle {
+  background: #b6e3ff;
+  color: #005b96;
+}
+
+.hole.albatross {
+  background: gold;
+  color: black;
+}
+
+.hole.hio {
+  background: #ffb3ff;
+}
+
+.hole.bogey {
+  background: #ffe0cc;
+}
+
+.hole.double {
+  background: #ffb3b3;
+}
+
+/* ===== LEADERBOARD NEW ===== */
+
+.leaderboard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.leaderboard-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #e5ece2;
+}
+
+.leaderboard-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.leaderboard-name {
+  font-weight: 800;
+}
+
+.leaderboard-score {
+  font-weight: 800;
+}
