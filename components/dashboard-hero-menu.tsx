@@ -34,13 +34,13 @@ const menuItemStyle: CSSProperties = {
   gap: 8,
   justifyContent: 'flex-start',
   width: '100%',
-  minHeight: 38,
-  padding: '8px 10px',
-  borderRadius: 10,
+  minHeight: 46,
+  padding: '10px 12px',
+  borderRadius: 12,
   border: '1px solid rgba(255,255,255,0.18)',
   background: 'rgba(255,255,255,0.09)',
   color: '#fff',
-  fontSize: 14,
+  fontSize: 15,
   fontWeight: 800,
   textDecoration: 'none',
   boxSizing: 'border-box',
@@ -66,6 +66,13 @@ export default function DashboardHeroMenu({
   const [platform, setPlatform] = useState<'ios' | 'android' | 'other'>('other')
   const containerRef = useRef<HTMLDivElement | null>(null)
   const useFixedPopover = platform === 'ios' || platform === 'android'
+  const fixedPopoverTop =
+    platform === 'ios'
+      ? 'calc(env(safe-area-inset-top) + 80px)'
+      : 'calc(env(safe-area-inset-top) + 72px)'
+  const fixedPopoverRight = 14
+  const fixedPopoverWidth = 'min(84vw, 320px)'
+
   useEffect(() => {
     const ua = window.navigator.userAgent || ''
     if (/iPhone|iPad|iPod/i.test(ua)) {
@@ -179,13 +186,9 @@ export default function DashboardHeroMenu({
         <div
           style={{
             position: useFixedPopover ? 'fixed' : 'absolute',
-            top: useFixedPopover
-              ? platform === 'ios'
-                ? 'calc(env(safe-area-inset-top) + 80px)'
-                : 'calc(env(safe-area-inset-top) + 72px)'
-              : 56,
-            right: useFixedPopover ? 14 : 0,
-            width: useFixedPopover ? 'min(84vw, 320px)' : 'min(84vw, 300px)',
+            top: useFixedPopover ? fixedPopoverTop : 56,
+            right: useFixedPopover ? fixedPopoverRight : 0,
+            width: useFixedPopover ? fixedPopoverWidth : 'min(84vw, 300px)',
             maxHeight: 'min(60vh, 420px)',
             overflowY: 'auto',
             zIndex: 30,
@@ -325,10 +328,12 @@ export default function DashboardHeroMenu({
 
       <div
         style={{
-          position: 'absolute',
-          top: platform === 'ios' ? 58 : 56,
-          right: 0,
-          minWidth: 186,
+          position: useFixedPopover ? 'fixed' : 'absolute',
+          top: useFixedPopover ? fixedPopoverTop : 56,
+          right: useFixedPopover ? fixedPopoverRight : 0,
+          width: useFixedPopover ? fixedPopoverWidth : 'min(84vw, 220px)',
+          minWidth: useFixedPopover ? undefined : 186,
+          maxWidth: useFixedPopover ? fixedPopoverWidth : undefined,
           zIndex: 20,
           borderRadius: 12,
           border: '1px solid rgba(255,255,255,0.24)',

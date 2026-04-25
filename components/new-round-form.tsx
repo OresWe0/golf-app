@@ -1257,6 +1257,7 @@ export function NewRoundForm({
                     <input
                       placeholder="t.ex. 24.1"
                       type="number"
+                      inputMode="decimal"
                       step="0.1"
                       value={player.handicapIndex}
                       onChange={(e) => updatePlayer(index, 'handicapIndex', e.target.value)}
@@ -1408,6 +1409,7 @@ export function NewRoundForm({
           zIndex: 20,
           marginTop: 4,
           paddingTop: 8,
+          paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
           background: 'linear-gradient(180deg, rgba(248,251,247,0) 0%, #f8fbf7 26%, #f8fbf7 100%)',
         }}
       >

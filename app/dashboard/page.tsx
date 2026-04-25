@@ -593,11 +593,12 @@ function DashboardHeader({
         />
       </div>
 
-      <div style={{ display: 'grid', gap: 20, position: 'relative', zIndex: 1 }}>
-        <div
-          style={{
-            position: 'absolute',
-            top: 'calc(env(safe-area-inset-top) + 10px)',
+        <div style={{ display: 'grid', gap: 20, position: 'relative', zIndex: 1 }}>
+          <div
+            className="dashboard-hero-topbar"
+            style={{
+              position: 'absolute',
+              top: 'calc(env(safe-area-inset-top) + 10px)',
             right: 0,
             display: 'inline-flex',
             gap: 10,
@@ -615,6 +616,7 @@ function DashboardHeader({
         </div>
 
         <div
+          className="dashboard-hero-content"
           style={{
             display: 'flex',
             justifyContent: 'flex-start',
@@ -624,7 +626,7 @@ function DashboardHeader({
             marginTop: 'calc(env(safe-area-inset-top) + 14px)',
           }}
         >
-          <div style={{ maxWidth: 720 }}>
+          <div className="dashboard-hero-intro" style={{ maxWidth: 720 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
               <UserAvatar profile={profile} name={displayName} size={92} />
             </div>
@@ -2640,6 +2642,20 @@ export default async function DashboardPage({
         }
 
         @media (max-width: 720px) {
+          .dashboard-hero-topbar {
+            position: static !important;
+            justify-content: flex-end;
+            margin-bottom: -4px;
+          }
+
+          .dashboard-hero-content {
+            margin-top: 0 !important;
+          }
+
+          .dashboard-hero-intro {
+            max-width: none !important;
+          }
+
           .dashboard-lower-stack {
             gap: 12px !important;
           }

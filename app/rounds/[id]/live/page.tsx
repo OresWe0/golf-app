@@ -590,9 +590,59 @@ export default async function RoundLivePage({
 
   return (
     <main>
+      <style>{`
+        .live-hole-grid-mobile {
+          display: none;
+        }
+
+        @media (max-width: 720px) {
+          .live-header-actions {
+            width: 100%;
+            justify-items: stretch !important;
+          }
+
+          .live-header-actions .button {
+            width: 100%;
+          }
+
+          .live-score-header {
+            align-items: flex-start !important;
+          }
+
+          .live-kpi-grid {
+            grid-template-columns: 1fr !important;
+          }
+
+          .live-hole-scroller {
+            display: none !important;
+          }
+
+          .live-hole-grid-mobile {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+          }
+
+          .live-summary-action {
+            justify-content: stretch !important;
+          }
+
+          .live-summary-action .button {
+            width: 100%;
+          }
+        }
+
+        @media (max-width: 420px) {
+          .live-hole-grid-mobile {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
       <div className="container" style={{ display: 'grid', gap: 16 }}>
         <div className="card" style={{ padding: 20, display: 'grid', gap: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+          <div
+            style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}
+          >
             <div style={{ display: 'grid', gap: 6 }}>
               <div className="badge">Publik livevy</div>
               <h1 className="title" style={{ margin: 0 }}>
@@ -603,7 +653,7 @@ export default async function RoundLivePage({
               </div>
             </div>
 
-            <div style={{ display: 'grid', gap: 8, justifyItems: 'end' }}>
+            <div className="live-header-actions" style={{ display: 'grid', gap: 8, justifyItems: 'end' }}>
               <LiveAutoRefresh intervalMs={15000} />
               <Link className="button secondary" href="/dashboard">
                 Till startsidan
@@ -730,7 +780,24 @@ export default async function RoundLivePage({
                       : '#fff',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                {(() => {
+                  const visibleHoles = holes.filter(
+                    (hole) =>
+                      hole.hole_number >= startHole && hole.hole_number <= currentHole
+                  )
+                  const mobileHolePreview = visibleHoles.slice(-6)
+
+                  return (
+                    <>
+                <div
+                  className="live-score-header"
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    flexWrap: 'wrap',
+                  }}
+                >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <UserAvatar
                       name={entry.name}
@@ -752,6 +819,7 @@ export default async function RoundLivePage({
                 </div>
 
                 <div
+                  className="live-kpi-grid"
                   style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
@@ -802,6 +870,7 @@ export default async function RoundLivePage({
                 </div>
 
                 <div
+                  className="live-hole-scroller"
                   style={{
                     border: '1px solid #e5e7eb',
                     borderRadius: 12,
@@ -811,9 +880,7 @@ export default async function RoundLivePage({
                   }}
                 >
                   <div style={{ display: 'grid', gridAutoFlow: 'column', gap: 8, width: 'max-content' }}>
-                    {holes
-                      .filter((hole) => hole.hole_number >= startHole && hole.hole_number <= currentHole)
-                      .map((hole) => {
+                    {visibleHoles.map((hole) => {
                         const score = scoreByPlayerHole.get(`${entry.playerId}:${hole.hole_number}`)
                         const strokes = typeof score?.strokes === 'number' ? score.strokes : null
                         const vsPar = strokes !== null ? scoreVsPar(strokes, hole.par) : null
@@ -871,11 +938,67 @@ export default async function RoundLivePage({
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <div className="live-hole-grid-mobile">
+                  {mobileHolePreview.map((hole) => {
+                    const score = scoreByPlayerHole.get(`${entry.playerId}:${hole.hole_number}`)
+                    const strokes = typeof score?.strokes === 'number' ? score.strokes : null
+                    const activeHoleIndexes = holes
+                      .filter((h) => {
+                        const player = playerById.get(entry.playerId)
+                        if (!player) return false
+                        const from = Math.max(player.active_from_hole ?? startHole, startHole)
+                        const to = Math.min(player.active_to_hole ?? endHole, endHole)
+                        return h.hole_number >= from && h.hole_number <= to
+                      })
+                      .map((h) => h.hcp_index)
+
+                    const points =
+                      strokes !== null
+                        ? stablefordPoints(
+                            strokes,
+                            hole.par,
+                            getReceivedStrokesForSelectedHole(
+                              playerById.get(entry.playerId)?.playing_handicap ?? 0,
+                              activeHoleIndexes,
+                              hole.hcp_index
+                            )
+                          )
+                        : null
+
+                    return (
+                      <div
+                        key={`mobile:${entry.playerId}:${hole.hole_number}`}
+                        style={{
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 12,
+                          padding: 10,
+                          background: '#fff',
+                          display: 'grid',
+                          gap: 4,
+                        }}
+                      >
+                        <div className="muted" style={{ fontSize: 11 }}>
+                          Hal {hole.hole_number} · Par {hole.par}
+                        </div>
+                        <div style={{ fontSize: 20, fontWeight: 900, color: '#1f3327', lineHeight: 1 }}>
+                          {strokes ?? '-'}
+                        </div>
+                        <div className="muted" style={{ fontSize: 11 }}>
+                          {points !== null ? `${points} p` : 'Ingen score'}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <div className="live-summary-action" style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <Link className="button secondary" href={`/rounds/${round.id}/summary`}>
                     📋 Öppna fullt scorekort (alla spelare)
                   </Link>
                 </div>
+                    </>
+                  )
+                })()}
               </div>
             ))}
           </div>
