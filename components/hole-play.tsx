@@ -570,7 +570,7 @@ function LiveLeaderboard({
               PGA-style leaderboard
             </div>
 
-            <h2 className="hp-leaderboard-title">Leaderboard</h2>
+            <h2 className="hp-leaderboard-title">NY LEADERBOARD TEST</h2>
 
             <p className="hp-leaderboard-subtitle">
               {leaderPlayer?.display_name ?? 'Ledaren'} leder just nu
