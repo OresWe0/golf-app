@@ -139,6 +139,48 @@ export default async function NewRoundPage() {
             grid-template-columns: 1fr;
           }
         }
+
+        @media (max-width: 720px) {
+          .new-round-shell {
+            gap: 14px;
+          }
+
+          .new-round-hero,
+          .new-round-form-card {
+            border-radius: 22px;
+          }
+
+          .new-round-hero {
+            padding: 18px !important;
+          }
+
+          .new-round-form-card {
+            padding: 16px !important;
+          }
+
+          .new-round-top-row {
+            gap: 12px;
+          }
+
+          .new-round-top-row .button {
+            width: 100%;
+            min-width: 0 !important;
+          }
+
+          .new-round-page-title {
+            font-size: clamp(1.8rem, 8vw, 2.4rem) !important;
+            line-height: 0.98 !important;
+          }
+
+          .new-round-page-copy {
+            font-size: 15px !important;
+          }
+
+          .new-round-info-card {
+            border-radius: 16px;
+            padding: 12px;
+          }
+        }
       `}</style>
 
       <div
@@ -177,6 +219,7 @@ export default async function NewRoundPage() {
                   </span>
 
                   <h1
+                    className="new-round-page-title"
                     style={{
                       marginTop: 16,
                       marginBottom: 10,
@@ -189,7 +232,7 @@ export default async function NewRoundPage() {
                   </h1>
 
                   <p
-                    className="muted"
+                    className="new-round-page-copy muted"
                     style={{
                       margin: 0,
                       lineHeight: 1.6,

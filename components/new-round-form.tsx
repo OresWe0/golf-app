@@ -268,6 +268,9 @@ export function NewRoundForm({
   const holesModeLabel =
     holesMode === 18 ? '18 hål' : nineHoleSide === 'front' ? '9 hål · Främre 9' : '9 hål · Bakre 9'
 
+  const compactHolesLabel =
+    holesMode === 18 ? '18 hal' : nineHoleSide === 'front' ? 'Framre 9' : 'Bakre 9'
+
   const dynamicCtaLabel = (() => {
     const others = normalizedPlayersPreview.filter(
       (player) => player.name.trim().toLowerCase() !== currentUser.displayName.trim().toLowerCase()
@@ -568,7 +571,102 @@ export function NewRoundForm({
   }
 
   return (
-    <div className="stack" style={{ paddingBottom: 92 }}>
+    <div className="stack new-round-mobile-shell" style={{ paddingBottom: 92 }}>
+      <style>{`
+        .new-round-mobile-shell {
+          scroll-padding-bottom: 120px;
+        }
+
+        .new-round-saved-grid {
+          display: grid;
+          gap: 10px;
+        }
+
+        .new-round-action-grid {
+          display: grid;
+          grid-template-columns: 1.2fr 1fr;
+          gap: 10px;
+          width: 100%;
+        }
+
+        .new-round-summary-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+          gap: 10px;
+          margin-top: 14px;
+          margin-bottom: 14px;
+        }
+
+        .new-round-sticky-meta {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+          margin-bottom: 10px;
+        }
+
+        .new-round-sticky-pill {
+          min-width: 0;
+          padding: 8px 10px;
+          border-radius: 14px;
+          background: #f3f7f4;
+          border: 1px solid #dbe7df;
+        }
+
+        .new-round-sticky-pill-label {
+          margin-bottom: 4px;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+
+        .new-round-sticky-pill-value {
+          overflow: hidden;
+          font-size: 13px;
+          font-weight: 900;
+          line-height: 1.25;
+          color: #1f3327;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        @media (max-width: 720px) {
+          .new-round-mobile-shell {
+            gap: 12px;
+            padding-bottom: 102px !important;
+          }
+
+          .new-round-saved-grid {
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(280px, 86%);
+            overflow-x: auto;
+            padding-bottom: 4px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .new-round-saved-grid > * {
+            scroll-snap-align: start;
+          }
+
+          .new-round-action-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .new-round-summary-grid {
+            grid-template-columns: 1fr;
+            margin-top: 12px;
+            margin-bottom: 12px;
+          }
+        }
+
+        @media (max-width: 520px) {
+          .new-round-sticky-meta {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
       <div className="card" style={heroCardStyle}>
         <div style={{ display: 'grid', gap: 14 }}>
           <div>
@@ -700,7 +798,7 @@ export function NewRoundForm({
               </p>
             </div>
 
-            <div style={{ display: 'grid', gap: 10 }}>
+            <div className="new-round-saved-grid">
               {savedSetups.map((setup) => {
                 const courseName =
                   courses.find((course) => course.id === setup.courseId)?.name ?? 'Vald bana'
@@ -769,7 +867,11 @@ export function NewRoundForm({
         </div>
       ) : null}
 
-      <div ref={customizeSectionRef} className="card" style={heroCardStyle}>
+      <div
+        ref={customizeSectionRef}
+        className="card"
+        style={{ ...heroCardStyle, scrollMarginTop: 24 }}
+      >
         <div style={{ display: 'grid', gap: 14 }}>
           <div>
             <div
@@ -1048,7 +1150,11 @@ export function NewRoundForm({
         </div>
       </div>
 
-      <div ref={playerSectionRef} className="card" style={sectionCardStyle}>
+      <div
+        ref={playerSectionRef}
+        className="card"
+        style={{ ...sectionCardStyle, scrollMarginTop: 24 }}
+      >
         <div style={{ display: 'grid', gap: 14 }}>
           <div
             style={{
@@ -1066,14 +1172,7 @@ export function NewRoundForm({
               </p>
             </div>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1.2fr 1fr',
-                gap: 10,
-                width: '100%',
-              }}
-            >
+            <div className="new-round-action-grid">
               <button type="button" className="button" onClick={addRegisteredPlayer}>
                 {recentlyAddedType === 'registered'
                   ? 'Spelare tillagd ↓'
@@ -1301,15 +1400,7 @@ export function NewRoundForm({
             <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>Bana</div>
             <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.1 }}>{selectedCourseName}</div>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))',
-                gap: 10,
-                marginTop: 14,
-                marginBottom: 14,
-              }}
-            >
+            <div className="new-round-summary-grid">
               <div
                 style={{
                   background: '#f8fafc',
@@ -1403,6 +1494,7 @@ export function NewRoundForm({
       ) : null}
 
       <div
+        className="new-round-sticky-shell"
         style={{
           position: 'sticky',
           bottom: 0,
@@ -1414,6 +1506,7 @@ export function NewRoundForm({
         }}
       >
         <div
+          className="new-round-sticky-panel"
           style={{
             padding: 12,
             borderRadius: 20,
@@ -1423,6 +1516,27 @@ export function NewRoundForm({
             backdropFilter: 'blur(8px)',
           }}
         >
+          <div className="new-round-sticky-meta">
+            <div className="new-round-sticky-pill">
+              <div className="new-round-sticky-pill-label">Bana</div>
+              <div className="new-round-sticky-pill-value">{selectedCourseName}</div>
+            </div>
+
+            <div className="new-round-sticky-pill">
+              <div className="new-round-sticky-pill-label">Spelare</div>
+              <div className="new-round-sticky-pill-value">
+                {normalizedPlayersPreview.length} klara
+              </div>
+            </div>
+
+            <div className="new-round-sticky-pill">
+              <div className="new-round-sticky-pill-label">Format</div>
+              <div className="new-round-sticky-pill-value">
+                {roundModeLabel} · {compactHolesLabel}
+              </div>
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={submit}
