@@ -1665,6 +1665,91 @@ function CompletedRoundCard({
   )
 }
 
+function CompletedRoundSwipeCard({
+  round,
+  membershipRole,
+}: {
+  round: RoundWithCreatedAt
+  membershipRole?: Membership['role']
+}) {
+  const role = getRoleLabel(membershipRole)
+  const scoring = getScoringLabel(round.scoring_mode)
+  const roundDate = formatRoundDate(round.created_at)
+  const holesLabel = Number(round.holes_mode) === 9 ? '9 hal' : '18 hal'
+
+  return (
+    <div
+      style={{
+        border: '1px solid #dbeedc',
+        borderRadius: 22,
+        background: 'linear-gradient(180deg, #f9fdf9 0%, #f3faf5 100%)',
+        padding: 16,
+        display: 'grid',
+        gap: 10,
+        boxShadow: '0 16px 32px rgba(34, 197, 94, 0.08)',
+        minHeight: 210,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: 10,
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: 24,
+              lineHeight: 1.05,
+              fontWeight: 900,
+              color: '#1f3327',
+              marginBottom: 8,
+            }}
+          >
+            {round.title}
+          </div>
+          <div
+            className="muted"
+            style={{ fontSize: 16, lineHeight: 1.35, wordBreak: 'break-word' }}
+          >
+            {roundDate || 'Tidigare runda'}
+          </div>
+        </div>
+
+        <div
+          style={{
+            ...dashboardStyles.pill,
+            background: '#ecfdf3',
+            color: '#166534',
+            flexShrink: 0,
+          }}
+        >
+          Klar
+        </div>
+      </div>
+
+      <div className="muted" style={{ fontSize: 15 }}>
+        {scoring} · {holesLabel} · {role}
+      </div>
+
+      <Link
+        className="button secondary"
+        href={`/rounds/${round.id}/summary`}
+        style={{
+          width: '100%',
+          textAlign: 'center',
+          boxSizing: 'border-box',
+          marginTop: 4,
+        }}
+      >
+        Visa summary
+      </Link>
+    </div>
+  )
+}
+
 function ActiveRoundsSection({
   rounds,
   membershipByRoundId,
@@ -2444,12 +2529,33 @@ export default async function DashboardPage({
             background-size: cover !important;
             background-position: center 42% !important;
           }
+
+          .dashboard-rounds-carousel {
+            grid-auto-columns: minmax(320px, 36%);
+          }
         }
 
         .dashboard-header-actions,
         .dashboard-stats-grid,
         .round-meta-grid,
         .round-actions-grid {
+          min-width: 0;
+        }
+
+        .dashboard-rounds-carousel {
+          display: grid;
+          grid-auto-flow: column;
+          grid-auto-columns: minmax(280px, 78%);
+          gap: 12px;
+          overflow-x: auto;
+          padding-bottom: 4px;
+          scroll-snap-type: x mandatory;
+          scrollbar-width: thin;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .dashboard-rounds-carousel > * {
+          scroll-snap-align: start;
           min-width: 0;
         }
 
@@ -2515,6 +2621,10 @@ export default async function DashboardPage({
           .round-meta-grid,
           .round-actions-grid {
             grid-template-columns: 1fr !important;
+          }
+
+          .dashboard-rounds-carousel {
+            grid-auto-columns: 90%;
           }
         }
 
