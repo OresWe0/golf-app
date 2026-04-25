@@ -345,7 +345,8 @@ export default async function AdminCoursesPage({
   tee_key: tee.tee_key,
   label: tee.label,
   course_rating: tee.course_rating,
-  slope_rating: tee.slope_rating
+  slope_rating: tee.slope_rating,
+  tee_par: tee.par_total ?? totalPar,
 }
 
       const { error: teeError } = existing?.id
