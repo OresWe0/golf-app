@@ -25,7 +25,7 @@ type ImportedHole = {
 
 type ImportedTee = {
   tee_key: string
-  label?: string
+  label: string
   course_rating: number | null
   slope_rating: number | null
   par_total: number | null
@@ -215,7 +215,7 @@ function parseImportedCourse(raw: string): ParsedCourse {
             par_total: parTotal == null ? null : Math.floor(parTotal),
           }
         })
-        .filter((tee): tee is ImportedTee => tee !== null)
+        .filter((tee): tee is NonNullable<typeof tee> => tee !== null)
     : []
 
   requireUniqueStrings(
