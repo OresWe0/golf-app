@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { sendPushNotification } from '@/lib/send-push'
@@ -598,7 +598,10 @@ export async function POST(
     }
 
     if (round.course_id) {
-      void runFeedAndPushInBackground({
+      // Viktigt: await här.
+      // På Render/serverless kan en "void" background-task avbrytas när requesten returnerar,
+      // vilket gör att feed-events och push-notiser ibland aldrig skickas.
+      await runFeedAndPushInBackground({
         requestId,
         supabase,
         supabaseAdmin,
