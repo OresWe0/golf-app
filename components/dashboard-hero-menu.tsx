@@ -68,8 +68,8 @@ export default function DashboardHeroMenu({
   const useFixedPopover = platform === 'ios' || platform === 'android'
   const fixedPopoverTop =
     platform === 'ios'
-      ? 'calc(env(safe-area-inset-top) + 80px)'
-      : 'calc(env(safe-area-inset-top) + 72px)'
+      ? 'calc(env(safe-area-inset-top) + 96px)'
+      : 'calc(env(safe-area-inset-top) + 88px)'
   const fixedPopoverRight = 14
   const fixedPopoverWidth = 'min(84vw, 320px)'
 

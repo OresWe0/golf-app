@@ -593,7 +593,10 @@ function DashboardHeader({
         />
       </div>
 
-        <div style={{ display: 'grid', gap: 20, position: 'relative', zIndex: 1 }}>
+        <div
+          className="dashboard-hero-inner"
+          style={{ display: 'grid', gap: 20, position: 'relative', zIndex: 1 }}
+        >
           <div
             className="dashboard-hero-topbar"
             style={{
@@ -2642,10 +2645,14 @@ export default async function DashboardPage({
         }
 
         @media (max-width: 720px) {
+          .dashboard-hero-inner {
+            padding-top: calc(env(safe-area-inset-top) + 12px);
+          }
+
           .dashboard-hero-topbar {
             position: static !important;
             justify-content: flex-end;
-            margin-bottom: -4px;
+            margin-bottom: 6px;
           }
 
           .dashboard-hero-content {
