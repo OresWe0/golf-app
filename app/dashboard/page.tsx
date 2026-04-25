@@ -2749,7 +2749,7 @@ export default async function DashboardPage({
           <div id="friend-feed" className="card" style={dashboardStyles.sectionCard}>
             <SectionHeader
               title="Din statistik"
-              description="Snabb oversikt. Oppna statistik for filter och full analys."
+              description="Öppna statistik for filter och full analys."
               count={completedRounds.length}
               countTone="slate"
             />
@@ -2770,7 +2770,7 @@ export default async function DashboardPage({
                   boxSizing: 'border-box',
                 }}
               >
-                Oppna statistik
+                Öppna statistik
               </Link>
             </div>
           </div>
