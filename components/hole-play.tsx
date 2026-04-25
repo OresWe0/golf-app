@@ -358,6 +358,171 @@ function StatusToast({ saveState }: { saveState: SaveState }) {
   )
 }
 
+function HoleHeader({
+  hole,
+  totalHoles,
+  onOpenHoleImage,
+}: {
+  hole: Hole
+  totalHoles: number
+  onOpenHoleImage: () => void
+}) {
+  return (
+    <div style={styles.glassPanel}>
+      <div className="hp-grid-2">
+        <div
+          style={{
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: 22,
+            background:
+              'linear-gradient(135deg, rgba(236,253,245,0.96) 0%, rgba(220,252,231,0.92) 100%)',
+            border: '1px solid rgba(134, 239, 172, 0.65)',
+            padding: 14,
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)',
+          }}
+        >
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              right: -18,
+              top: -18,
+              width: 92,
+              height: 92,
+              borderRadius: '50%',
+              background:
+                'radial-gradient(circle, rgba(34,197,94,0.18) 0%, rgba(34,197,94,0) 72%)',
+            }}
+          />
+
+          <div
+            style={{
+              position: 'relative',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '7px 10px',
+              borderRadius: 999,
+              background: 'rgba(255,255,255,0.65)',
+              border: '1px solid rgba(134, 239, 172, 0.55)',
+              fontSize: 11,
+              fontWeight: 900,
+              color: '#166534',
+              letterSpacing: 0.6,
+              textTransform: 'uppercase',
+            }}
+          >
+            Bana & hål
+          </div>
+
+          <div
+            style={{
+              position: 'relative',
+              marginTop: 10,
+              fontSize: 28,
+              fontWeight: 950,
+              lineHeight: 1.02,
+              letterSpacing: '-0.03em',
+              color: '#0f172a',
+            }}
+          >
+            Hål {hole.hole_number}
+          </div>
+
+          <div
+            style={{
+              position: 'relative',
+              marginTop: 6,
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              alignItems: 'center',
+            }}
+          >
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 10px',
+                borderRadius: 999,
+                background: 'rgba(255,255,255,0.65)',
+                border: '1px solid rgba(134, 239, 172, 0.55)',
+                color: '#14532d',
+                fontWeight: 900,
+                fontSize: 13,
+              }}
+            >
+              Par {hole.par}
+            </span>
+
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 10px',
+                borderRadius: 999,
+                background: 'rgba(255,255,255,0.65)',
+                border: '1px solid rgba(134, 239, 172, 0.55)',
+                color: '#14532d',
+                fontWeight: 900,
+                fontSize: 13,
+              }}
+            >
+              Index {hole.hcp_index}
+            </span>
+
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 10px',
+                borderRadius: 999,
+                background: 'rgba(255,255,255,0.65)',
+                border: '1px solid rgba(134, 239, 172, 0.55)',
+                color: '#14532d',
+                fontWeight: 900,
+                fontSize: 13,
+              }}
+            >
+              {totalHoles} hål
+            </span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onOpenHoleImage}
+          style={{
+            border: '1px solid rgba(22,101,52,0.10)',
+            borderRadius: 20,
+            padding: '14px 16px',
+            background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+            color: '#fff',
+            fontSize: 15,
+            fontWeight: 900,
+            cursor: 'pointer',
+            boxShadow: '0 14px 30px rgba(34, 197, 94, 0.22)',
+            whiteSpace: 'nowrap',
+            minWidth: 128,
+            minHeight: 84,
+            display: 'grid',
+            placeItems: 'center',
+            textAlign: 'center',
+            lineHeight: 1.2,
+          }}
+        >
+          <span>⛳ Visa</span>
+          <span>banvy</span>
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function LiveLeaderboard({
   leaderboard,
   players,
@@ -396,7 +561,7 @@ function LiveLeaderboard({
   }
 
   return (
-    <section className="hp-leaderboard-shell" aria-label="Live leaderboard">
+    <section className="hp-leaderboard-shell" aria-label="Live leaderboard" style={{ display: "none" }}>
       <div className="hp-leaderboard-card">
         <div className="hp-leaderboard-hero">
           <div style={{ minWidth: 0 }}>
@@ -961,7 +1126,6 @@ function HoleImageModal({
     <div onClick={onClose} style={styles.modalBackdrop}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="hp-course-sheet"
         style={{
           width: 'min(100%, 980px)',
           maxHeight: '90vh',
@@ -2088,11 +2252,6 @@ useEffect(() => {
           100% { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        @keyframes bottomSheetIn {
-          0% { opacity: 0; transform: translateY(26px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-
         @keyframes ctaReadyPulse {
           0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.22); }
           100% { box-shadow: 0 0 0 12px rgba(34, 197, 94, 0); }
@@ -2374,46 +2533,6 @@ useEffect(() => {
           padding: 14px;
         }
 
-        .hp-course-icon-button {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 7px;
-          min-height: 38px;
-          padding: 9px 12px;
-          border-radius: 999px;
-          border: 1px solid rgba(255,255,255,0.18);
-          background: rgba(255,255,255,0.10);
-          color: #fff;
-          font-size: 16px;
-          font-weight: 900;
-          cursor: pointer;
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 24px rgba(0,0,0,0.14);
-          transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease;
-          touch-action: manipulation;
-        }
-
-        .hp-course-icon-button:active {
-          transform: scale(0.96);
-          background: rgba(255,255,255,0.16);
-        }
-
-        .hp-course-icon-button:focus-visible {
-          outline: 3px solid rgba(74,222,128,0.42);
-          outline-offset: 3px;
-        }
-
-        .hp-course-icon-label {
-          font-size: 12px;
-          letter-spacing: 0.1px;
-        }
-
-        .hp-course-sheet {
-          transform-origin: center bottom;
-        }
-
         .hp-finish-actions {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -2481,25 +2600,6 @@ useEffect(() => {
 
           .hp-score-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
-
-          .hp-course-icon-label {
-            display: none;
-          }
-
-          .hp-course-icon-button {
-            width: 38px;
-            height: 38px;
-            padding: 0;
-          }
-
-          .hp-course-sheet {
-            align-self: end;
-            width: 100% !important;
-            max-height: 88vh !important;
-            border-radius: 28px 28px 0 0 !important;
-            animation: bottomSheetIn 0.24s cubic-bezier(.2,.8,.2,1) !important;
           }
         }
 
@@ -2577,35 +2677,14 @@ useEffect(() => {
                 <div
                   style={{
                     marginTop: 12,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    flexWrap: 'wrap',
+                    fontSize: 28,
+                    lineHeight: 1.05,
+                    fontWeight: 950,
+                    letterSpacing: '-0.03em',
+                    color: '#ffffff',
                   }}
                 >
-                  <div
-                    className="hp-live-hero-title"
-                    style={{
-                      fontSize: 28,
-                      lineHeight: 1.05,
-                      fontWeight: 950,
-                      letterSpacing: '-0.03em',
-                      color: '#ffffff',
-                    }}
-                  >
-                    Hål {currentHole} av {totalHoles}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={openHoleImage}
-                    aria-label={`Visa banvy för hål ${currentHole}`}
-                    title="Visa banvy"
-                    className="hp-course-icon-button"
-                  >
-                    <span aria-hidden="true">🗺️</span>
-                    <span className="hp-course-icon-label">Banvy</span>
-                  </button>
+                  Hål {currentHole} av {totalHoles}
                 </div>
 
                 <div
@@ -2725,6 +2804,14 @@ useEffect(() => {
               </div>
             </div>
           </div>
+
+          <HoleHeader hole={hole} totalHoles={totalHoles} onOpenHoleImage={openHoleImage} />
+          <LiveLeaderboard
+            leaderboard={leaderboard}
+            players={players}
+            startHole={startHole}
+            endHole={endHole}
+          />
         </div>
 
         <div style={{ display: 'grid', gap: 14 }}>
