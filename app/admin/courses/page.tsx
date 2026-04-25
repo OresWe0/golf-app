@@ -341,12 +341,12 @@ export default async function AdminCoursesPage({
       }
 
       const teePayload = {
-        course_id: courseId,
-        tee_key: tee.tee_key,
-        course_rating: tee.course_rating,
-        slope_rating: tee.slope_rating,
-        par_total: tee.par_total,
-      }
+  course_id: courseId,
+  tee_key: tee.tee_key,
+  label: tee.label,
+  course_rating: tee.course_rating,
+  slope_rating: tee.slope_rating
+}
 
       const { error: teeError } = existing?.id
         ? await supabase
