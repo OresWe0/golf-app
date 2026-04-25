@@ -1718,11 +1718,9 @@ function ActiveRoundsSection({
           {rounds.length > ACTIVE_ROUNDS_PREVIEW_COUNT ? (
             <div
               style={{
-                display: 'flex',
-                justifyContent: 'center',
+                display: 'grid',
                 gap: 10,
-                flexWrap: 'wrap',
-                marginTop: 4,
+                marginTop: 2,
               }}
             >
               {showAll ? (
@@ -1763,9 +1761,8 @@ function CompletedRoundsSection({
   showAll: boolean
   showAllActive: boolean
 }) {
-  const visibleRounds = showAll
-    ? rounds
-    : rounds.slice(0, COMPLETED_ROUNDS_PREVIEW_COUNT)
+  const latestRounds = rounds.slice(0, Math.min(rounds.length, 8))
+  const canExpand = rounds.length > latestRounds.length
 
   const hiddenCount = Math.max(
     rounds.length - COMPLETED_ROUNDS_PREVIEW_COUNT,
@@ -1796,16 +1793,43 @@ function CompletedRoundsSection({
           description="När du avslutar en runda visas den här."
         />
       ) : (
-        <div style={{ display: 'grid', gap: 10 }}>
-          {visibleRounds.map((round) => (
-            <CompletedRoundCard
-              key={round.id}
-              round={round}
-              membershipRole={membershipByRoundId.get(round.id)}
-            />
-          ))}
+        <div style={{ display: 'grid', gap: 12 }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 10,
+              flexWrap: 'wrap',
+            }}
+          >
+            <div className="muted" style={{ fontSize: 13 }}>
+              Swipea mellan senaste rundorna.
+            </div>
+            {canExpand || showAll ? (
+              <Link
+                href={showAll ? showLessHref : showMoreHref}
+                scroll={false}
+                className="button secondary"
+                style={{ minWidth: 128, textAlign: 'center' }}
+              >
+                {showAll ? 'Visa senaste' : `Visa alla${hiddenCount > 0 ? ` (${hiddenCount})` : ''}`}
+              </Link>
+            ) : null}
+          </div>
 
-          {rounds.length > COMPLETED_ROUNDS_PREVIEW_COUNT ? (
+          <div className="dashboard-rounds-carousel" role="list" aria-label="Senaste rundor">
+            {latestRounds.map((round) => (
+              <div key={round.id} role="listitem">
+                <CompletedRoundSwipeCard
+                  round={round}
+                  membershipRole={membershipByRoundId.get(round.id)}
+                />
+              </div>
+            ))}
+          </div>
+
+          {showAll ? (
             <div
               style={{
                 display: 'flex',
