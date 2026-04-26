@@ -2742,6 +2742,32 @@ useEffect(() => {
                     {completedPlayersCount}/{players.length}
                   </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={openHoleImage}
+                  style={{
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: 16,
+                    padding: '12px 14px',
+                    background:
+                      'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.06) 100%)',
+                    color: '#ffffff',
+                    fontSize: 13,
+                    fontWeight: 900,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    minHeight: 52,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    boxShadow: '0 10px 24px rgba(15, 23, 42, 0.18)',
+                  }}
+                >
+                  <span aria-hidden="true">⛳</span>
+                  <span>Se banvy</span>
+                </button>
               </div>
             </div>
 
@@ -2805,7 +2831,6 @@ useEffect(() => {
             </div>
           </div>
 
-          <HoleHeader hole={hole} totalHoles={totalHoles} onOpenHoleImage={openHoleImage} />
           <LiveLeaderboard
             leaderboard={leaderboard}
             players={players}
