@@ -1037,19 +1037,51 @@ export default async function RoundLivePage({
 
         .premium-quick-cheers {
           display: flex;
-          gap: 8px;
+          gap: 10px;
           overflow-x: auto;
-          padding-bottom: 2px;
+          padding: 2px 2px 8px;
+          margin-inline: -2px;
+          scroll-snap-type: x proximity;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .premium-quick-cheers::-webkit-scrollbar {
+          display: none;
         }
 
         .premium-quick-cheers button {
-          border: 1px solid rgba(22, 133, 62, 0.16);
-          background: var(--green-50);
+          flex: 0 0 92px;
+          min-height: 82px;
+          border: 1px solid rgba(22, 133, 62, 0.18);
+          background: linear-gradient(180deg, #f8fffa 0%, #eef9f1 100%);
           color: var(--green-900);
-          border-radius: 999px;
-          padding: 9px 12px;
-          font-weight: 900;
-          white-space: nowrap;
+          border-radius: 22px;
+          padding: 10px 8px;
+          font-weight: 950;
+          font-size: 13px;
+          line-height: 1.1;
+          white-space: normal;
+          display: inline-flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          text-align: center;
+          scroll-snap-align: start;
+          box-shadow: 0 8px 18px rgba(22, 62, 38, 0.06);
+        }
+
+        .premium-quick-cheers button:active {
+          transform: translateY(1px);
+        }
+
+        .premium-cheer-emoji {
+          font-size: 25px;
+          line-height: 1;
+        }
+
+        .premium-cheer-label {
+          display: block;
         }
 
         .premium-chat-list {
@@ -1462,9 +1494,16 @@ export default async function RoundLivePage({
           <form action={sendRoundCheer} className="premium-cheer-form">
             <input type="hidden" name="round_id" value={round.id} />
             <div className="premium-quick-cheers" aria-label="Snabba hejarop">
-              {['Snyggt kämpat! 🔥', 'Nu kommer birdien! 🐦', 'Stabilt spel ⛳️', 'Kom igen! 💪'].map((message) => (
-                <button key={message} type="submit" name="message" value={message}>
-                  {message}
+              {[
+                { label: 'Snyggt!', emoji: '👏', message: 'Snyggt kämpat! 🔥' },
+                { label: 'Kämpa!', emoji: '💪', message: 'Kämpa på! 💪' },
+                { label: 'Birdie!', emoji: '🐦', message: 'Nu kommer birdien! 🐦' },
+                { label: 'Stabilt!', emoji: '⛳️', message: 'Stabilt spel ⛳️' },
+                { label: 'Kom igen!', emoji: '🙌', message: 'Kom igen! 🙌' },
+              ].map((item) => (
+                <button key={item.message} type="submit" name="message" value={item.message}>
+                  <span className="premium-cheer-emoji" aria-hidden="true">{item.emoji}</span>
+                  <span className="premium-cheer-label">{item.label}</span>
                 </button>
               ))}
             </div>
