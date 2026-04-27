@@ -561,7 +561,7 @@ function LiveLeaderboard({
   }
 
   return (
-    <section className="hp-leaderboard-shell" aria-label="Live leaderboard" style={{ display: "none" }}>
+    <section className="hp-leaderboard-shell" aria-label="Live leaderboard">
       <div className="hp-leaderboard-card">
         <div className="hp-leaderboard-hero">
           <div style={{ minWidth: 0 }}>
