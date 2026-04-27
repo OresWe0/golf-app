@@ -366,6 +366,7 @@ function GameTabs({ scoringMode }: { scoringMode: RoundLike['scoring_mode'] }) {
 function CompactLeaderboard({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
   return (
     <section
+      className="compact-leaderboard premium-leaderboard"
       style={{
         borderRadius: 18,
         overflow: 'hidden',
@@ -375,6 +376,7 @@ function CompactLeaderboard({ leaderboard }: { leaderboard: LeaderboardEntry[] }
       }}
     >
       <div
+        className="premium-leaderboard-head"
         style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -389,10 +391,11 @@ function CompactLeaderboard({ leaderboard }: { leaderboard: LeaderboardEntry[] }
         <div style={{ fontSize: 12, fontWeight: 800, color: '#5e6f64' }}>Live • NET</div>
       </div>
 
-      <div style={{ display: 'grid', gap: 8, padding: 10 }}>
+      <div className="premium-leaderboard-list" style={{ display: 'grid', gap: 8, padding: 10 }}>
         {leaderboard.map((entry) => (
           <div
             key={entry.playerId}
+            className="premium-leaderboard-row"
             style={{
               display: 'grid',
               gridTemplateColumns: '46px minmax(0, 1fr) auto',
@@ -406,6 +409,7 @@ function CompactLeaderboard({ leaderboard }: { leaderboard: LeaderboardEntry[] }
             }}
           >
             <div
+              className="premium-leaderboard-pos"
               style={{
                 width: 38,
                 height: 38,
@@ -421,8 +425,9 @@ function CompactLeaderboard({ leaderboard }: { leaderboard: LeaderboardEntry[] }
               {entry.position}.
             </div>
 
-            <div style={{ minWidth: 0 }}>
+            <div className="premium-leaderboard-player" style={{ minWidth: 0 }}>
               <div
+                className="premium-leaderboard-name"
                 style={{
                   fontSize: 23,
                   lineHeight: 1.05,
@@ -435,14 +440,14 @@ function CompactLeaderboard({ leaderboard }: { leaderboard: LeaderboardEntry[] }
               >
                 {entry.playerName}
               </div>
-              <div style={{ color: '#6b7d72', fontWeight: 800, fontSize: 12 }}>Till par {formatToPar(entry.totalToPar)}</div>
+              <div className="premium-leaderboard-meta" style={{ color: '#6b7d72', fontWeight: 800, fontSize: 12 }}>Till par {formatToPar(entry.totalToPar)}</div>
             </div>
 
-            <div style={{ textAlign: 'right', minWidth: 72 }}>
-              <div style={{ fontSize: 24, fontWeight: 950, color: '#1f2937', lineHeight: 1 }}>
+            <div className="premium-leaderboard-score-wrap" style={{ textAlign: 'right', minWidth: 72 }}>
+              <div className="premium-leaderboard-score" style={{ fontSize: 24, fontWeight: 950, color: '#1f2937', lineHeight: 1 }}>
                 {entry.totalStrokes ?? '-'}
               </div>
-              <div style={{ marginTop: 4, fontSize: 11, fontWeight: 800, color: '#6b7280' }}>
+              <div className="premium-leaderboard-score-label" style={{ marginTop: 4, fontSize: 11, fontWeight: 800, color: '#6b7280' }}>
                 slag
               </div>
             </div>
@@ -481,7 +486,7 @@ function ScorecardTable({
 
   return (
     <div className="scorecard-table-wrap" style={{ overflowX: 'auto' }}>
-      <table className="scorecard-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760, tableLayout: 'fixed' }}>
+      <table className="scorecard-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640, tableLayout: 'fixed' }}>
         <thead>
           <tr>
             <th style={greenHeadCell}>Hål</th>
@@ -491,7 +496,7 @@ function ScorecardTable({
         </thead>
         <tbody>
           <tr>
-            <td style={labelCell}>Handicap</td>
+            <td style={labelCell}>HCP</td>
             {holes.map((hole) => <td key={hole.hole_number} style={plainCell}>{hole.hcp_index}</td>)}
             <td style={plainCell}></td>
           </tr>
@@ -501,7 +506,7 @@ function ScorecardTable({
             <td style={plainCell}>{totalPar}</td>
           </tr>
           <tr>
-            <td style={labelCellBold}>Resultat</td>
+            <td style={labelCellBold}>Res</td>
             {holes.map((hole) => {
               const strokes = rowsByHole.get(hole.hole_number)?.strokes ?? null
               const bg = getScoreColor(strokes, hole.par)
@@ -576,7 +581,7 @@ function PlayerScorecard({
 
       <div className="player-scorecard-summary" style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr 1fr', gap: 8, padding: '18px 16px', borderTop: '1px solid #e5e7eb', alignItems: 'center' }}>
         <div style={summaryStatStyle}>Par <strong>{totals.totalPar}</strong></div>
-        <div style={summaryStatStyle}>Resultat <strong>{totals.totalStrokes || '-'}/{totals.totalNet || '-'}</strong></div>
+        <div style={summaryStatStyle}>Res <strong>{totals.totalStrokes || '-'}/{totals.totalNet || '-'}</strong></div>
         <div style={{ ...summaryStatStyle, textAlign: 'right' }}>Position <strong>{position}.</strong></div>
       </div>
     </article>
@@ -630,21 +635,27 @@ const leaderHeaderCell: React.CSSProperties = {
 }
 
 const greenHeadCell: React.CSSProperties = {
-  padding: '12px 8px',
+  padding: '10px 6px',
   background: '#149654',
   color: '#fff',
-  fontSize: 20,
+  fontSize: 'clamp(15px, 3.8vw, 19px)',
   fontWeight: 950,
   borderRight: '1px solid rgba(255,255,255,0.14)',
+  whiteSpace: 'nowrap',
 }
 
 const labelCell: React.CSSProperties = {
-  padding: '11px 8px',
+  padding: '10px 10px',
   textAlign: 'left',
-  fontSize: 20,
+  fontSize: 'clamp(14px, 3.5vw, 18px)',
   color: '#3a4244',
   border: '1px solid #eef0f2',
   background: '#fff',
+  minWidth: 86,
+  width: 86,
+  whiteSpace: 'nowrap',
+  fontWeight: 800,
+  letterSpacing: '-0.01em',
 }
 
 const labelCellBold: React.CSSProperties = {
@@ -655,11 +666,13 @@ const labelCellBold: React.CSSProperties = {
 const plainCell: React.CSSProperties = {
   padding: '10px 6px',
   textAlign: 'center',
-  fontSize: 20,
+  fontSize: 'clamp(15px, 3.4vw, 19px)',
   color: '#30383d',
   border: '1px solid #eef0f2',
   background: '#fff',
   fontWeight: 650,
+  fontVariantNumeric: 'tabular-nums',
+  whiteSpace: 'nowrap',
 }
 
 const plainCellBold: React.CSSProperties = {
