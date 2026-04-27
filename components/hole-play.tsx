@@ -2903,15 +2903,7 @@ useEffect(() => {
             </div>
           </div>
 
-          <LiveLeaderboard
-            leaderboard={leaderboard}
-            players={players}
-            startHole={startHole}
-            endHole={endHole}
-            roundId={roundId}
-            currentHole={currentHole}
-          />
-        </div>
+          </div>
 
         <div style={{ display: 'grid', gap: 14 }}>
           {players.map((player, index) => {

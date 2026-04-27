@@ -319,7 +319,7 @@ function PremiumLeaderboard({
             </p>
           </div>
 
-          <Link
+<a
   href={`/rounds/${roundId}/summary?hole=${currentHoleNumber}`}
   style={{
     color: '#fff',
@@ -331,12 +331,10 @@ function PremiumLeaderboard({
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: 'nowrap',
-    position: 'relative',
-    zIndex: 9999, // 👈 DETTA ÄR FIXEN
   }}
 >
   Visa allt
-</Link>
+</a>
         </div>
 
         <div
