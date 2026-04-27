@@ -295,11 +295,15 @@ function SummaryHero({
   roundId: string
 }) {
   return (
-    <section style={{ textAlign: 'center', padding: '18px 8px 10px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr 56px', alignItems: 'center', gap: 10 }}>
+    <section className="summary-hero" style={{ textAlign: 'center', padding: '18px 8px 10px' }}>
+      <div
+        className="summary-hero-grid"
+        style={{ display: 'grid', gridTemplateColumns: '56px 1fr 56px', alignItems: 'center', gap: 10 }}
+      >
         <Link
           href={`/rounds/${roundId}?hole=${currentHoleNumber}`}
           aria-label="Tillbaka till rundan"
+          className="summary-back-button"
           style={{
             width: 52,
             height: 52,
@@ -317,24 +321,27 @@ function SummaryHero({
           ‹
         </Link>
 
-        <div style={{ minWidth: 0 }}>
-          <h1 style={{ margin: 0, fontSize: 'clamp(28px, 7vw, 42px)', lineHeight: 1.05, fontWeight: 950 }}>
+        <div style={{ minWidth: 0 }} className="summary-hero-title-wrap">
+          <h1
+            className="summary-title"
+            style={{ margin: 0, fontSize: 'clamp(28px, 7vw, 42px)', lineHeight: 1.05, fontWeight: 950 }}
+          >
             {roundTitle}
           </h1>
-          <p style={{ margin: '3px 0 0', color: '#56645b', fontSize: 20, fontWeight: 800 }}>
+          <p className="summary-course" style={{ margin: '3px 0 0', color: '#56645b', fontSize: 20, fontWeight: 800 }}>
             {courseName}
           </p>
         </div>
 
-        <div style={{ color: '#166534', fontSize: 22, fontWeight: 950, lineHeight: 0.92, textAlign: 'right' }}>
+        <div className="summary-brand" style={{ color: '#166534', fontSize: 22, fontWeight: 950, lineHeight: 0.92, textAlign: 'right' }}>
           GOLF<br />RUNDAN
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>
-        <span style={pillStyle}>🏆 Leaderboard</span>
-        <span style={pillStyle}>{modeLabel}</span>
-        <span style={pillStyle}>Hål {currentHoleNumber}/{totalHoles}</span>
+      <div className="summary-pills" style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>
+        <span className="summary-pill" style={pillStyle}>🏆 Leaderboard</span>
+        <span className="summary-pill" style={pillStyle}>{modeLabel}</span>
+        <span className="summary-pill" style={pillStyle}>Hål {currentHoleNumber}/{totalHoles}</span>
       </div>
     </section>
   )
@@ -345,11 +352,11 @@ function GameTabs({ scoringMode }: { scoringMode: RoundLike['scoring_mode'] }) {
   const inactiveLabel = scoringMode === 'stableford' ? 'Slagspel NET' : 'Poängbogey NET'
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', marginTop: 8, boxShadow: '0 8px 22px rgba(0,0,0,0.12)', borderRadius: '18px 18px 0 0', overflow: 'hidden' }}>
-      <div style={{ padding: '17px 10px', textAlign: 'center', background: '#13ad6b', color: '#fff', fontSize: 22, fontWeight: 950 }}>
+    <div className="game-tabs" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', marginTop: 8, boxShadow: '0 8px 22px rgba(0,0,0,0.12)', borderRadius: '18px 18px 0 0', overflow: 'hidden' }}>
+      <div className="game-tab game-tab-active" style={{ padding: '17px 10px', textAlign: 'center', background: '#13ad6b', color: '#fff', fontSize: 22, fontWeight: 950 }}>
         {activeLabel}
       </div>
-      <div style={{ padding: '17px 10px', textAlign: 'center', background: '#d9d9d9', color: '#3e4640', fontSize: 22, fontWeight: 950 }}>
+      <div className="game-tab game-tab-inactive" style={{ padding: '17px 10px', textAlign: 'center', background: '#d9d9d9', color: '#3e4640', fontSize: 22, fontWeight: 950 }}>
         {inactiveLabel}
       </div>
     </div>
@@ -358,30 +365,34 @@ function GameTabs({ scoringMode }: { scoringMode: RoundLike['scoring_mode'] }) {
 
 function CompactLeaderboard({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
   return (
-    <section style={{ borderRadius: 0, overflow: 'hidden', border: '1px solid #0ea55d', borderTop: 0 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr 96px 86px 74px', gap: 0, background: '#353836', color: '#fff', fontSize: 13, fontWeight: 950, textTransform: 'uppercase' }}>
-        <div style={leaderHeaderCell}>#</div>
-        <div style={leaderHeaderCell}>Namn</div>
-        <div style={leaderHeaderCell}>Resultat</div>
-        <div style={leaderHeaderCell}>Till par</div>
-        <div style={leaderHeaderCell}>Spelat</div>
-      </div>
-
-      <div style={{ background: '#10a968', padding: 8, display: 'grid', gap: 8 }}>
-        {leaderboard.map((entry) => (
-          <div key={entry.playerId} style={{ display: 'grid', gridTemplateColumns: '56px 1fr 96px 86px 74px', alignItems: 'center', background: '#fff', borderRadius: 10, minHeight: 74, overflow: 'hidden' }}>
-            <div style={{ padding: '0 12px', fontSize: 22 }}>{entry.position}.</div>
-            <div style={{ padding: '10px 6px', minWidth: 0 }}>
-              <div style={{ fontSize: 24, lineHeight: 1.05, color: '#374047', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {entry.playerName}
-              </div>
-              <div style={{ color: '#75807a', fontWeight: 800 }}>HCP</div>
-            </div>
-            <div style={{ textAlign: 'center', fontSize: 27, fontWeight: 800, color: '#30383d' }}>{entry.totalStrokes || '-'}</div>
-            <div style={{ textAlign: 'center', fontSize: 30, fontWeight: 950, color: '#000' }}>{formatToPar(entry.totalToPar)}</div>
-            <div style={{ textAlign: 'center', fontSize: 24, fontWeight: 800, color: '#30383d' }}>F</div>
+    <section className="compact-leaderboard" style={{ borderRadius: 0, overflow: 'hidden', border: '1px solid #0ea55d', borderTop: 0 }}>
+      <div className="compact-leaderboard-scroll">
+        <div className="compact-leaderboard-table">
+          <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr 96px 86px 74px', gap: 0, background: '#353836', color: '#fff', fontSize: 13, fontWeight: 950, textTransform: 'uppercase' }}>
+            <div style={leaderHeaderCell}>#</div>
+            <div style={leaderHeaderCell}>Namn</div>
+            <div style={leaderHeaderCell}>Resultat</div>
+            <div style={leaderHeaderCell}>Till par</div>
+            <div style={leaderHeaderCell}>Spelat</div>
           </div>
-        ))}
+
+          <div style={{ background: '#10a968', padding: 8, display: 'grid', gap: 8 }}>
+            {leaderboard.map((entry) => (
+              <div key={entry.playerId} className="compact-leaderboard-row" style={{ display: 'grid', gridTemplateColumns: '56px 1fr 96px 86px 74px', alignItems: 'center', background: '#fff', borderRadius: 10, minHeight: 74, overflow: 'hidden' }}>
+                <div style={{ padding: '0 12px', fontSize: 22 }}>{entry.position}.</div>
+                <div style={{ padding: '10px 6px', minWidth: 0 }}>
+                  <div style={{ fontSize: 24, lineHeight: 1.05, color: '#374047', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {entry.playerName}
+                  </div>
+                  <div style={{ color: '#75807a', fontWeight: 800 }}>HCP</div>
+                </div>
+                <div style={{ textAlign: 'center', fontSize: 27, fontWeight: 800, color: '#30383d' }}>{entry.totalStrokes || '-'}</div>
+                <div style={{ textAlign: 'center', fontSize: 30, fontWeight: 950, color: '#000' }}>{formatToPar(entry.totalToPar)}</div>
+                <div style={{ textAlign: 'center', fontSize: 24, fontWeight: 800, color: '#30383d' }}>F</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   )
@@ -414,8 +425,8 @@ function ScorecardTable({
   }, 0)
 
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760, tableLayout: 'fixed' }}>
+    <div className="scorecard-table-wrap" style={{ overflowX: 'auto' }}>
+      <table className="scorecard-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760, tableLayout: 'fixed' }}>
         <thead>
           <tr>
             <th style={greenHeadCell}>Hål</th>
@@ -494,21 +505,21 @@ function PlayerScorecard({
   const totals = calculatePlayerTotals({ player, holes, scoreRows })
 
   return (
-    <article style={{ borderRadius: 22, background: '#fff', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 16px 34px rgba(0,0,0,0.10)' }}>
-      <div style={{ padding: '14px 16px 10px', display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'start' }}>
+    <article className="player-scorecard" style={{ borderRadius: 22, background: '#fff', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 16px 34px rgba(0,0,0,0.10)' }}>
+      <div className="player-scorecard-head" style={{ padding: '14px 16px 10px', display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'start' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 26, color: '#273238' }}>{player.display_name ?? 'Spelare'}</h2>
-          <p style={{ margin: '4px 0 0', color: '#65756b', fontWeight: 850 }}>
+          <h2 className="player-scorecard-name" style={{ margin: 0, fontSize: 26, color: '#273238' }}>{player.display_name ?? 'Spelare'}</h2>
+          <p className="player-scorecard-meta" style={{ margin: '4px 0 0', color: '#65756b', fontWeight: 850 }}>
             HCP {player.exact_handicap ?? '-'} · Spelade hål {totals.playedHoles}
           </p>
         </div>
-        <span style={{ ...pillStyle, fontSize: 14 }}>{player.tee_key ?? 'Tee'}</span>
+        <span className="player-tee-pill" style={{ ...pillStyle, fontSize: 14 }}>{player.tee_key ?? 'Tee'}</span>
       </div>
 
       {frontNine.length > 0 && <ScorecardTable player={player} holes={frontNine} scoreRows={scoreRows} label="Ut" />}
       {backNine.length > 0 && <ScorecardTable player={player} holes={backNine} scoreRows={scoreRows} label="In" />}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr 1fr', gap: 8, padding: '18px 16px', borderTop: '1px solid #e5e7eb', alignItems: 'center' }}>
+      <div className="player-scorecard-summary" style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr 1fr', gap: 8, padding: '18px 16px', borderTop: '1px solid #e5e7eb', alignItems: 'center' }}>
         <div style={summaryStatStyle}>Par <strong>{totals.totalPar}</strong></div>
         <div style={summaryStatStyle}>Resultat <strong>{totals.totalStrokes || '-'}/{totals.totalNet || '-'}</strong></div>
         <div style={{ ...summaryStatStyle, textAlign: 'right' }}>Position <strong>{position}.</strong></div>
@@ -715,8 +726,8 @@ export default async function SummaryPage({
   })
 
   return (
-    <main style={{ background: '#f3fbf5', minHeight: '100vh' }}>
-      <div className="container" style={{ display: 'grid', gap: 0, maxWidth: 980 }}>
+    <main className="summary-page" style={{ background: '#f3fbf5', minHeight: '100vh' }}>
+      <div className="container summary-shell" style={{ display: 'grid', gap: 0, maxWidth: 980 }}>
         <SummaryHero
           roundTitle={round.title}
           courseName={course.name}
@@ -729,7 +740,7 @@ export default async function SummaryPage({
         <GameTabs scoringMode={round.scoring_mode} />
         <CompactLeaderboard leaderboard={leaderboard} />
 
-        <div style={{ padding: '14px 0 40px' }}>
+        <div className="summary-scorecards-wrap" style={{ padding: '14px 0 40px' }}>
           <GamebookScorecards
             players={activePlayers}
             holes={visibleHoles}
@@ -738,6 +749,187 @@ export default async function SummaryPage({
           />
         </div>
       </div>
+      <style jsx>{`
+        .summary-page {
+          background:
+            radial-gradient(circle at top right, rgba(16, 185, 129, 0.12), transparent 32%),
+            linear-gradient(180deg, #f4faf5 0%, #eff6f1 100%);
+        }
+
+        .summary-shell {
+          padding-left: 12px;
+          padding-right: 12px;
+          padding-top: calc(10px + env(safe-area-inset-top));
+          padding-bottom: calc(20px + env(safe-area-inset-bottom));
+        }
+
+        .summary-hero {
+          border-radius: 26px;
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 252, 248, 0.88));
+          border: 1px solid rgba(15, 23, 42, 0.06);
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+          margin-bottom: 10px;
+        }
+
+        .summary-back-button {
+          box-shadow: 0 10px 22px rgba(15, 23, 42, 0.1);
+        }
+
+        .summary-brand {
+          letter-spacing: 0.02em;
+        }
+
+        .summary-pills {
+          overflow-x: auto;
+          flex-wrap: nowrap !important;
+          justify-content: flex-start !important;
+          padding: 2px 0 2px 2px;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+        }
+
+        .summary-pills::-webkit-scrollbar {
+          display: none;
+        }
+
+        .summary-pill {
+          flex: 0 0 auto;
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+        }
+
+        .game-tabs {
+          border: 1px solid rgba(16, 185, 129, 0.32);
+          border-bottom: 0;
+        }
+
+        .compact-leaderboard {
+          border-radius: 0 0 20px 20px !important;
+          box-shadow: 0 18px 34px rgba(5, 150, 105, 0.2);
+        }
+
+        .compact-leaderboard-scroll {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .compact-leaderboard-table {
+          min-width: 560px;
+        }
+
+        .player-scorecard {
+          border-color: rgba(15, 23, 42, 0.06) !important;
+        }
+
+        .player-scorecard-head {
+          background: linear-gradient(180deg, rgba(248, 252, 248, 0.9), rgba(255, 255, 255, 1));
+        }
+
+        .scorecard-table-wrap {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(22, 101, 52, 0.35) transparent;
+        }
+
+        .scorecard-table {
+          min-width: 700px !important;
+        }
+
+        @media (max-width: 900px) {
+          .summary-brand {
+            font-size: 18px !important;
+          }
+        }
+
+        @media (max-width: 680px) {
+          .summary-shell {
+            padding-left: 10px;
+            padding-right: 10px;
+          }
+
+          .summary-hero-grid {
+            grid-template-columns: 48px 1fr auto !important;
+            gap: 8px !important;
+            align-items: start !important;
+          }
+
+          .summary-back-button {
+            width: 46px !important;
+            height: 46px !important;
+            font-size: 30px !important;
+          }
+
+          .summary-title {
+            font-size: clamp(30px, 9vw, 42px) !important;
+          }
+
+          .summary-course {
+            font-size: 17px !important;
+          }
+
+          .summary-brand {
+            font-size: 13px !important;
+            line-height: 1.05 !important;
+            text-align: left !important;
+            padding-top: 4px;
+          }
+
+          .summary-pill {
+            font-size: 14px !important;
+            padding: 8px 12px !important;
+          }
+
+          .game-tab {
+            font-size: 16px !important;
+            padding: 12px 8px !important;
+          }
+
+          .compact-leaderboard-row > div:nth-child(1) {
+            font-size: 18px !important;
+          }
+
+          .compact-leaderboard-row > div:nth-child(2) > div:first-child {
+            font-size: 19px !important;
+          }
+
+          .compact-leaderboard-row > div:nth-child(3),
+          .compact-leaderboard-row > div:nth-child(4),
+          .compact-leaderboard-row > div:nth-child(5) {
+            font-size: 20px !important;
+          }
+
+          .player-scorecard {
+            border-radius: 18px !important;
+          }
+
+          .player-scorecard-head {
+            padding: 12px 12px 8px !important;
+            gap: 8px !important;
+          }
+
+          .player-scorecard-name {
+            font-size: 24px !important;
+          }
+
+          .player-scorecard-meta {
+            font-size: 15px !important;
+          }
+
+          .player-tee-pill {
+            font-size: 12px !important;
+            padding: 7px 10px !important;
+          }
+
+          .player-scorecard-summary {
+            grid-template-columns: 1fr !important;
+            gap: 6px !important;
+            padding: 14px 12px !important;
+          }
+
+          .player-scorecard-summary > div {
+            text-align: left !important;
+            font-size: 20px !important;
+          }
+        }
+      `}</style>
     </main>
   )
 }
