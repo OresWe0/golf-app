@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { HolePlay } from '@/components/hole-play'
 import {
   getReceivedStrokesForSelectedHole,
   scoreVsPar,
@@ -14,23 +13,12 @@ type HoleLike = {
   hcp_index: number
 }
 
-type LeaderboardEntry = {
-  playerId: string
-  playerName?: string
-  position: number
-  scoreText?: string
-  totalPoints?: number
-  totalToPar?: number
-  totalStrokes?: number
-  isLeader?: boolean
-}
-
 type RoundPlayer = {
   id: string
   display_name?: string
   exact_handicap?: number | null
   playing_handicap?: number | null
-  tee_key?: string 
+  tee_key?: string
   active_from_hole?: number | null
   active_to_hole?: number | null
 }
@@ -58,30 +46,15 @@ type CourseLike = {
   name: string
 }
 
-type HoleGpsRow = {
-  hole_number: number
-  front_lat: number
-  front_lng: number
-  center_lat: number
-  center_lng: number
-  back_lat: number
-  back_lng: number
-}
-
-function toCourseImageSlug(name?: string | null) {
-  const source = String(name ?? '').trim().toLowerCase()
-  if (!source) return undefined
-
-  const normalized = source
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-
-  if (normalized.includes('karsta')) return 'karsta'
-  if (normalized.includes('lindesberg')) return 'lindesberg'
-
-  return normalized || undefined
+type LeaderboardEntry = {
+  playerId: string
+  playerName: string
+  position: number
+  scoreText: string
+  totalPoints: number
+  totalToPar: number
+  totalStrokes: number
+  isLeader: boolean
 }
 
 function parseHoleNumber(value?: string) {
@@ -112,9 +85,8 @@ function isPlayerActiveOnHole(
   return holeNumber >= activeFrom && holeNumber <= activeTo
 }
 
-function formatToPar(value?: number) {
-  if (value == null) return 'E'
-  if (value === 0) return 'E'
+function formatToPar(value?: number | null) {
+  if (value == null || value === 0) return 'E'
   return value > 0 ? `+${value}` : `${value}`
 }
 
@@ -123,6 +95,16 @@ function getMedal(position: number) {
   if (position === 2) return '🥈'
   if (position === 3) return '🥉'
   return `#${position}`
+}
+
+function getScoreLabel(strokes: number | null, par: number) {
+  if (strokes == null) return '-'
+  const diff = strokes - par
+  if (diff <= -2) return 'Eagle+'
+  if (diff === -1) return 'Birdie'
+  if (diff === 0) return 'Par'
+  if (diff === 1) return 'Bogey'
+  return 'Double+'
 }
 
 function buildLeaderboard(params: {
@@ -238,348 +220,258 @@ function buildLeaderboard(params: {
   return leaderboard
 }
 
-function PremiumLeaderboard({
-  leaderboard,
-  roundId,
+function SummaryHero({
+  roundTitle,
+  courseName,
+  modeLabel,
   currentHoleNumber,
+  totalHoles,
+  roundId,
 }: {
-  leaderboard: LeaderboardEntry[]
-  roundId: string
+  roundTitle: string
+  courseName: string
+  modeLabel: string
   currentHoleNumber: number
+  totalHoles: number
+  roundId: string
 }) {
-  const leader = leaderboard[0]
-  const podium = leaderboard.slice(0, 5)
-
   return (
     <section
-      aria-label="Leaderboard"
+      className="card"
       style={{
-        background: 'linear-gradient(135deg, #12231d 0%, #1f7a3a 100%)',
-        color: '#fff',
-        borderRadius: 24,
-        padding: 16,
-        boxShadow: '0 18px 45px rgba(21, 90, 45, 0.22)',
-        overflow: 'hidden',
-        position: 'relative',
+        padding: 18,
+        borderRadius: 26,
+        background:
+          'linear-gradient(145deg, rgba(244,252,246,0.98), rgba(255,255,255,0.96))',
+        border: '1px solid rgba(36, 122, 67, 0.12)',
+        boxShadow: '0 16px 42px rgba(20, 77, 43, 0.10)',
       }}
     >
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background:
-            'radial-gradient(circle at top right, rgba(255,255,255,0.18), transparent 34%)',
-          pointerEvents: 'none',
-        }}
-      />
-
-      <div style={{ position: 'relative', display: 'grid', gap: 14 }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            gap: 12,
-            alignItems: 'flex-start',
-          }}
-        >
-          <div>
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 7,
-                padding: '5px 10px',
-                borderRadius: 999,
-                background: 'rgba(255,255,255,0.16)',
-                fontSize: 12,
-                fontWeight: 800,
-                letterSpacing: 0.3,
-                textTransform: 'uppercase',
-              }}
-            >
-              <span>🔴</span>
-              <span>Live leaderboard</span>
-            </div>
-
-            <h2
-              style={{
-                margin: '10px 0 2px',
-                fontSize: 25,
-                lineHeight: 1,
-                fontWeight: 950,
-              }}
-            >
-              {leader?.playerName ?? 'Leaderboard'}
-            </h2>
-
-            <p style={{ margin: 0, color: 'rgba(255,255,255,0.76)', fontSize: 13 }}>
-              {leader
-                ? `Leder just nu på ${leader.scoreText ?? '0'}`
-                : 'Ställningen visas här så fort spelare finns.'}
-            </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <span className="badge">🏆 Leaderboard</span>
+            <span className="badge">{modeLabel}</span>
+            <span className="badge">Hål {currentHoleNumber}/{totalHoles}</span>
           </div>
-
-          <Link
-            href={`/rounds/${roundId}/summary?hole=${currentHoleNumber}`}
-            style={{
-              color: '#fff',
-              textDecoration: 'none',
-              background: 'rgba(255,255,255,0.15)',
-              border: '1px solid rgba(255,255,255,0.22)',
-              borderRadius: 999,
-              padding: '8px 11px',
-              fontSize: 12,
-              fontWeight: 900,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Visa allt
-          </Link>
+          <div>
+            <h1 className="title" style={{ margin: 0, fontSize: 'clamp(28px, 8vw, 42px)', lineHeight: 1 }}>
+              {roundTitle}
+            </h1>
+            <p className="muted meta" style={{ margin: '4px 0 0' }}>{courseName}</p>
+          </div>
         </div>
 
-        <div
-          style={{
-            display: 'flex',
-            gap: 10,
-            overflowX: 'auto',
-            paddingBottom: 3,
-            WebkitOverflowScrolling: 'touch',
-          }}
+        <Link
+          className="button secondary"
+          href={`/rounds/${roundId}?hole=${currentHoleNumber}`}
+          style={{ borderRadius: 999, alignSelf: 'flex-start' }}
         >
-          {podium.map((entry) => (
-            <div
-              key={entry.playerId}
-              style={{
-                minWidth: 122,
-                borderRadius: 18,
-                padding: 12,
-                background: entry.isLeader
-                  ? 'rgba(255,255,255,0.22)'
-                  : 'rgba(255,255,255,0.11)',
-                border: entry.isLeader
-                  ? '1px solid rgba(255,255,255,0.38)'
-                  : '1px solid rgba(255,255,255,0.18)',
-                boxShadow: entry.isLeader
-                  ? 'inset 0 1px 0 rgba(255,255,255,0.2)'
-                  : undefined,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: 8,
-                  marginBottom: 8,
-                }}
-              >
-                <span style={{ fontSize: 18 }}>{getMedal(entry.position)}</span>
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 900,
-                    color: 'rgba(255,255,255,0.7)',
-                  }}
-                >
-                  {formatToPar(entry.totalToPar)}
-                </span>
-              </div>
-
-              <div
-                style={{
-                  fontSize: 15,
-                  fontWeight: 950,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {entry.playerName}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 4,
-                  fontSize: 20,
-                  fontWeight: 950,
-                  letterSpacing: -0.4,
-                }}
-              >
-                {entry.scoreText}
-              </div>
-
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)' }}>
-                {entry.totalStrokes ?? 0} slag totalt
-              </div>
-            </div>
-          ))}
-        </div>
+          Till rundan
+        </Link>
       </div>
     </section>
   )
 }
 
-function RoundHero({
-  roundTitle,
-  courseName,
-  currentHoleNumber,
-  totalHoles,
-  modeLabel,
-  par,
-  hcpIndex,
-  roundId,
-  leaderboard,
-}: {
-  roundTitle: string
-  courseName: string
-  currentHoleNumber: number
-  totalHoles: number
-  modeLabel: string
-  par: number
-  hcpIndex: number
-  roundId: string
-  leaderboard: LeaderboardEntry[]
-}) {
+function FullLeaderboard({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
   return (
-    <div
+    <section
       style={{
-        display: 'grid',
-        gap: 14,
+        background: 'linear-gradient(135deg, #12231d 0%, #1f7a3a 100%)',
+        color: '#fff',
+        borderRadius: 26,
+        padding: 18,
+        boxShadow: '0 18px 45px rgba(21, 90, 45, 0.22)',
       }}
     >
-      <div
-        className="card round-hero"
-        style={{
-          padding: 18,
-          borderRadius: 26,
-          background:
-            'linear-gradient(145deg, rgba(244,252,246,0.98), rgba(255,255,255,0.96))',
-          boxShadow: '0 16px 42px rgba(20, 77, 43, 0.10)',
-          border: '1px solid rgba(36, 122, 67, 0.12)',
-        }}
-      >
-        <div style={{ display: 'grid', gap: 15 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
+        <div>
           <div
             style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              gap: 12,
-              flexWrap: 'wrap',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 7,
+              padding: '5px 10px',
+              borderRadius: 999,
+              background: 'rgba(255,255,255,0.16)',
+              fontSize: 12,
+              fontWeight: 900,
+              textTransform: 'uppercase',
             }}
           >
-            <div style={{ display: 'grid', gap: 9 }}>
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  flexWrap: 'wrap',
-                }}
-              >
-                <span className="badge">🏌️ Runda</span>
-                <span className="badge">{modeLabel}</span>
-                <span className="badge">Hål {currentHoleNumber}/{totalHoles}</span>
-              </div>
-
-              <div style={{ display: 'grid', gap: 4 }}>
-                <h1
-                  className="title"
-                  style={{
-                    margin: 0,
-                    fontSize: 'clamp(26px, 8vw, 38px)',
-                    lineHeight: 0.98,
-                    letterSpacing: -1.2,
-                  }}
-                >
-                  {roundTitle}
-                </h1>
-
-                <p className="muted meta" style={{ margin: 0 }}>
-                  {courseName}
-                </p>
-              </div>
-            </div>
-
-            <Link
-              className="button secondary"
-              href={`/rounds/${roundId}/players`}
-              style={{
-                borderRadius: 999,
-                minHeight: 38,
-                paddingInline: 14,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Hantera spelare
-            </Link>
+            🔴 Live leaderboard
           </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-              gap: 9,
-            }}
-          >
-            <div
-              style={{
-                padding: '11px 12px',
-                borderRadius: 18,
-                background: '#fff',
-                border: '1px solid rgba(20, 77, 43, 0.10)',
-                boxShadow: '0 8px 20px rgba(20, 77, 43, 0.06)',
-              }}
-            >
-              <div className="muted" style={{ fontSize: 11, fontWeight: 800 }}>
-                Aktuellt hål
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 950 }}>Hål {currentHoleNumber}</div>
-            </div>
-
-            <div
-              style={{
-                padding: '11px 12px',
-                borderRadius: 18,
-                background: '#fff',
-                border: '1px solid rgba(20, 77, 43, 0.10)',
-                boxShadow: '0 8px 20px rgba(20, 77, 43, 0.06)',
-              }}
-            >
-              <div className="muted" style={{ fontSize: 11, fontWeight: 800 }}>
-                Par
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 950 }}>{par}</div>
-            </div>
-
-            <div
-              style={{
-                padding: '11px 12px',
-                borderRadius: 18,
-                background: '#fff',
-                border: '1px solid rgba(20, 77, 43, 0.10)',
-                boxShadow: '0 8px 20px rgba(20, 77, 43, 0.06)',
-              }}
-            >
-              <div className="muted" style={{ fontSize: 11, fontWeight: 800 }}>
-                Index
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 950 }}>{hcpIndex}</div>
-            </div>
-          </div>
+          <h2 style={{ margin: '10px 0 0', fontSize: 26, lineHeight: 1 }}>Ställning</h2>
         </div>
       </div>
 
-      <PremiumLeaderboard
-        leaderboard={leaderboard}
-        roundId={roundId}
-        currentHoleNumber={currentHoleNumber}
-      />
-    </div>
+      <div style={{ display: 'grid', gap: 10 }}>
+        {leaderboard.map((entry) => (
+          <div
+            key={entry.playerId}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '46px minmax(0, 1fr) auto auto',
+              gap: 10,
+              alignItems: 'center',
+              padding: 12,
+              borderRadius: 18,
+              background: entry.isLeader ? 'rgba(255,255,255,0.20)' : 'rgba(255,255,255,0.10)',
+              border: entry.isLeader
+                ? '1px solid rgba(255,255,255,0.35)'
+                : '1px solid rgba(255,255,255,0.16)',
+            }}
+          >
+            <div style={{ fontSize: 22, fontWeight: 950 }}>{getMedal(entry.position)}</div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 17, fontWeight: 950, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {entry.playerName}
+              </div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.70)' }}>
+                {entry.totalStrokes} slag totalt
+              </div>
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 950 }}>{entry.scoreText}</div>
+            <div style={{ fontSize: 13, fontWeight: 900, color: 'rgba(255,255,255,0.72)' }}>
+              {formatToPar(entry.totalToPar)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 
-export default async function RoundPage({
+function Scorecards({
+  players,
+  holes,
+  scoreRows,
+}: {
+  players: RoundPlayer[]
+  holes: HoleLike[]
+  scoreRows: HoleScoreRow[]
+}) {
+  return (
+    <section style={{ display: 'grid', gap: 12 }}>
+      <h2 style={{ margin: 0, fontSize: 26 }}>Scorekort</h2>
+
+      {players.map((player) => {
+        const rowsByHole = new Map(
+          scoreRows
+            .filter((row) => row.round_player_id === player.id)
+            .map((row) => [row.hole_number, row])
+        )
+
+        const totalStrokes = holes.reduce(
+          (sum, hole) => sum + (rowsByHole.get(hole.hole_number)?.strokes ?? 0),
+          0
+        )
+
+        const totalToPar = holes.reduce((sum, hole) => {
+          const strokes = rowsByHole.get(hole.hole_number)?.strokes ?? null
+          return sum + (scoreVsPar(strokes, hole.par) ?? 0)
+        }, 0)
+
+        return (
+          <article
+            key={player.id}
+            className="card"
+            style={{
+              padding: 14,
+              borderRadius: 24,
+              border: '1px solid rgba(36, 122, 67, 0.14)',
+              boxShadow: '0 12px 34px rgba(20, 77, 43, 0.08)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 22 }}>{player.display_name ?? 'Spelare'}</h3>
+                <p className="muted" style={{ margin: '3px 0 0', fontWeight: 800 }}>
+                  Totalt: {totalStrokes} slag · Till par {formatToPar(totalToPar)}
+                </p>
+              </div>
+              <span className="badge">{player.tee_key ?? 'Tee'}</span>
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, minWidth: 720 }}>
+                <thead>
+                  <tr>
+                    <th style={cellHeaderStyle}>Hål</th>
+                    {holes.map((hole) => (
+                      <th key={hole.hole_number} style={cellHeaderStyle}>{hole.hole_number}</th>
+                    ))}
+                    <th style={cellHeaderStyle}>Totalt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={cellLabelStyle}>Par</td>
+                    {holes.map((hole) => <td key={hole.hole_number} style={cellStyle}>{hole.par}</td>)}
+                    <td style={cellStyle}>{holes.reduce((sum, hole) => sum + hole.par, 0)}</td>
+                  </tr>
+                  <tr>
+                    <td style={cellLabelStyle}>Slag</td>
+                    {holes.map((hole) => {
+                      const strokes = rowsByHole.get(hole.hole_number)?.strokes ?? null
+                      return <td key={hole.hole_number} style={cellStyle}>{strokes ?? '-'}</td>
+                    })}
+                    <td style={cellStyle}>{totalStrokes}</td>
+                  </tr>
+                  <tr>
+                    <td style={cellLabelStyle}>Resultat</td>
+                    {holes.map((hole) => {
+                      const strokes = rowsByHole.get(hole.hole_number)?.strokes ?? null
+                      return <td key={hole.hole_number} style={cellSmallStyle}>{getScoreLabel(strokes, hole.par)}</td>
+                    })}
+                    <td style={cellSmallStyle}>{formatToPar(totalToPar)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+        )
+      })}
+    </section>
+  )
+}
+
+const cellHeaderStyle: React.CSSProperties = {
+  padding: '10px 8px',
+  fontSize: 12,
+  textAlign: 'center',
+  color: '#61705f',
+  background: '#f5fbf6',
+  borderBottom: '1px solid rgba(20,77,43,0.10)',
+}
+
+const cellLabelStyle: React.CSSProperties = {
+  padding: '10px 8px',
+  fontSize: 12,
+  fontWeight: 950,
+  color: '#26382d',
+  background: '#f9fcfa',
+  borderBottom: '1px solid rgba(20,77,43,0.08)',
+  textAlign: 'left',
+}
+
+const cellStyle: React.CSSProperties = {
+  padding: '10px 8px',
+  textAlign: 'center',
+  fontSize: 15,
+  fontWeight: 900,
+  borderBottom: '1px solid rgba(20,77,43,0.08)',
+}
+
+const cellSmallStyle: React.CSSProperties = {
+  ...cellStyle,
+  fontSize: 11,
+  color: '#667085',
+  textTransform: 'uppercase',
+}
+
+export default async function SummaryPage({
   params,
   searchParams,
 }: {
@@ -601,15 +493,11 @@ export default async function RoundPage({
 
   const { data: roundData } = await supabase
     .from('rounds')
-    .select(
-      'id, title, owner_id, course_id, current_hole, start_hole, end_hole, holes_mode, scoring_mode'
-    )
+    .select('id, title, owner_id, course_id, current_hole, start_hole, end_hole, holes_mode, scoring_mode')
     .eq('id', id)
     .single()
 
-  if (!roundData) {
-    notFound()
-  }
+  if (!roundData) notFound()
 
   const round = roundData as RoundLike
 
@@ -621,9 +509,7 @@ export default async function RoundPage({
       .eq('user_id', user.id)
       .maybeSingle()
 
-    if (!membership) {
-      notFound()
-    }
+    if (!membership) notFound()
   }
 
   const requestedHoleNumber = resolvedSearchParams.hole
@@ -635,13 +521,10 @@ export default async function RoundPage({
     { data: courseData },
     { data: holesData },
     { data: allScoreRowsData },
-    { data: holeGpsData },
   ] = await Promise.all([
     supabase
       .from('round_players')
-      .select(
-        'id, display_name, exact_handicap, playing_handicap, tee_key, active_from_hole, active_to_hole'
-      )
+      .select('id, display_name, exact_handicap, playing_handicap, tee_key, active_from_hole, active_to_hole')
       .eq('round_id', id)
       .order('sort_order'),
     supabase.from('courses').select('id, name').eq('id', round.course_id).single(),
@@ -655,108 +538,64 @@ export default async function RoundPage({
       .select('round_player_id, hole_number, strokes')
       .eq('round_id', id)
       .order('hole_number'),
-    supabase
-      .from('course_hole_gps')
-      .select(
-        'hole_number, front_lat, front_lng, center_lat, center_lng, back_lat, back_lng'
-      )
-      .eq('course_id', round.course_id),
   ])
 
-  if (!courseData || !holesData || !playersData) {
-    notFound()
-  }
+  if (!courseData || !holesData || !playersData) notFound()
 
   const players = (playersData ?? []).map((player) => ({
-  ...player,
-  display_name: player.display_name ?? undefined,
-  tee_key: player.tee_key ?? undefined,
-})) as RoundPlayer[]
+    ...player,
+    display_name: player.display_name ?? undefined,
+    tee_key: player.tee_key ?? undefined,
+  })) as RoundPlayer[]
+
   const course = courseData as CourseLike
   const holes = holesData as HoleLike[]
   const scoreRows = (allScoreRowsData ?? []) as HoleScoreRow[]
-  const holeGpsRows = (holeGpsData ?? []) as HoleGpsRow[]
-  const holeGpsByNumber = Object.fromEntries(
-    holeGpsRows.map((row) => [
-      row.hole_number,
-      {
-        front: { lat: row.front_lat, lng: row.front_lng },
-        center: { lat: row.center_lat, lng: row.center_lng },
-        back: { lat: row.back_lat, lng: row.back_lng },
-      },
-    ])
-  )
 
   const startHole = round.start_hole ?? 1
   const endHole = round.end_hole ?? holes.length
-
   const visibleHoles = getVisibleHoles(holes, startHole, endHole)
 
-  if (!visibleHoles.length) {
-    notFound()
-  }
-
-  const selectedHoleIndexes = visibleHoles.map((item) => item.hcp_index)
+  if (!visibleHoles.length) notFound()
 
   const currentHole =
-    visibleHoles.find((item) => item.hole_number === requestedHoleNumber) ?? null
+    visibleHoles.find((item) => item.hole_number === requestedHoleNumber) ??
+    visibleHoles.find((item) => item.hole_number === round.current_hole) ??
+    visibleHoles[0]
 
-  if (!currentHole) {
-    redirect(`/rounds/${id}?hole=${round.current_hole ?? startHole}`)
-  }
-
-  const activePlayersForHole = players.filter((player) =>
+  const playersForSummary = players.filter((player) =>
     isPlayerActiveOnHole(player, currentHole.hole_number, startHole, endHole)
   )
-  const playersForHole = activePlayersForHole.length > 0 ? activePlayersForHole : players
-  const activePlayerIds = new Set(playersForHole.map((player) => player.id))
-
-  const currentHoleScores = scoreRows.filter(
-    (row) =>
-      row.hole_number === currentHole.hole_number &&
-      activePlayerIds.has(row.round_player_id)
-  )
+  const activePlayers = playersForSummary.length > 0 ? playersForSummary : players
 
   const leaderboard = buildLeaderboard({
-    players: playersForHole,
+    players: activePlayers,
     scoreRows,
     visibleHoles,
-    selectedHoleIndexes,
+    selectedHoleIndexes: visibleHoles.map((item) => item.hcp_index),
     scoringMode: round.scoring_mode,
     startHole,
     endHole,
   })
 
-  const modeLabel = getRoundModeLabel(round, startHole)
-
   return (
     <main>
       <div className="container" style={{ display: 'grid', gap: 16 }}>
-        <RoundHero
+        <SummaryHero
           roundTitle={round.title}
           courseName={course.name}
+          modeLabel={getRoundModeLabel(round, startHole)}
           currentHoleNumber={currentHole.hole_number}
           totalHoles={visibleHoles.length}
-          modeLabel={modeLabel}
-          par={currentHole.par}
-          hcpIndex={currentHole.hcp_index}
           roundId={id}
-          leaderboard={leaderboard}
         />
 
-        <HolePlay
-          roundId={id}
-          currentHole={currentHole.hole_number}
-          totalHoles={visibleHoles.length}
-          startHole={startHole}
-          endHole={endHole}
-          hole={currentHole}
-          players={playersForHole}
-          scores={currentHoleScores}
-          leaderboard={leaderboard}
-          selectedHoleIndexes={selectedHoleIndexes}
-          courseImageSlug={toCourseImageSlug(course.name)}
-          holeGpsByNumber={holeGpsByNumber}
+        <FullLeaderboard leaderboard={leaderboard} />
+
+        <Scorecards
+          players={activePlayers}
+          holes={visibleHoles}
+          scoreRows={scoreRows}
         />
       </div>
     </main>
