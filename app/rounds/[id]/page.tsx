@@ -22,6 +22,7 @@ type LeaderboardEntry = {
   totalPoints?: number
   totalToPar?: number
   totalStrokes?: number
+  holesPlayed?: number
   isLeader?: boolean
 }
 
@@ -51,6 +52,8 @@ type RoundLike = {
   end_hole: number | null
   holes_mode: number
   scoring_mode: 'stableford' | 'strokeplay'
+  status?: string | null
+  completed_at?: string | null
 }
 
 type CourseLike = {
@@ -151,9 +154,11 @@ function buildLeaderboard(params: {
       (row) =>
         row.round_player_id === player.id &&
         row.hole_number >= startHole &&
-        row.hole_number <= endHole
+        row.hole_number <= endHole &&
+        row.strokes != null
     )
 
+    const holesPlayed = new Set(rows.map((row) => row.hole_number)).size
     const totalStrokes = rows.reduce((sum, row) => sum + (row.strokes ?? 0), 0)
 
     const totalToPar = rows.reduce((sum, row) => {
@@ -184,16 +189,19 @@ function buildLeaderboard(params: {
       totalStrokes,
       totalToPar,
       totalPoints,
+      holesPlayed,
     }
   })
 
   const sortedLeaderboard = [...leaderboardBase].sort((a, b) => {
     if (scoringMode === 'stableford') {
       if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints
+      if (b.holesPlayed !== a.holesPlayed) return b.holesPlayed - a.holesPlayed
       if (a.totalStrokes !== b.totalStrokes) return a.totalStrokes - b.totalStrokes
       return a.playerId.localeCompare(b.playerId)
     }
 
+    if (b.holesPlayed !== a.holesPlayed) return b.holesPlayed - a.holesPlayed
     if (a.totalStrokes !== b.totalStrokes) return a.totalStrokes - b.totalStrokes
     if (a.totalToPar !== b.totalToPar) return a.totalToPar - b.totalToPar
     return a.playerId.localeCompare(b.playerId)
@@ -210,9 +218,11 @@ function buildLeaderboard(params: {
       previous &&
       (scoringMode === 'stableford'
         ? previous.totalPoints === entry.totalPoints &&
-          previous.totalStrokes === entry.totalStrokes
+          previous.totalStrokes === entry.totalStrokes &&
+          previous.holesPlayed === entry.holesPlayed
         : previous.totalStrokes === entry.totalStrokes &&
-          previous.totalToPar === entry.totalToPar)
+          previous.totalToPar === entry.totalToPar &&
+          previous.holesPlayed === entry.holesPlayed)
 
     const position = sameAsPrevious ? lastPosition : index + 1
     lastPosition = position
@@ -231,6 +241,7 @@ function buildLeaderboard(params: {
       totalPoints: entry.totalPoints,
       totalToPar: entry.totalToPar,
       totalStrokes: entry.totalStrokes,
+      holesPlayed: entry.holesPlayed,
       isLeader: position === 1,
     })
   }
@@ -409,7 +420,7 @@ function PremiumLeaderboard({
               </div>
 
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)' }}>
-                {entry.totalStrokes ?? 0} slag totalt
+                {entry.totalStrokes ?? 0} slag · {entry.holesPlayed ?? 0} hål
               </div>
             </div>
           ))}
@@ -602,7 +613,7 @@ export default async function RoundPage({
   const { data: roundData } = await supabase
     .from('rounds')
     .select(
-      'id, title, owner_id, course_id, current_hole, start_hole, end_hole, holes_mode, scoring_mode'
+      'id, title, owner_id, course_id, current_hole, start_hole, end_hole, holes_mode, scoring_mode, status, completed_at'
     )
     .eq('id', id)
     .single()
