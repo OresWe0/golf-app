@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { HolePlay } from '@/components/hole-play'
+import FinishRoundQuickAction from '@/components/finish-round-quick-action'
 import {
   getReceivedStrokesForSelectedHole,
   scoreVsPar,
@@ -501,18 +502,26 @@ function RoundHero({
               </div>
             </div>
 
-            <Link
-              className="button secondary"
-              href={`/rounds/${roundId}/players`}
-              style={{
-                borderRadius: 999,
-                minHeight: 38,
-                paddingInline: 14,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Hantera spelare
-            </Link>
+            <div style={{ display: 'grid', gap: 8, justifyItems: 'end' }}>
+              <Link
+                className="button secondary"
+                href={`/rounds/${roundId}/players`}
+                style={{
+                  borderRadius: 999,
+                  minHeight: 38,
+                  paddingInline: 14,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Hantera spelare
+              </Link>
+
+              <FinishRoundQuickAction
+                roundId={roundId}
+                currentHole={currentHoleNumber}
+                totalHoles={totalHoles}
+              />
+            </div>
           </div>
 
           <div

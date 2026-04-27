@@ -2878,31 +2878,6 @@ useEffect(() => {
                   <span>Se banvy</span>
                 </button>
 
-                {currentHole < endHole ? (
-                  <button
-                    type="button"
-                    onClick={requestFinishEarly}
-                    disabled={loading || !canInteract || !isReadyToAdvance}
-                    style={{
-                      border: '1px solid rgba(255,255,255,0.18)',
-                      borderRadius: 16,
-                      padding: '10px 12px',
-                      background:
-                        'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.08) 100%)',
-                      color: '#ffffff',
-                      fontSize: 12,
-                      fontWeight: 900,
-                      cursor: loading || !canInteract || !isReadyToAdvance ? 'not-allowed' : 'pointer',
-                      opacity: loading || !canInteract || !isReadyToAdvance ? 0.6 : 1,
-                      minHeight: 44,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    Avsluta rundan nu
-                  </button>
-                ) : null}
               </div>
             </div>
 

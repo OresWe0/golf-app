@@ -365,34 +365,89 @@ function GameTabs({ scoringMode }: { scoringMode: RoundLike['scoring_mode'] }) {
 
 function CompactLeaderboard({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
   return (
-    <section className="compact-leaderboard" style={{ borderRadius: 0, overflow: 'hidden', border: '1px solid #0ea55d', borderTop: 0 }}>
-      <div className="compact-leaderboard-scroll">
-        <div className="compact-leaderboard-table">
-          <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr 96px 86px 74px', gap: 0, background: '#353836', color: '#fff', fontSize: 13, fontWeight: 950, textTransform: 'uppercase' }}>
-            <div style={leaderHeaderCell}>#</div>
-            <div style={leaderHeaderCell}>Namn</div>
-            <div style={leaderHeaderCell}>Resultat</div>
-            <div style={leaderHeaderCell}>Till par</div>
-            <div style={leaderHeaderCell}>Spelat</div>
-          </div>
+    <section
+      style={{
+        borderRadius: 18,
+        overflow: 'hidden',
+        border: '1px solid rgba(22, 101, 52, 0.15)',
+        background: '#ffffff',
+        boxShadow: '0 12px 26px rgba(15, 23, 42, 0.06)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 10,
+          padding: '12px 14px',
+          background: 'linear-gradient(180deg, #f6faf7 0%, #eef5ef 100%)',
+          borderBottom: '1px solid #e4ece6',
+        }}
+      >
+        <div style={{ fontSize: 14, fontWeight: 950, color: '#1f3b2c' }}>Leaderboard</div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: '#5e6f64' }}>Live • NET</div>
+      </div>
 
-          <div style={{ background: '#10a968', padding: 8, display: 'grid', gap: 8 }}>
-            {leaderboard.map((entry) => (
-              <div key={entry.playerId} className="compact-leaderboard-row" style={{ display: 'grid', gridTemplateColumns: '56px 1fr 96px 86px 74px', alignItems: 'center', background: '#fff', borderRadius: 10, minHeight: 74, overflow: 'hidden' }}>
-                <div style={{ padding: '0 12px', fontSize: 22 }}>{entry.position}.</div>
-                <div style={{ padding: '10px 6px', minWidth: 0 }}>
-                  <div style={{ fontSize: 24, lineHeight: 1.05, color: '#374047', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {entry.playerName}
-                  </div>
-                  <div style={{ color: '#75807a', fontWeight: 800 }}>HCP</div>
-                </div>
-                <div style={{ textAlign: 'center', fontSize: 27, fontWeight: 800, color: '#30383d' }}>{entry.totalStrokes || '-'}</div>
-                <div style={{ textAlign: 'center', fontSize: 30, fontWeight: 950, color: '#000' }}>{formatToPar(entry.totalToPar)}</div>
-                <div style={{ textAlign: 'center', fontSize: 24, fontWeight: 800, color: '#30383d' }}>F</div>
+      <div style={{ display: 'grid', gap: 8, padding: 10 }}>
+        {leaderboard.map((entry) => (
+          <div
+            key={entry.playerId}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '46px minmax(0, 1fr) auto',
+              gap: 10,
+              alignItems: 'center',
+              minHeight: 66,
+              borderRadius: 12,
+              padding: '10px 12px',
+              background: entry.isLeader ? '#f2faf4' : '#f8fbf9',
+              border: entry.isLeader ? '1px solid #b8e2c5' : '1px solid #e2ece6',
+            }}
+          >
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 999,
+                display: 'grid',
+                placeItems: 'center',
+                background: entry.isLeader ? '#daf5e2' : '#eef3ef',
+                color: '#1f3b2c',
+                fontWeight: 950,
+                fontSize: 16,
+              }}
+            >
+              {entry.position}.
+            </div>
+
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 23,
+                  lineHeight: 1.05,
+                  color: '#25363b',
+                  fontWeight: 800,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {entry.playerName}
               </div>
-            ))}
+              <div style={{ color: '#6b7d72', fontWeight: 800, fontSize: 12 }}>Till par {formatToPar(entry.totalToPar)}</div>
+            </div>
+
+            <div style={{ textAlign: 'right', minWidth: 72 }}>
+              <div style={{ fontSize: 24, fontWeight: 950, color: '#1f2937', lineHeight: 1 }}>
+                {entry.totalStrokes ?? '-'}
+              </div>
+              <div style={{ marginTop: 4, fontSize: 11, fontWeight: 800, color: '#6b7280' }}>
+                slag
+              </div>
+            </div>
           </div>
-        </div>
+        ))}
       </div>
     </section>
   )
