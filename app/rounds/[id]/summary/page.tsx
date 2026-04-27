@@ -57,6 +57,15 @@ type LeaderboardEntry = {
   isLeader: boolean
 }
 
+type PlayerTotals = {
+  totalPar: number
+  totalStrokes: number
+  totalToPar: number
+  totalNet: number
+  netToPar: number
+  playedHoles: number
+}
+
 function parseHoleNumber(value?: string) {
   const parsed = Number(value)
   if (!Number.isFinite(parsed) || parsed < 1) return 1
@@ -94,17 +103,67 @@ function getMedal(position: number) {
   if (position === 1) return '🥇'
   if (position === 2) return '🥈'
   if (position === 3) return '🥉'
-  return `#${position}`
+  return `${position}.`
 }
 
 function getScoreLabel(strokes: number | null, par: number) {
   if (strokes == null) return '-'
   const diff = strokes - par
-  if (diff <= -2) return 'Eagle+'
-  if (diff === -1) return 'Birdie'
-  if (diff === 0) return 'Par'
-  if (diff === 1) return 'Bogey'
-  return 'Double+'
+  if (diff <= -2) return 'EAGLE+'
+  if (diff === -1) return 'BIRDIE'
+  if (diff === 0) return 'PAR'
+  if (diff === 1) return 'BOGEY'
+  return 'DOUBLE+'
+}
+
+function getScoreColor(strokes: number | null, par: number) {
+  if (strokes == null) return undefined
+  const diff = strokes - par
+  if (diff <= -2) return '#155da8'
+  if (diff === -1) return '#3f8ee8'
+  if (diff === 1) return '#f04b56'
+  if (diff >= 2) return '#0f4f8f'
+  return undefined
+}
+
+function buildRowsByHole(scoreRows: HoleScoreRow[], playerId: string) {
+  return new Map(
+    scoreRows
+      .filter((row) => row.round_player_id === playerId)
+      .map((row) => [row.hole_number, row])
+  )
+}
+
+function calculatePlayerTotals(params: {
+  player: RoundPlayer
+  holes: HoleLike[]
+  scoreRows: HoleScoreRow[]
+}) {
+  const { player, holes, scoreRows } = params
+  const rowsByHole = buildRowsByHole(scoreRows, player.id)
+  const hcpIndexes = holes.map((hole) => hole.hcp_index)
+
+  return holes.reduce<PlayerTotals>(
+    (totals, hole) => {
+      const strokes = rowsByHole.get(hole.hole_number)?.strokes ?? null
+      const receivedStrokes = getReceivedStrokesForSelectedHole(
+        player.playing_handicap ?? 0,
+        hcpIndexes,
+        hole.hcp_index
+      )
+      const netStrokes = strokes == null ? null : Math.max(1, strokes - receivedStrokes)
+
+      return {
+        totalPar: totals.totalPar + hole.par,
+        totalStrokes: totals.totalStrokes + (strokes ?? 0),
+        totalToPar: totals.totalToPar + (scoreVsPar(strokes, hole.par) ?? 0),
+        totalNet: totals.totalNet + (netStrokes ?? 0),
+        netToPar: totals.netToPar + (scoreVsPar(netStrokes, hole.par) ?? 0),
+        playedHoles: totals.playedHoles + (strokes == null ? 0 : 1),
+      }
+    },
+    { totalPar: 0, totalStrokes: 0, totalToPar: 0, totalNet: 0, netToPar: 0, playedHoles: 0 }
+  )
 }
 
 function buildLeaderboard(params: {
@@ -236,106 +295,91 @@ function SummaryHero({
   roundId: string
 }) {
   return (
-    <section
-      className="card"
-      style={{
-        padding: 18,
-        borderRadius: 26,
-        background:
-          'linear-gradient(145deg, rgba(244,252,246,0.98), rgba(255,255,255,0.96))',
-        border: '1px solid rgba(36, 122, 67, 0.12)',
-        boxShadow: '0 16px 42px rgba(20, 77, 43, 0.10)',
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ display: 'grid', gap: 8 }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <span className="badge">🏆 Leaderboard</span>
-            <span className="badge">{modeLabel}</span>
-            <span className="badge">Hål {currentHoleNumber}/{totalHoles}</span>
-          </div>
-          <div>
-            <h1 className="title" style={{ margin: 0, fontSize: 'clamp(28px, 8vw, 42px)', lineHeight: 1 }}>
-              {roundTitle}
-            </h1>
-            <p className="muted meta" style={{ margin: '4px 0 0' }}>{courseName}</p>
-          </div>
+    <section style={{ textAlign: 'center', padding: '18px 8px 10px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr 56px', alignItems: 'center', gap: 10 }}>
+        <Link
+          href={`/rounds/${roundId}?hole=${currentHoleNumber}`}
+          aria-label="Tillbaka till rundan"
+          style={{
+            width: 52,
+            height: 52,
+            display: 'grid',
+            placeItems: 'center',
+            borderRadius: 999,
+            background: '#f3f3f7',
+            color: '#263238',
+            textDecoration: 'none',
+            fontSize: 34,
+            fontWeight: 900,
+            lineHeight: 1,
+          }}
+        >
+          ‹
+        </Link>
+
+        <div style={{ minWidth: 0 }}>
+          <h1 style={{ margin: 0, fontSize: 'clamp(28px, 7vw, 42px)', lineHeight: 1.05, fontWeight: 950 }}>
+            {roundTitle}
+          </h1>
+          <p style={{ margin: '3px 0 0', color: '#56645b', fontSize: 20, fontWeight: 800 }}>
+            {courseName}
+          </p>
         </div>
 
-        <Link
-          className="button secondary"
-          href={`/rounds/${roundId}?hole=${currentHoleNumber}`}
-          style={{ borderRadius: 999, alignSelf: 'flex-start' }}
-        >
-          Till rundan
-        </Link>
+        <div style={{ color: '#16a34a', fontSize: 22, fontWeight: 950, lineHeight: 0.92, textAlign: 'right' }}>
+          GOLF<br />GAME<br />BOOK
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>
+        <span style={pillStyle}>🏆 Leaderboard</span>
+        <span style={pillStyle}>{modeLabel}</span>
+        <span style={pillStyle}>Hål {currentHoleNumber}/{totalHoles}</span>
       </div>
     </section>
   )
 }
 
-function FullLeaderboard({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
+function GameTabs({ scoringMode }: { scoringMode: RoundLike['scoring_mode'] }) {
+  const activeLabel = scoringMode === 'stableford' ? 'Poängbogey NET' : 'Slagspel NET'
+  const inactiveLabel = scoringMode === 'stableford' ? 'Slagspel NET' : 'Poängbogey NET'
+
   return (
-    <section
-      style={{
-        background: 'linear-gradient(135deg, #12231d 0%, #1f7a3a 100%)',
-        color: '#fff',
-        borderRadius: 26,
-        padding: 18,
-        boxShadow: '0 18px 45px rgba(21, 90, 45, 0.22)',
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
-        <div>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 7,
-              padding: '5px 10px',
-              borderRadius: 999,
-              background: 'rgba(255,255,255,0.16)',
-              fontSize: 12,
-              fontWeight: 900,
-              textTransform: 'uppercase',
-            }}
-          >
-            🔴 Live leaderboard
-          </div>
-          <h2 style={{ margin: '10px 0 0', fontSize: 26, lineHeight: 1 }}>Ställning</h2>
-        </div>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', marginTop: 8, boxShadow: '0 8px 22px rgba(0,0,0,0.12)', borderRadius: '18px 18px 0 0', overflow: 'hidden' }}>
+      <div style={{ padding: '17px 10px', textAlign: 'center', background: '#13ad6b', color: '#fff', fontSize: 22, fontWeight: 950 }}>
+        {activeLabel}
+      </div>
+      <div style={{ padding: '17px 10px', textAlign: 'center', background: '#d9d9d9', color: '#3e4640', fontSize: 22, fontWeight: 950 }}>
+        {inactiveLabel}
+      </div>
+    </div>
+  )
+}
+
+function CompactLeaderboard({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
+  return (
+    <section style={{ borderRadius: 0, overflow: 'hidden', border: '1px solid #0ea55d', borderTop: 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr 96px 86px 74px', gap: 0, background: '#353836', color: '#fff', fontSize: 13, fontWeight: 950, textTransform: 'uppercase' }}>
+        <div style={leaderHeaderCell}>#</div>
+        <div style={leaderHeaderCell}>Namn</div>
+        <div style={leaderHeaderCell}>Resultat</div>
+        <div style={leaderHeaderCell}>Till par</div>
+        <div style={leaderHeaderCell}>Spelat</div>
       </div>
 
-      <div style={{ display: 'grid', gap: 10 }}>
+      <div style={{ background: '#10a968', padding: 8, display: 'grid', gap: 8 }}>
         {leaderboard.map((entry) => (
-          <div
-            key={entry.playerId}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '46px minmax(0, 1fr) auto auto',
-              gap: 10,
-              alignItems: 'center',
-              padding: 12,
-              borderRadius: 18,
-              background: entry.isLeader ? 'rgba(255,255,255,0.20)' : 'rgba(255,255,255,0.10)',
-              border: entry.isLeader
-                ? '1px solid rgba(255,255,255,0.35)'
-                : '1px solid rgba(255,255,255,0.16)',
-            }}
-          >
-            <div style={{ fontSize: 22, fontWeight: 950 }}>{getMedal(entry.position)}</div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 17, fontWeight: 950, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div key={entry.playerId} style={{ display: 'grid', gridTemplateColumns: '56px 1fr 96px 86px 74px', alignItems: 'center', background: '#fff', borderRadius: 10, minHeight: 74, overflow: 'hidden' }}>
+            <div style={{ padding: '0 12px', fontSize: 22 }}>{entry.position}.</div>
+            <div style={{ padding: '10px 6px', minWidth: 0 }}>
+              <div style={{ fontSize: 24, lineHeight: 1.05, color: '#374047', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {entry.playerName}
               </div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.70)' }}>
-                {entry.totalStrokes} slag totalt
-              </div>
+              <div style={{ color: '#75807a', fontWeight: 800 }}>HCP</div>
             </div>
-            <div style={{ fontSize: 20, fontWeight: 950 }}>{entry.scoreText}</div>
-            <div style={{ fontSize: 13, fontWeight: 900, color: 'rgba(255,255,255,0.72)' }}>
-              {formatToPar(entry.totalToPar)}
-            </div>
+            <div style={{ textAlign: 'center', fontSize: 27, fontWeight: 800, color: '#30383d' }}>{entry.totalStrokes || '-'}</div>
+            <div style={{ textAlign: 'center', fontSize: 30, fontWeight: 950, color: '#000' }}>{formatToPar(entry.totalToPar)}</div>
+            <div style={{ textAlign: 'center', fontSize: 24, fontWeight: 800, color: '#30383d' }}>F</div>
           </div>
         ))}
       </div>
@@ -343,132 +387,224 @@ function FullLeaderboard({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
   )
 }
 
-function Scorecards({
+function ScorecardTable({
+  player,
+  holes,
+  scoreRows,
+  label,
+}: {
+  player: RoundPlayer
+  holes: HoleLike[]
+  scoreRows: HoleScoreRow[]
+  label: 'Ut' | 'In' | 'Totalt'
+}) {
+  const rowsByHole = buildRowsByHole(scoreRows, player.id)
+  const hcpIndexes = holes.map((hole) => hole.hcp_index)
+  const totalPar = holes.reduce((sum, hole) => sum + hole.par, 0)
+  const totalStrokes = holes.reduce((sum, hole) => sum + (rowsByHole.get(hole.hole_number)?.strokes ?? 0), 0)
+  const totalNet = holes.reduce((sum, hole) => {
+    const strokes = rowsByHole.get(hole.hole_number)?.strokes ?? null
+    if (strokes == null) return sum
+    const receivedStrokes = getReceivedStrokesForSelectedHole(
+      player.playing_handicap ?? 0,
+      hcpIndexes,
+      hole.hcp_index
+    )
+    return sum + Math.max(1, strokes - receivedStrokes)
+  }, 0)
+
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760, tableLayout: 'fixed' }}>
+        <thead>
+          <tr>
+            <th style={greenHeadCell}>Hål</th>
+            {holes.map((hole) => <th key={hole.hole_number} style={greenHeadCell}>{hole.hole_number}</th>)}
+            <th style={greenHeadCell}>{label}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={labelCell}>Handicap</td>
+            {holes.map((hole) => <td key={hole.hole_number} style={plainCell}>{hole.hcp_index}</td>)}
+            <td style={plainCell}></td>
+          </tr>
+          <tr>
+            <td style={labelCell}>Par</td>
+            {holes.map((hole) => <td key={hole.hole_number} style={plainCell}>{hole.par}</td>)}
+            <td style={plainCell}>{totalPar}</td>
+          </tr>
+          <tr>
+            <td style={labelCellBold}>Resultat</td>
+            {holes.map((hole) => {
+              const strokes = rowsByHole.get(hole.hole_number)?.strokes ?? null
+              const bg = getScoreColor(strokes, hole.par)
+              return (
+                <td key={hole.hole_number} style={plainCell}>
+                  <span style={{
+                    display: 'inline-grid',
+                    placeItems: 'center',
+                    minWidth: 40,
+                    height: 40,
+                    borderRadius: bg === '#f04b56' ? 999 : 0,
+                    background: bg,
+                    color: bg ? '#fff' : '#30383d',
+                    fontWeight: 950,
+                  }}>
+                    {strokes ?? '-'}
+                  </span>
+                </td>
+              )
+            })}
+            <td style={plainCellBold}>{totalStrokes || '-'}</td>
+          </tr>
+          <tr>
+            <td style={labelCell}>Net</td>
+            {holes.map((hole) => {
+              const strokes = rowsByHole.get(hole.hole_number)?.strokes ?? null
+              const receivedStrokes = getReceivedStrokesForSelectedHole(
+                player.playing_handicap ?? 0,
+                hcpIndexes,
+                hole.hcp_index
+              )
+              const net = strokes == null ? null : Math.max(1, strokes - receivedStrokes)
+              return <td key={hole.hole_number} style={plainCell}>{net ?? '-'}</td>
+            })}
+            <td style={plainCell}>{totalNet || '-'}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function PlayerScorecard({
+  player,
+  holes,
+  scoreRows,
+  position,
+}: {
+  player: RoundPlayer
+  holes: HoleLike[]
+  scoreRows: HoleScoreRow[]
+  position: number
+}) {
+  const frontNine = holes.filter((hole) => hole.hole_number <= 9)
+  const backNine = holes.filter((hole) => hole.hole_number >= 10)
+  const totals = calculatePlayerTotals({ player, holes, scoreRows })
+
+  return (
+    <article style={{ borderRadius: 22, background: '#fff', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 16px 34px rgba(0,0,0,0.10)' }}>
+      <div style={{ padding: '14px 16px 10px', display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'start' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 26, color: '#273238' }}>{player.display_name ?? 'Spelare'}</h2>
+          <p style={{ margin: '4px 0 0', color: '#65756b', fontWeight: 850 }}>
+            HCP {player.exact_handicap ?? '-'} · Spelade hål {totals.playedHoles}
+          </p>
+        </div>
+        <span style={{ ...pillStyle, fontSize: 14 }}>{player.tee_key ?? 'Tee'}</span>
+      </div>
+
+      {frontNine.length > 0 && <ScorecardTable player={player} holes={frontNine} scoreRows={scoreRows} label="Ut" />}
+      {backNine.length > 0 && <ScorecardTable player={player} holes={backNine} scoreRows={scoreRows} label="In" />}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr 1fr', gap: 8, padding: '18px 16px', borderTop: '1px solid #e5e7eb', alignItems: 'center' }}>
+        <div style={summaryStatStyle}>Par <strong>{totals.totalPar}</strong></div>
+        <div style={summaryStatStyle}>Resultat <strong>{totals.totalStrokes || '-'}/{totals.totalNet || '-'}</strong></div>
+        <div style={{ ...summaryStatStyle, textAlign: 'right' }}>Position <strong>{position}.</strong></div>
+      </div>
+    </article>
+  )
+}
+
+function GamebookScorecards({
   players,
   holes,
   scoreRows,
+  leaderboard,
 }: {
   players: RoundPlayer[]
   holes: HoleLike[]
   scoreRows: HoleScoreRow[]
+  leaderboard: LeaderboardEntry[]
 }) {
+  const positionByPlayerId = new Map(leaderboard.map((entry) => [entry.playerId, entry.position]))
+
   return (
-    <section style={{ display: 'grid', gap: 12 }}>
-      <h2 style={{ margin: 0, fontSize: 26 }}>Scorekort</h2>
-
-      {players.map((player) => {
-        const rowsByHole = new Map(
-          scoreRows
-            .filter((row) => row.round_player_id === player.id)
-            .map((row) => [row.hole_number, row])
-        )
-
-        const totalStrokes = holes.reduce(
-          (sum, hole) => sum + (rowsByHole.get(hole.hole_number)?.strokes ?? 0),
-          0
-        )
-
-        const totalToPar = holes.reduce((sum, hole) => {
-          const strokes = rowsByHole.get(hole.hole_number)?.strokes ?? null
-          return sum + (scoreVsPar(strokes, hole.par) ?? 0)
-        }, 0)
-
-        return (
-          <article
-            key={player.id}
-            className="card"
-            style={{
-              padding: 14,
-              borderRadius: 24,
-              border: '1px solid rgba(36, 122, 67, 0.14)',
-              boxShadow: '0 12px 34px rgba(20, 77, 43, 0.08)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: 22 }}>{player.display_name ?? 'Spelare'}</h3>
-                <p className="muted" style={{ margin: '3px 0 0', fontWeight: 800 }}>
-                  Totalt: {totalStrokes} slag · Till par {formatToPar(totalToPar)}
-                </p>
-              </div>
-              <span className="badge">{player.tee_key ?? 'Tee'}</span>
-            </div>
-
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, minWidth: 720 }}>
-                <thead>
-                  <tr>
-                    <th style={cellHeaderStyle}>Hål</th>
-                    {holes.map((hole) => (
-                      <th key={hole.hole_number} style={cellHeaderStyle}>{hole.hole_number}</th>
-                    ))}
-                    <th style={cellHeaderStyle}>Totalt</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td style={cellLabelStyle}>Par</td>
-                    {holes.map((hole) => <td key={hole.hole_number} style={cellStyle}>{hole.par}</td>)}
-                    <td style={cellStyle}>{holes.reduce((sum, hole) => sum + hole.par, 0)}</td>
-                  </tr>
-                  <tr>
-                    <td style={cellLabelStyle}>Slag</td>
-                    {holes.map((hole) => {
-                      const strokes = rowsByHole.get(hole.hole_number)?.strokes ?? null
-                      return <td key={hole.hole_number} style={cellStyle}>{strokes ?? '-'}</td>
-                    })}
-                    <td style={cellStyle}>{totalStrokes}</td>
-                  </tr>
-                  <tr>
-                    <td style={cellLabelStyle}>Resultat</td>
-                    {holes.map((hole) => {
-                      const strokes = rowsByHole.get(hole.hole_number)?.strokes ?? null
-                      return <td key={hole.hole_number} style={cellSmallStyle}>{getScoreLabel(strokes, hole.par)}</td>
-                    })}
-                    <td style={cellSmallStyle}>{formatToPar(totalToPar)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </article>
-        )
-      })}
+    <section style={{ display: 'grid', gap: 14 }}>
+      {players.map((player) => (
+        <PlayerScorecard
+          key={player.id}
+          player={player}
+          holes={holes}
+          scoreRows={scoreRows}
+          position={positionByPlayerId.get(player.id) ?? 1}
+        />
+      ))}
     </section>
   )
 }
 
-const cellHeaderStyle: React.CSSProperties = {
-  padding: '10px 8px',
-  fontSize: 12,
-  textAlign: 'center',
-  color: '#61705f',
-  background: '#f5fbf6',
-  borderBottom: '1px solid rgba(20,77,43,0.10)',
-}
-
-const cellLabelStyle: React.CSSProperties = {
-  padding: '10px 8px',
-  fontSize: 12,
+const pillStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '9px 15px',
+  borderRadius: 999,
+  background: '#edf7ee',
+  color: '#20452c',
+  border: '1px solid rgba(28, 120, 58, 0.16)',
+  fontSize: 16,
   fontWeight: 950,
-  color: '#26382d',
-  background: '#f9fcfa',
-  borderBottom: '1px solid rgba(20,77,43,0.08)',
-  textAlign: 'left',
 }
 
-const cellStyle: React.CSSProperties = {
+const leaderHeaderCell: React.CSSProperties = {
   padding: '10px 8px',
-  textAlign: 'center',
-  fontSize: 15,
-  fontWeight: 900,
-  borderBottom: '1px solid rgba(20,77,43,0.08)',
+  whiteSpace: 'nowrap',
 }
 
-const cellSmallStyle: React.CSSProperties = {
-  ...cellStyle,
-  fontSize: 11,
-  color: '#667085',
-  textTransform: 'uppercase',
+const greenHeadCell: React.CSSProperties = {
+  padding: '12px 8px',
+  background: '#149654',
+  color: '#fff',
+  fontSize: 20,
+  fontWeight: 950,
+  borderRight: '1px solid rgba(255,255,255,0.14)',
+}
+
+const labelCell: React.CSSProperties = {
+  padding: '11px 8px',
+  textAlign: 'left',
+  fontSize: 20,
+  color: '#3a4244',
+  border: '1px solid #eef0f2',
+  background: '#fff',
+}
+
+const labelCellBold: React.CSSProperties = {
+  ...labelCell,
+  fontWeight: 950,
+}
+
+const plainCell: React.CSSProperties = {
+  padding: '10px 6px',
+  textAlign: 'center',
+  fontSize: 20,
+  color: '#30383d',
+  border: '1px solid #eef0f2',
+  background: '#fff',
+  fontWeight: 650,
+}
+
+const plainCellBold: React.CSSProperties = {
+  ...plainCell,
+  fontWeight: 950,
+}
+
+const summaryStatStyle: React.CSSProperties = {
+  color: '#30383d',
+  fontSize: 'clamp(18px, 5vw, 27px)',
+  fontWeight: 500,
 }
 
 export default async function SummaryPage({
@@ -579,8 +715,8 @@ export default async function SummaryPage({
   })
 
   return (
-    <main>
-      <div className="container" style={{ display: 'grid', gap: 16 }}>
+    <main style={{ background: '#f3fbf5', minHeight: '100vh' }}>
+      <div className="container" style={{ display: 'grid', gap: 0, maxWidth: 980 }}>
         <SummaryHero
           roundTitle={round.title}
           courseName={course.name}
@@ -590,13 +726,17 @@ export default async function SummaryPage({
           roundId={id}
         />
 
-        <FullLeaderboard leaderboard={leaderboard} />
+        <GameTabs scoringMode={round.scoring_mode} />
+        <CompactLeaderboard leaderboard={leaderboard} />
 
-        <Scorecards
-          players={activePlayers}
-          holes={visibleHoles}
-          scoreRows={scoreRows}
-        />
+        <div style={{ padding: '14px 0 40px' }}>
+          <GamebookScorecards
+            players={activePlayers}
+            holes={visibleHoles}
+            scoreRows={scoreRows}
+            leaderboard={leaderboard}
+          />
+        </div>
       </div>
     </main>
   )
