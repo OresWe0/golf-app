@@ -326,8 +326,8 @@ function SummaryHero({
           </p>
         </div>
 
-        <div style={{ color: '#16a34a', fontSize: 22, fontWeight: 950, lineHeight: 0.92, textAlign: 'right' }}>
-          GOLF<br />GAME<br />BOOK
+        <div style={{ color: '#166534', fontSize: 22, fontWeight: 950, lineHeight: 0.92, textAlign: 'right' }}>
+          GOLF<br />RUNDAN
         </div>
       </div>
 
