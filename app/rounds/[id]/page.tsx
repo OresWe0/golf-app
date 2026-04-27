@@ -320,21 +320,23 @@ function PremiumLeaderboard({
           </div>
 
           <Link
-            href={`/rounds/${roundId}/summary?hole=${currentHoleNumber}`}
-            style={{
-              color: '#fff',
-              textDecoration: 'none',
-              background: 'rgba(255,255,255,0.15)',
-              border: '1px solid rgba(255,255,255,0.22)',
-              borderRadius: 999,
-              padding: '8px 11px',
-              fontSize: 12,
-              fontWeight: 900,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Visa allt
-          </Link>
+  href={`/rounds/${roundId}/summary?hole=${currentHoleNumber}`}
+  style={{
+    color: '#fff',
+    textDecoration: 'none',
+    background: 'rgba(255,255,255,0.15)',
+    border: '1px solid rgba(255,255,255,0.22)',
+    borderRadius: 999,
+    padding: '8px 11px',
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: 'nowrap',
+    position: 'relative',
+    zIndex: 9999, // 👈 DETTA ÄR FIXEN
+  }}
+>
+  Visa allt
+</Link>
         </div>
 
         <div
