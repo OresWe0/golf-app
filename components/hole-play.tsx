@@ -1350,168 +1350,51 @@ function HoleImageModal({
 function FinishRoundModal({
   open,
   loading,
-  isEarlyFinish,
-  currentHole,
-  totalHoles,
-  completedPlayers,
-  totalPlayers,
   onCancel,
   onConfirm,
 }: {
   open: boolean
   loading: boolean
-  isEarlyFinish: boolean
-  currentHole: number
-  totalHoles: number
-  completedPlayers: number
-  totalPlayers: number
   onCancel: () => void
   onConfirm: () => void
 }) {
   if (!open) return null
 
-  const title = isEarlyFinish ? 'Avsluta rundan här?' : 'Rundan är klar!'
-  const subtitle = isEarlyFinish
-    ? `Du har spelat till hål ${currentHole} av ${totalHoles}. Resultatet sparas och summeringen visar ${currentHole}/${totalHoles} hål.`
-    : 'Alla hål är spelade. Spara rundan och gå vidare till summering och leaderboard.'
-
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
       style={{
         position: 'fixed',
         inset: 0,
-        background:
-          'linear-gradient(180deg, rgba(15,23,42,0.48), rgba(15,23,42,0.66))',
-        backdropFilter: 'blur(14px)',
-        WebkitBackdropFilter: 'blur(14px)',
+        background: 'rgba(15, 23, 42, 0.52)',
+        backdropFilter: 'blur(10px)',
         zIndex: 200,
         display: 'grid',
-        placeItems: 'end center',
-        padding: '16px 14px max(16px, env(safe-area-inset-bottom))',
+        placeItems: 'center',
+        padding: 16,
       }}
-      onClick={onCancel}
     >
       <div
-        onClick={(event) => event.stopPropagation()}
         style={{
           width: '100%',
-          maxWidth: 460,
+          maxWidth: 430,
           background:
-            'radial-gradient(circle at top left, rgba(34,197,94,0.18), transparent 36%), linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.96) 100%)',
-          border: '1px solid rgba(255,255,255,0.82)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderRadius: 30,
-          padding: 18,
+            'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,250,252,0.92) 100%)',
+          border: '1px solid rgba(255,255,255,0.7)',
+          backdropFilter: 'blur(16px)',
+          borderRadius: 28,
+          padding: 22,
           display: 'grid',
-          gap: 14,
-          boxShadow: '0 30px 90px rgba(15, 23, 42, 0.30)',
-          animation: 'modalIn 0.22s cubic-bezier(.2,.9,.25,1.12)',
+          gap: 16,
+          textAlign: 'center',
+          boxShadow: '0 28px 70px rgba(15, 23, 42, 0.20)',
+          animation: 'modalIn 0.2s ease',
         }}
       >
-        <div
-          style={{
-            width: 44,
-            height: 5,
-            borderRadius: 999,
-            background: '#cbd5e1',
-            margin: '0 auto 2px',
-          }}
-        />
+        <div style={{ fontSize: 24, fontWeight: 900 }}>🎉 Rundan är klar!</div>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '58px minmax(0, 1fr)',
-            gap: 13,
-            alignItems: 'center',
-          }}
-        >
-          <div
-            style={{
-              width: 58,
-              height: 58,
-              borderRadius: 22,
-              display: 'grid',
-              placeItems: 'center',
-              background: isEarlyFinish
-                ? 'linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%)'
-                : 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
-              boxShadow: isEarlyFinish
-                ? '0 14px 28px rgba(245, 158, 11, 0.16)'
-                : '0 14px 28px rgba(34, 197, 94, 0.16)',
-              fontSize: 28,
-            }}
-          >
-            {isEarlyFinish ? '🌅' : '🏁'}
-          </div>
-
-          <div style={{ minWidth: 0 }}>
-            <div
-              style={{
-                fontSize: 22,
-                lineHeight: 1.05,
-                letterSpacing: -0.5,
-                fontWeight: 950,
-                color: '#0f172a',
-              }}
-            >
-              {title}
-            </div>
-            <div
-              style={{
-                marginTop: 7,
-                color: '#64748b',
-                fontSize: 14,
-                lineHeight: 1.42,
-                fontWeight: 700,
-              }}
-            >
-              {subtitle}
-            </div>
-          </div>
+        <div style={{ color: '#475569', fontSize: 15, lineHeight: 1.55 }}>
+          Vill du avsluta rundan och gå vidare till leaderboard och scorekort?
         </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-            gap: 8,
-          }}
-        >
-          <div className="hp-finish-stat">
-            <strong>{currentHole}/{totalHoles}</strong>
-            <span>hål</span>
-          </div>
-          <div className="hp-finish-stat">
-            <strong>{completedPlayers}/{totalPlayers}</strong>
-            <span>spelare klara</span>
-          </div>
-          <div className="hp-finish-stat">
-            <strong>{isEarlyFinish ? 'Tidigt' : 'Klar'}</strong>
-            <span>status</span>
-          </div>
-        </div>
-
-        {isEarlyFinish ? (
-          <div
-            style={{
-              borderRadius: 22,
-              padding: 13,
-              background: 'rgba(255, 247, 237, 0.95)',
-              border: '1px solid rgba(251, 146, 60, 0.22)',
-              color: '#9a3412',
-              fontSize: 13,
-              lineHeight: 1.42,
-              fontWeight: 800,
-            }}
-          >
-            Tips: använd detta när ni bryter p.g.a. mörker, väder eller tidsbrist. Ospelade hål räknas inte.
-          </div>
-        ) : null}
 
         <div className="hp-finish-actions">
           <button
@@ -1519,17 +1402,16 @@ function FinishRoundModal({
             onClick={onCancel}
             disabled={loading}
             style={{
-              border: '1px solid #dbe3ea',
-              borderRadius: 20,
-              padding: '15px 14px',
-              fontWeight: 900,
-              background: 'rgba(255,255,255,0.92)',
+              border: '1px solid #d1d5db',
+              borderRadius: 18,
+              padding: '14px',
+              fontWeight: 800,
+              background: 'rgba(255,255,255,0.84)',
               cursor: loading ? 'not-allowed' : 'pointer',
               color: '#0f172a',
-              boxShadow: '0 10px 22px rgba(15,23,42,0.06)',
             }}
           >
-            Fortsätt spela
+            Avbryt
           </button>
 
           <button
@@ -1538,18 +1420,16 @@ function FinishRoundModal({
             disabled={loading}
             style={{
               border: 'none',
-              borderRadius: 20,
-              padding: '15px 14px',
-              fontWeight: 950,
-              background: isEarlyFinish
-                ? 'linear-gradient(135deg, #0f172a 0%, #166534 100%)'
-                : 'linear-gradient(135deg, #166534 0%, #22c55e 100%)',
+              borderRadius: 18,
+              padding: '14px',
+              fontWeight: 900,
+              background: 'linear-gradient(135deg, #166534 0%, #22c55e 100%)',
               color: '#fff',
               cursor: loading ? 'not-allowed' : 'pointer',
-              boxShadow: '0 16px 32px rgba(22, 101, 52, 0.24)',
+              boxShadow: '0 12px 26px rgba(22, 101, 52, 0.22)',
             }}
           >
-            {loading ? 'Avslutar...' : isEarlyFinish ? 'Avsluta här' : 'Visa summering'}
+            {loading ? 'Avslutar...' : 'Bekräfta'}
           </button>
         </div>
       </div>
@@ -1709,7 +1589,6 @@ export function HolePlay({
   const [holeImageError, setHoleImageError] = useState(false)
   const [previewHoleNumber, setPreviewHoleNumber] = useState<number>(hole.hole_number)
   const [showFinishModal, setShowFinishModal] = useState(false)
-  const [isEarlyFinishModal, setIsEarlyFinishModal] = useState(false)
 const [activeCourseImageSlug, setActiveCourseImageSlug] = useState(courseImageSlug || '')
 const [zoom, setZoom] = useState(1)
 const [pan, setPan] = useState({ x: 0, y: 0 })
@@ -2010,32 +1889,8 @@ const navigateTo = (target: string, options?: { replace?: boolean }) => {
     setLoading(true)
 
     try {
-      if (allPlayersHaveScores(values)) {
-        const saveResponse = await fetch(`/api/rounds/${roundId}/scores`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            holeNumber: currentHole,
-            scores: players.map((player) => ({
-              roundPlayerId: player.id,
-              strokes: values[String(player.id)] ? Number(values[String(player.id)]) : null,
-            })),
-          }),
-        })
-
-        if (!saveResponse.ok) {
-          alert('Kunde inte spara scorerna innan rundan avslutades.')
-          return
-        }
-      }
-
       const response = await fetch(`/api/rounds/${roundId}/complete`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          finishHoleNumber: currentHole,
-          isEarlyFinish: isEarlyFinishModal || currentHole < endHole,
-        }),
       })
 
       if (!response.ok) {
@@ -2097,7 +1952,6 @@ const navigateTo = (target: string, options?: { replace?: boolean }) => {
       if (currentHole === endHole) {
         isSavingRef.current = false
         setLoading(false)
-        setIsEarlyFinishModal(false)
         setShowFinishModal(true)
         return
       }
@@ -2183,15 +2037,6 @@ const previewNextHole = () => {
     }
   }
 }
-
-  const openFinishEarlyModal = () => {
-    if (!canInteract) return
-    if (!isReadyToAdvance) return
-
-    setIsEarlyFinishModal(true)
-    setShowFinishModal(true)
-  }
-
   const onTouchStart: TouchEventHandler<HTMLDivElement> = (e) => {
     touchStartX.current = e.changedTouches[0]?.clientX ?? null
   }
@@ -2221,7 +2066,6 @@ const previewNextHole = () => {
   setPreviewHoleNumber(hole.hole_number)
   setHoleImageError(false)
   setShowFinishModal(false)
-  setIsEarlyFinishModal(false)
   setSaveState('idle')
 
   hasUserChangedScoreRef.current = false
@@ -2411,56 +2255,6 @@ useEffect(() => {
         @keyframes ctaReadyPulse {
           0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.22); }
           100% { box-shadow: 0 0 0 12px rgba(34, 197, 94, 0); }
-        }
-
-
-        .hp-finish-stat {
-          min-height: 66px;
-          border-radius: 20px;
-          background: rgba(255,255,255,0.82);
-          border: 1px solid rgba(226,232,240,0.88);
-          box-shadow: 0 10px 22px rgba(15,23,42,0.05);
-          display: grid;
-          place-items: center;
-          align-content: center;
-          gap: 3px;
-          text-align: center;
-        }
-
-        .hp-finish-stat strong {
-          color: #0f172a;
-          font-size: 17px;
-          line-height: 1;
-          font-weight: 950;
-        }
-
-        .hp-finish-stat span {
-          color: #64748b;
-          font-size: 10px;
-          font-weight: 900;
-          text-transform: uppercase;
-          letter-spacing: 0.45px;
-        }
-
-        .hp-finish-early-button {
-          width: 100%;
-          border: 1px solid rgba(148, 163, 184, 0.28);
-          border-radius: 22px;
-          padding: 13px 14px;
-          background: rgba(255,255,255,0.82);
-          color: #334155;
-          font-size: 14px;
-          font-weight: 900;
-          box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
-          cursor: pointer;
-          touch-action: manipulation;
-          -webkit-tap-highlight-color: transparent;
-        }
-
-        .hp-finish-early-button:disabled {
-          opacity: 0.48;
-          cursor: not-allowed;
-          box-shadow: none;
         }
 
 
@@ -3072,17 +2866,6 @@ useEffect(() => {
           })}
         </div>
 
-        {currentHole < endHole ? (
-          <button
-            type="button"
-            className="hp-finish-early-button"
-            disabled={!canInteract || !isReadyToAdvance}
-            onClick={openFinishEarlyModal}
-          >
-            🌅 Avsluta runda här · {isReadyToAdvance ? `${currentHole}/${totalHoles} hål spelade` : 'fyll i hålet först'}
-          </button>
-        ) : null}
-
         <BottomBar
           canInteract={canInteract}
           isReadyToAdvance={isReadyToAdvance}
@@ -3124,15 +2907,9 @@ useEffect(() => {
       <FinishRoundModal
         open={showFinishModal}
         loading={loading}
-        isEarlyFinish={isEarlyFinishModal || currentHole < endHole}
-        currentHole={currentHole}
-        totalHoles={totalHoles}
-        completedPlayers={completedPlayersCount}
-        totalPlayers={players.length}
         onCancel={() => {
           if (loading || isSavingRef.current || isNavigatingRef.current) return
           setShowFinishModal(false)
-          setIsEarlyFinishModal(false)
         }}
         onConfirm={() => void confirmFinishRound()}
       />
