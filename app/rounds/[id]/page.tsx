@@ -320,7 +320,7 @@ function PremiumLeaderboard({
           </div>
 
           <Link
-            href={`/rounds/${roundId}/players?hole=${currentHoleNumber}`}
+            href={`/rounds/${roundId}/summary?hole=${currentHoleNumber}`}
             style={{
               color: '#fff',
               textDecoration: 'none',
