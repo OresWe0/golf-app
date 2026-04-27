@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import {
   useEffect,
   useMemo,
@@ -528,11 +529,15 @@ function LiveLeaderboard({
   players,
   startHole,
   endHole,
+  roundId,
+  currentHole,
 }: {
   leaderboard: LeaderboardEntry[]
   players: Player[]
   startHole: number
   endHole: number
+  roundId: string
+  currentHole: number
 }) {
   const sortedLeaderboard = useMemo(() => {
     return [...leaderboard].sort((a, b) => {
@@ -552,6 +557,7 @@ function LiveLeaderboard({
 
   const leader = sortedLeaderboard[0]
   const leaderPlayer = players.find((p) => String(p.id) === String(leader.playerId))
+  const podium = sortedLeaderboard.slice(0, 4)
 
   const getPositionBadge = (position: number) => {
     if (position === 1) return '🥇'
@@ -561,84 +567,150 @@ function LiveLeaderboard({
   }
 
   return (
-    <section className="hp-leaderboard-shell" aria-label="Live leaderboard">
-      <div className="hp-leaderboard-card">
-        <div className="hp-leaderboard-hero">
+    <section
+      aria-label="Live leaderboard"
+      style={{
+        borderRadius: 32,
+        padding: 22,
+        background: 'linear-gradient(135deg, #0f2f1f 0%, #2f7d3f 100%)',
+        color: '#ffffff',
+        boxShadow: '0 22px 55px rgba(21, 90, 45, 0.20)',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'radial-gradient(circle at top right, rgba(255,255,255,0.18), transparent 34%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      <div style={{ position: 'relative', display: 'grid', gap: 16 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            gap: 12,
+            alignItems: 'flex-start',
+          }}
+        >
           <div style={{ minWidth: 0 }}>
-            <div className="hp-eyebrow">
-              <span className="hp-live-dot" />
-              PGA-style leaderboard
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 12px',
+                borderRadius: 999,
+                background: 'rgba(255,255,255,0.16)',
+                fontSize: 13,
+                fontWeight: 900,
+                letterSpacing: 0.3,
+                textTransform: 'uppercase',
+              }}
+            >
+              <span aria-hidden="true">🔴</span>
+              <span>Live leaderboard</span>
             </div>
 
-            <h2 className="hp-leaderboard-title">Leaderboard</h2>
+            <h2
+              style={{
+                margin: '14px 0 2px',
+                fontSize: 32,
+                lineHeight: 1,
+                fontWeight: 950,
+                letterSpacing: '-0.04em',
+              }}
+            >
+              {leaderPlayer?.display_name ?? 'Leaderboard'}
+            </h2>
 
-            <p className="hp-leaderboard-subtitle">
+            <p style={{ margin: 0, color: 'rgba(255,255,255,0.76)', fontSize: 15, fontWeight: 800 }}>
               {leaderPlayer?.display_name ?? 'Ledaren'} leder just nu
-              {leader.totalPoints != null ? ` på ${leader.totalPoints} poäng` : ''}.
+              {leader.totalPoints != null ? ` på ${leader.totalPoints} p` : ''}
             </p>
           </div>
 
-          <div className="hp-leaderboard-leaderbox">
-            <div className="hp-leaderbox-label">Ledare</div>
-            <div className="hp-leaderbox-name">{leaderPlayer?.display_name ?? 'Spelare'}</div>
-            <div className="hp-leaderbox-score">
-              <span>{leader.totalPoints ?? '-'} p</span>
-              <span>{formatToPar(leader.totalToPar)}</span>
-            </div>
-          </div>
+          <Link
+            href={`/rounds/${roundId}/summary?hole=${currentHole}`}
+            prefetch={false}
+            style={{
+              color: '#ffffff',
+              textDecoration: 'none',
+              background: 'rgba(255,255,255,0.16)',
+              border: '1px solid rgba(255,255,255,0.25)',
+              borderRadius: 999,
+              padding: '11px 16px',
+              fontSize: 15,
+              fontWeight: 950,
+              whiteSpace: 'nowrap',
+              boxShadow: '0 10px 26px rgba(15, 23, 42, 0.16)',
+            }}
+          >
+            Visa allt
+          </Link>
         </div>
 
-        <div className="hp-leaderboard-table" role="table" aria-label="Aktuell ställning">
-          <div className="hp-leaderboard-head" role="row">
-            <div>Pos</div>
-            <div>Spelare</div>
-            <div className="hp-text-right">Poäng</div>
-            <div className="hp-text-right">Par</div>
-            <div className="hp-text-right">Slag</div>
-          </div>
+        <div
+          style={{
+            display: 'flex',
+            gap: 12,
+            overflowX: 'auto',
+            paddingBottom: 4,
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          {podium.map((entry) => {
+            const player = players.find((p) => String(p.id) === String(entry.playerId))
+            const activeFrom = player?.active_from_hole ?? startHole
+            const activeTo = player?.active_to_hole ?? endHole
+            const isPartialRound = activeFrom > startHole || activeTo < endHole
 
-          <div className="hp-leaderboard-rows">
-            {sortedLeaderboard.map((entry) => {
-              const player = players.find((p) => String(p.id) === String(entry.playerId))
-              const isLeader = entry.position === 1
-              const activeFrom = player?.active_from_hole ?? startHole
-              const activeTo = player?.active_to_hole ?? endHole
-              const isPartialRound = activeFrom > startHole || activeTo < endHole
-
-              return (
+            return (
+              <div
+                key={`leaderboard-preview-${entry.playerId}`}
+                style={{
+                  minWidth: 150,
+                  borderRadius: 22,
+                  padding: 16,
+                  background: 'rgba(255,255,255,0.15)',
+                  border: '1px solid rgba(255,255,255,0.24)',
+                  boxShadow: entry.position === 1 ? '0 14px 35px rgba(0,0,0,0.16)' : 'none',
+                }}
+              >
                 <div
-                  key={`leaderboard-${entry.playerId}`}
-                  className={isLeader ? 'hp-leaderboard-row is-leader' : 'hp-leaderboard-row'}
-                  role="row"
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 8,
+                    alignItems: 'center',
+                    fontSize: 18,
+                    fontWeight: 950,
+                  }}
                 >
-                  <div className="hp-position-pill">{getPositionBadge(entry.position)}</div>
-
-                  <div className="hp-player-cell">
-                    <div className="hp-player-name">{player?.display_name ?? 'Spelare'}</div>
-                    <div className="hp-player-meta">
-                      {isLeader ? 'Leder' : `Placering ${entry.position}`}
-                      {isPartialRound ? ` · Hål ${activeFrom}-${activeTo}` : ''}
-                    </div>
-                  </div>
-
-                  <div className="hp-stat-cell hp-text-right">
-                    <strong>{entry.totalPoints ?? '-'}</strong>
-                    <span>p</span>
-                  </div>
-
-                  <div className="hp-stat-cell hp-text-right">
-                    <strong>{formatToPar(entry.totalToPar)}</strong>
-                    <span>tot</span>
-                  </div>
-
-                  <div className="hp-stat-cell hp-text-right">
-                    <strong>{entry.totalStrokes ?? '-'}</strong>
-                    <span>slag</span>
-                  </div>
+                  <span>{getPositionBadge(entry.position)}</span>
+                  <span>{formatToPar(entry.totalToPar)}</span>
                 </div>
-              )
-            })}
-          </div>
+
+                <div style={{ marginTop: 18, fontSize: 17, fontWeight: 950 }}>
+                  {player?.display_name ?? 'Spelare'}
+                </div>
+
+                <div style={{ marginTop: 10, fontSize: 30, lineHeight: 1, fontWeight: 950 }}>
+                  {entry.totalPoints ?? '-'} p
+                </div>
+
+                <div style={{ marginTop: 5, color: 'rgba(255,255,255,0.72)', fontSize: 13, fontWeight: 750 }}>
+                  {entry.totalStrokes ?? '-'} slag totalt
+                  {isPartialRound ? ` · Hål ${activeFrom}-${activeTo}` : ''}
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
     </section>
@@ -2836,6 +2908,8 @@ useEffect(() => {
             players={players}
             startHole={startHole}
             endHole={endHole}
+            roundId={roundId}
+            currentHole={currentHole}
           />
         </div>
 
