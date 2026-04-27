@@ -72,6 +72,7 @@ type HoleGpsData = {
 
 type DistanceStatus = 'idle' | 'loading' | 'ready' | 'error'
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
+type FinishModalMode = 'saved-last-hole' | 'finish-early'
 
 type ScoreTone = {
   background: string
@@ -1422,11 +1423,15 @@ function HoleImageModal({
 function FinishRoundModal({
   open,
   loading,
+  title,
+  description,
   onCancel,
   onConfirm,
 }: {
   open: boolean
   loading: boolean
+  title: string
+  description: string
   onCancel: () => void
   onConfirm: () => void
 }) {
@@ -1462,11 +1467,9 @@ function FinishRoundModal({
           animation: 'modalIn 0.2s ease',
         }}
       >
-        <div style={{ fontSize: 24, fontWeight: 900 }}>🎉 Rundan är klar!</div>
+        <div style={{ fontSize: 24, fontWeight: 900 }}>{title}</div>
 
-        <div style={{ color: '#475569', fontSize: 15, lineHeight: 1.55 }}>
-          Vill du avsluta rundan och gå vidare till leaderboard och scorekort?
-        </div>
+        <div style={{ color: '#475569', fontSize: 15, lineHeight: 1.55 }}>{description}</div>
 
         <div className="hp-finish-actions">
           <button
@@ -1516,9 +1519,11 @@ function BottomBar({
   totalPlayers,
   currentHole,
   endHole,
+  canFinishEarly,
   loading,
   onPrevious,
   onSave,
+  onFinishEarly,
 }: {
   canInteract: boolean
   isReadyToAdvance: boolean
@@ -1526,9 +1531,11 @@ function BottomBar({
   totalPlayers: number
   currentHole: number
   endHole: number
+  canFinishEarly: boolean
   loading: boolean
   onPrevious: () => void
   onSave: () => void
+  onFinishEarly: () => void
 }) {
   return (
     <div style={styles.bottomBarOuter}>
@@ -1613,6 +1620,26 @@ function BottomBar({
       >
         <span>{completedPlayers}/{totalPlayers} spelare klara</span>
         <span>{isReadyToAdvance ? 'Redo att gå vidare' : 'Väntar på resterande scorer'}</span>
+        {canFinishEarly ? (
+          <button
+            type="button"
+            onClick={onFinishEarly}
+            disabled={loading || !canInteract || !isReadyToAdvance}
+            style={{
+              border: '1px solid #cbd5e1',
+              borderRadius: 999,
+              padding: '6px 12px',
+              background: '#ffffff',
+              color: '#0f172a',
+              fontSize: 12,
+              fontWeight: 900,
+              cursor: loading || !canInteract || !isReadyToAdvance ? 'not-allowed' : 'pointer',
+              opacity: loading || !canInteract || !isReadyToAdvance ? 0.65 : 1,
+            }}
+          >
+            Avsluta rundan nu
+          </button>
+        ) : null}
       </div>
     </div>
   )
@@ -1661,6 +1688,7 @@ export function HolePlay({
   const [holeImageError, setHoleImageError] = useState(false)
   const [previewHoleNumber, setPreviewHoleNumber] = useState<number>(hole.hole_number)
   const [showFinishModal, setShowFinishModal] = useState(false)
+  const [finishModalMode, setFinishModalMode] = useState<FinishModalMode>('saved-last-hole')
 const [activeCourseImageSlug, setActiveCourseImageSlug] = useState(courseImageSlug || '')
 const [zoom, setZoom] = useState(1)
 const [pan, setPan] = useState({ x: 0, y: 0 })
@@ -1936,6 +1964,16 @@ const navigateTo = (target: string, options?: { replace?: boolean }) => {
     navigateTo(target)
   }
 
+  const requestFinishEarly = () => {
+    if (!canInteract) return
+    if (!isReadyToAdvance) return
+    if (loading || isSavingRef.current || isNavigatingRef.current) return
+    if (currentHole >= endHole) return
+
+    setFinishModalMode('finish-early')
+    setShowFinishModal(true)
+  }
+
   const markSaved = () => {
     setSaveState('saved')
     clearToastTimeout()
@@ -1954,23 +1992,36 @@ const navigateTo = (target: string, options?: { replace?: boolean }) => {
     }, 1800)
   }
 
+  const completeRound = async (completedThroughHole: number) => {
+    const response = await fetch(`/api/rounds/${roundId}/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ completedThroughHole }),
+    })
+
+    if (!response.ok) {
+      alert('Kunde inte avsluta rundan.')
+      return false
+    }
+
+    navigateTo(`/rounds/${roundId}/summary`, { replace: true })
+    return true
+  }
+
   const confirmFinishRound = async () => {
     if (!canInteract) return
+
+    if (finishModalMode === 'finish-early') {
+      setShowFinishModal(false)
+      await saveScores(values, { completeRoundAfterSave: true })
+      return
+    }
 
     isSavingRef.current = true
     setLoading(true)
 
     try {
-      const response = await fetch(`/api/rounds/${roundId}/complete`, {
-        method: 'POST',
-      })
-
-      if (!response.ok) {
-        alert('Kunde inte avsluta rundan.')
-        return
-      }
-
-      navigateTo(`/rounds/${roundId}/summary`, { replace: true })
+      await completeRound(currentHole)
     } finally {
       if (!isNavigatingRef.current) {
         setLoading(false)
@@ -1979,7 +2030,10 @@ const navigateTo = (target: string, options?: { replace?: boolean }) => {
     }
   }
 
-  const saveScores = async (overrideValues?: Record<string, string>) => {
+  const saveScores = async (
+    overrideValues?: Record<string, string>,
+    options?: { completeRoundAfterSave?: boolean }
+  ) => {
     const valuesToSave = overrideValues ?? values
 
     if (loading) return
@@ -2021,9 +2075,15 @@ const navigateTo = (target: string, options?: { replace?: boolean }) => {
         navigator.vibrate([20, 18, 20])
       }
 
+      if (options?.completeRoundAfterSave) {
+        await completeRound(currentHole)
+        return
+      }
+
       if (currentHole === endHole) {
         isSavingRef.current = false
         setLoading(false)
+        setFinishModalMode('saved-last-hole')
         setShowFinishModal(true)
         return
       }
@@ -2138,6 +2198,7 @@ const previewNextHole = () => {
   setPreviewHoleNumber(hole.hole_number)
   setHoleImageError(false)
   setShowFinishModal(false)
+  setFinishModalMode('saved-last-hole')
   setSaveState('idle')
 
   hasUserChangedScoreRef.current = false
@@ -2939,9 +3000,11 @@ useEffect(() => {
           totalPlayers={players.length}
           currentHole={currentHole}
           endHole={endHole}
+          canFinishEarly={currentHole < endHole}
           loading={loading}
           onPrevious={goPrevious}
           onSave={() => void saveScores()}
+          onFinishEarly={requestFinishEarly}
         />
       </div>
 
@@ -2973,9 +3036,16 @@ useEffect(() => {
       <FinishRoundModal
         open={showFinishModal}
         loading={loading}
+        title={finishModalMode === 'finish-early' ? 'Avsluta rundan redan nu?' : 'Rundan är klar!'}
+        description={
+          finishModalMode === 'finish-early'
+            ? 'Vi sparar scorerna för det här hålet och avslutar rundan direkt.'
+            : 'Vill du avsluta rundan och gå vidare till leaderboard och scorekort?'
+        }
         onCancel={() => {
           if (loading || isSavingRef.current || isNavigatingRef.current) return
           setShowFinishModal(false)
+          setFinishModalMode('saved-last-hole')
         }}
         onConfirm={() => void confirmFinishRound()}
       />
