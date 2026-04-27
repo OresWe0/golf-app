@@ -1519,11 +1519,9 @@ function BottomBar({
   totalPlayers,
   currentHole,
   endHole,
-  canFinishEarly,
   loading,
   onPrevious,
   onSave,
-  onFinishEarly,
 }: {
   canInteract: boolean
   isReadyToAdvance: boolean
@@ -1531,11 +1529,9 @@ function BottomBar({
   totalPlayers: number
   currentHole: number
   endHole: number
-  canFinishEarly: boolean
   loading: boolean
   onPrevious: () => void
   onSave: () => void
-  onFinishEarly: () => void
 }) {
   return (
     <div style={styles.bottomBarOuter}>
@@ -1620,26 +1616,6 @@ function BottomBar({
       >
         <span>{completedPlayers}/{totalPlayers} spelare klara</span>
         <span>{isReadyToAdvance ? 'Redo att gå vidare' : 'Väntar på resterande scorer'}</span>
-        {canFinishEarly ? (
-          <button
-            type="button"
-            onClick={onFinishEarly}
-            disabled={loading || !canInteract || !isReadyToAdvance}
-            style={{
-              border: '1px solid #cbd5e1',
-              borderRadius: 999,
-              padding: '6px 12px',
-              background: '#ffffff',
-              color: '#0f172a',
-              fontSize: 12,
-              fontWeight: 900,
-              cursor: loading || !canInteract || !isReadyToAdvance ? 'not-allowed' : 'pointer',
-              opacity: loading || !canInteract || !isReadyToAdvance ? 0.65 : 1,
-            }}
-          >
-            Avsluta rundan nu
-          </button>
-        ) : null}
       </div>
     </div>
   )
@@ -2901,6 +2877,32 @@ useEffect(() => {
                   <span aria-hidden="true">⛳</span>
                   <span>Se banvy</span>
                 </button>
+
+                {currentHole < endHole ? (
+                  <button
+                    type="button"
+                    onClick={requestFinishEarly}
+                    disabled={loading || !canInteract || !isReadyToAdvance}
+                    style={{
+                      border: '1px solid rgba(255,255,255,0.18)',
+                      borderRadius: 16,
+                      padding: '10px 12px',
+                      background:
+                        'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.08) 100%)',
+                      color: '#ffffff',
+                      fontSize: 12,
+                      fontWeight: 900,
+                      cursor: loading || !canInteract || !isReadyToAdvance ? 'not-allowed' : 'pointer',
+                      opacity: loading || !canInteract || !isReadyToAdvance ? 0.6 : 1,
+                      minHeight: 44,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    Avsluta rundan nu
+                  </button>
+                ) : null}
               </div>
             </div>
 
@@ -3000,11 +3002,9 @@ useEffect(() => {
           totalPlayers={players.length}
           currentHole={currentHole}
           endHole={endHole}
-          canFinishEarly={currentHole < endHole}
           loading={loading}
           onPrevious={goPrevious}
           onSave={() => void saveScores()}
-          onFinishEarly={requestFinishEarly}
         />
       </div>
 

@@ -833,59 +833,86 @@ button.danger,
 
 .summary-page {
   background:
-    radial-gradient(circle at top right, rgba(16, 185, 129, 0.12), transparent 32%),
-    linear-gradient(180deg, #f4faf5 0%, #eff6f1 100%);
+    radial-gradient(circle at top right, rgba(34, 197, 94, 0.08), transparent 30%),
+    linear-gradient(180deg, #f6faf6 0%, #edf3ee 100%);
 }
 
 .summary-shell {
   padding-left: 12px;
   padding-right: 12px;
   padding-top: calc(10px + env(safe-area-inset-top));
-  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
 }
 
 .summary-hero {
-  border-radius: 26px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 252, 248, 0.88));
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-  margin-bottom: 10px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 251, 248, 0.94));
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+  margin-bottom: 12px;
+}
+
+.summary-hero-grid {
+  grid-template-columns: 56px 1fr !important;
+  gap: 12px !important;
+  align-items: start !important;
 }
 
 .summary-back-button {
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
 }
 
 .summary-brand {
-  letter-spacing: 0.02em;
-}
-
-.summary-pills {
-  overflow-x: auto;
-  flex-wrap: nowrap !important;
-  justify-content: flex-start !important;
-  padding: 2px 0 2px 2px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.summary-pills::-webkit-scrollbar {
   display: none;
 }
 
+.summary-hero-title-wrap {
+  text-align: left;
+}
+
+.summary-title {
+  letter-spacing: -0.03em;
+}
+
+.summary-course {
+  opacity: 0.9;
+}
+
+.summary-pills {
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  margin-top: 14px !important;
+}
+
 .summary-pill {
-  flex: 0 0 auto;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 3px 10px rgba(15, 23, 42, 0.04);
 }
 
 .game-tabs {
-  border: 1px solid rgba(16, 185, 129, 0.32);
+  border: 1px solid rgba(22, 101, 52, 0.14);
   border-bottom: 0;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06) !important;
+  border-radius: 16px 16px 0 0 !important;
+}
+
+.game-tab-active {
+  background: linear-gradient(180deg, #169f63 0%, #1aae6e 100%) !important;
+  font-size: 20px !important;
+}
+
+.game-tab-inactive {
+  background: #e6ece8 !important;
+  color: #374151 !important;
+  font-size: 20px !important;
 }
 
 .compact-leaderboard {
-  border-radius: 0 0 20px 20px !important;
-  box-shadow: 0 18px 34px rgba(5, 150, 105, 0.2);
+  border: 1px solid rgba(22, 101, 52, 0.16) !important;
+  border-top: 0 !important;
+  border-radius: 0 0 16px 16px !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
 }
 
 .compact-leaderboard-scroll {
@@ -895,6 +922,19 @@ button.danger,
 
 .compact-leaderboard-table {
   min-width: 560px;
+}
+
+.compact-leaderboard-table > div:first-child {
+  background: #1f2937 !important;
+}
+
+.compact-leaderboard-table > div:nth-child(2) {
+  background: #eaf6ee !important;
+}
+
+.compact-leaderboard-row {
+  border: 1px solid #d7e4db;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
 }
 
 .player-scorecard {
@@ -915,7 +955,12 @@ button.danger,
 }
 
 @media (max-width: 900px) {
-  .summary-brand {
+  .summary-title {
+    font-size: clamp(30px, 6.8vw, 40px) !important;
+  }
+
+  .game-tab-active,
+  .game-tab-inactive {
     font-size: 18px !important;
   }
 }
@@ -927,7 +972,7 @@ button.danger,
   }
 
   .summary-hero-grid {
-    grid-template-columns: 48px 1fr auto !important;
+    grid-template-columns: 48px 1fr !important;
     gap: 8px !important;
     align-items: start !important;
   }
@@ -947,10 +992,7 @@ button.danger,
   }
 
   .summary-brand {
-    font-size: 13px !important;
-    line-height: 1.05 !important;
-    text-align: left !important;
-    padding-top: 4px;
+    display: none !important;
   }
 
   .summary-pill {
@@ -960,7 +1002,7 @@ button.danger,
 
   .game-tab {
     font-size: 16px !important;
-    padding: 12px 8px !important;
+    padding: 11px 8px !important;
   }
 
   .compact-leaderboard-row > div:nth-child(1) {
