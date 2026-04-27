@@ -622,9 +622,9 @@ export default async function RoundLivePage({
           --muted: #607367;
           --line: rgba(18, 52, 33, 0.12);
           --shadow: 0 18px 50px rgba(18, 52, 33, 0.14);
-          width: min(920px, 100%);
+          width: min(940px, 100%);
           margin: 0 auto;
-          padding: 12px 14px 92px;
+          padding: calc(env(safe-area-inset-top) + 8px) 14px calc(env(safe-area-inset-bottom) + 92px);
           display: grid;
           gap: 14px;
           color: var(--ink);
@@ -632,13 +632,13 @@ export default async function RoundLivePage({
 
         .premium-live-topbar {
           position: sticky;
-          top: 0;
+          top: max(0px, calc(env(safe-area-inset-top) - 2px));
           z-index: 30;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 10px;
-          padding: 10px 0 4px;
+          padding: 8px 0 6px;
           backdrop-filter: blur(18px);
         }
 
@@ -1041,8 +1041,10 @@ export default async function RoundLivePage({
           overflow-x: auto;
           padding: 2px 2px 8px;
           margin-inline: -2px;
+          scroll-padding-inline: 12px;
           scroll-snap-type: x proximity;
           -webkit-overflow-scrolling: touch;
+          mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
         }
 
         .premium-quick-cheers::-webkit-scrollbar {
@@ -1130,12 +1132,15 @@ export default async function RoundLivePage({
           }
 
           .premium-live-shell {
-            padding-top: 8px;
+            gap: 12px;
+            padding-left: 10px;
+            padding-right: 10px;
+            padding-bottom: calc(env(safe-area-inset-bottom) + 88px);
           }
 
           .premium-hero {
-            border-radius: 30px;
-            padding: 20px;
+            border-radius: 26px;
+            padding: 18px;
           }
 
           .premium-hero-grid {
@@ -1143,8 +1148,8 @@ export default async function RoundLivePage({
           }
 
           .premium-section {
-            border-radius: 26px;
-            padding: 16px;
+            border-radius: 22px;
+            padding: 14px;
           }
 
           .premium-now-grid {
@@ -1167,15 +1172,31 @@ export default async function RoundLivePage({
             padding-left: 58px;
             margin-top: -8px;
           }
+
+          .premium-bottom-bar {
+            width: calc(100% - 20px);
+            bottom: calc(env(safe-area-inset-bottom) + 8px);
+            border-radius: 20px;
+            padding: 8px;
+          }
         }
 
         @media (max-width: 420px) {
+          .premium-hero h1 {
+            font-size: clamp(30px, 10vw, 40px);
+          }
+
           .premium-now-grid {
             grid-template-columns: 1fr;
           }
 
           .premium-full-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .premium-pill {
+            font-size: 12px;
+            padding: 6px 10px;
           }
         }
       `}</style>

@@ -603,7 +603,7 @@ function DashboardHeader({
             className="dashboard-hero-topbar"
             style={{
               position: 'absolute',
-              top: 'calc(env(safe-area-inset-top) + 10px)',
+              top: 'calc(env(safe-area-inset-top) + 14px)',
             right: 0,
             display: 'inline-flex',
             gap: 10,
@@ -628,7 +628,7 @@ function DashboardHeader({
             gap: 10,
             alignItems: 'flex-start',
             flexWrap: 'wrap',
-            marginTop: 'calc(env(safe-area-inset-top) + 14px)',
+            marginTop: 'calc(env(safe-area-inset-top) + 18px)',
           }}
         >
           <div className="dashboard-hero-intro" style={{ maxWidth: 720 }}>
@@ -2613,6 +2613,8 @@ export default async function DashboardPage({
         .dashboard-hero {
           background-size: 115% auto !important;
           background-position: center 38% !important;
+          border: 1px solid rgba(255, 255, 255, 0.22) !important;
+          box-shadow: 0 24px 48px rgba(15, 23, 42, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
         }
 
         @media (min-width: 980px) {
@@ -2657,6 +2659,14 @@ export default async function DashboardPage({
             border-color 180ms ease,
             background 180ms ease;
           -webkit-tap-highlight-color: transparent;
+          backdrop-filter: blur(12px);
+        }
+
+        .dashboard-live-hook:hover {
+          border-color: rgba(255, 255, 255, 0.24) !important;
+          box-shadow:
+            0 18px 36px rgba(15, 23, 42, 0.22),
+            inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
         }
 
         .dashboard-live-hook:active {
@@ -2755,7 +2765,7 @@ export default async function DashboardPage({
 
         @media (max-width: 720px) {
           .dashboard-hero-inner {
-            padding-top: calc(env(safe-area-inset-top) + 6px);
+            padding-top: calc(env(safe-area-inset-top) + 10px);
           }
 
           .dashboard-hero-topbar {
@@ -2769,7 +2779,7 @@ export default async function DashboardPage({
           }
 
           .dashboard-hero-intro {
-            margin-top: -6px;
+            margin-top: 0;
             max-width: none !important;
           }
 
@@ -2784,6 +2794,12 @@ export default async function DashboardPage({
           .dashboard-live-hook {
             border-radius: 20px !important;
             padding: 14px 14px !important;
+          }
+
+          .dashboard-hero {
+            border-radius: 24px !important;
+            background-size: cover !important;
+            background-position: center 34% !important;
           }
 
           .dashboard-mobile-card .button.secondary {
@@ -2812,6 +2828,10 @@ export default async function DashboardPage({
 
           .dashboard-live-hook {
             gap: 9px !important;
+          }
+
+          .dashboard-hero-content h1 {
+            font-size: clamp(2rem, 10vw, 2.7rem) !important;
           }
         }
       `}</style>
