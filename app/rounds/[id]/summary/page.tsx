@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import {
   getReceivedStrokesForSelectedHole,
@@ -44,6 +45,10 @@ type RoundLike = {
 type CourseLike = {
   id: string
   name: string
+}
+
+type OwnerProfileLike = {
+  email: string | null
 }
 
 type LeaderboardEntry = {
@@ -706,26 +711,98 @@ export default async function SummaryPage({
   const { id } = await params
   const resolvedSearchParams = await searchParams
 
-  const { data: roundData } = await supabase
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseAdmin =
+    supabaseUrl && serviceRoleKey
+      ? createAdminClient(supabaseUrl, serviceRoleKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        })
+      : null
+
+  const { data: roundFromUserClient } = await supabase
     .from('rounds')
     .select('id, title, owner_id, course_id, current_hole, start_hole, end_hole, holes_mode, scoring_mode')
     .eq('id', id)
-    .single()
+    .maybeSingle()
+
+  let roundData = roundFromUserClient
+
+  if (!roundData && supabaseAdmin) {
+    const { data: roundFromAdminClient } = await supabaseAdmin
+      .from('rounds')
+      .select('id, title, owner_id, course_id, current_hole, start_hole, end_hole, holes_mode, scoring_mode')
+      .eq('id', id)
+      .maybeSingle()
+
+    roundData = roundFromAdminClient
+  }
 
   if (!roundData) notFound()
 
   const round = roundData as RoundLike
 
-  if (round.owner_id !== user.id) {
-    const { data: membership } = await supabase
+  const viewerEmail = String(user.email ?? '').trim().toLowerCase()
+  const viewerIsOwner = round.owner_id === user.id
+
+  const [{ data: membership }, { data: ownerProfileRaw }] = await Promise.all([
+    supabase
       .from('round_members')
       .select('id')
       .eq('round_id', id)
       .eq('user_id', user.id)
+      .maybeSingle(),
+    supabaseAdmin
+      ? supabaseAdmin
+          .from('profiles')
+          .select('email')
+          .eq('id', round.owner_id)
+          .maybeSingle()
+      : supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', round.owner_id)
+          .maybeSingle(),
+  ])
+
+  const ownerProfile = (ownerProfileRaw as OwnerProfileLike | null) ?? null
+  const ownerEmail = String(ownerProfile?.email ?? '').trim().toLowerCase()
+
+  let isFriendOfOwner = false
+
+  if (!viewerIsOwner && !membership && viewerEmail) {
+    const friendReadClient = supabaseAdmin ?? supabase
+
+    const { data: directFriend } = await friendReadClient
+      .from('friends')
+      .select('id')
+      .eq('user_id', round.owner_id)
+      .eq('friend_email', viewerEmail)
       .maybeSingle()
 
-    if (!membership) notFound()
+    if (directFriend) {
+      isFriendOfOwner = true
+    } else if (ownerEmail) {
+      const { data: reverseFriend } = await friendReadClient
+        .from('friends')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('friend_email', ownerEmail)
+        .maybeSingle()
+
+      isFriendOfOwner = Boolean(reverseFriend)
+    }
   }
+
+  if (!viewerIsOwner && !membership && !isFriendOfOwner) {
+    notFound()
+  }
+
+  const isFriendViewer = !viewerIsOwner && !membership && isFriendOfOwner
+  const dataReadClient = isFriendViewer && supabaseAdmin ? supabaseAdmin : supabase
 
   const requestedHoleNumber = resolvedSearchParams.hole
     ? parseHoleNumber(resolvedSearchParams.hole)
@@ -737,18 +814,18 @@ export default async function SummaryPage({
     { data: holesData },
     { data: allScoreRowsData },
   ] = await Promise.all([
-    supabase
+    dataReadClient
       .from('round_players')
       .select('id, display_name, exact_handicap, playing_handicap, tee_key, active_from_hole, active_to_hole')
       .eq('round_id', id)
       .order('sort_order'),
-    supabase.from('courses').select('id, name').eq('id', round.course_id).single(),
-    supabase
+    dataReadClient.from('courses').select('id, name').eq('id', round.course_id).single(),
+    dataReadClient
       .from('course_holes')
       .select('hole_number, par, hcp_index')
       .eq('course_id', round.course_id)
       .order('hole_number'),
-    supabase
+    dataReadClient
       .from('hole_scores')
       .select('round_player_id, hole_number, strokes')
       .eq('round_id', id)

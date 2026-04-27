@@ -538,6 +538,7 @@ function DashboardHeader({
   liveRoundOwnerName,
   liveRoundCourseName,
   liveRoundsCount,
+  liveRoundsHref,
 }: {
   displayName: string
   profile: Profile | null
@@ -555,6 +556,7 @@ function DashboardHeader({
   liveRoundOwnerName: string
   liveRoundCourseName: string
   liveRoundsCount: number
+  liveRoundsHref: string
 }) {
   return (
     <div className="card dashboard-hero" style={dashboardStyles.heroCard}>
@@ -665,7 +667,7 @@ function DashboardHeader({
 
             {liveRound ? (
               <Link
-                href={`/rounds/${liveRound.id}/live`}
+                href={liveRoundsHref}
                 className="dashboard-live-hook"
                 style={{
                   marginTop: 16,
@@ -1822,6 +1824,7 @@ function ActiveRoundsSection({
 
   return (
     <div
+      id="friend-active-rounds"
       className="card dashboard-mobile-card"
       style={{
         ...dashboardStyles.sectionCard,
@@ -2843,7 +2846,14 @@ export default async function DashboardPage({
                 : ''
             }
             liveRoundsCount={
-              new Set(friendActiveRounds.map((round) => round.owner_id)).size
+              friendActiveRounds.length
+            }
+            liveRoundsHref={
+              friendActiveRounds.length > 1
+                ? '/dashboard#friend-active-rounds'
+                : friendActiveRounds[0]
+                  ? `/rounds/${friendActiveRounds[0].id}/live`
+                  : '/dashboard'
             }
           />
 
