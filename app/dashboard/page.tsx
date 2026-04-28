@@ -1707,7 +1707,7 @@ function CompletedRoundSwipeCard({
   const role = getRoleLabel(membershipRole)
   const scoring = getScoringLabel(round.scoring_mode)
   const roundDate = formatRoundDate(round.created_at)
-  const holesLabel = Number(round.holes_mode) === 9 ? '9 hal' : '18 hal'
+  const holesLabel = Number(round.holes_mode) === 9 ? '9 hål' : '18 hål'
 
   return (
     <div
