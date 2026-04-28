@@ -10,6 +10,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { signOut } from '@/app/login/actions'
 import InstallAppPrompt from '@/components/install-app-prompt'
 import DashboardHeroMenu from '@/components/dashboard-hero-menu'
+import ScrollToIdOnLoad from '@/components/scroll-to-id-on-load'
 import NotificationClearButton from '@/components/notification-clear-button'
 import type { Course, Profile, Round } from '@/lib/types'
 
@@ -21,6 +22,7 @@ const FEED_EVENTS_PREVIEW_COUNT = 3
 type DashboardSearchParams = {
   showActive?: string | string[]
   showCompleted?: string | string[]
+  focus?: string | string[]
 }
 
 type Membership = {
@@ -2164,6 +2166,8 @@ export default async function DashboardPage({
   const showAllActive = getSingleParam(resolvedSearchParams.showActive) === 'all'
   const showAllCompleted =
     getSingleParam(resolvedSearchParams.showCompleted) === 'all'
+  const focusTarget = getSingleParam(resolvedSearchParams.focus)
+  const shouldFocusFriendActiveRounds = focusTarget === 'friends-live'
 
   const isAdmin = user.email === ADMIN_EMAIL
   const currentUserEmail = (user.email ?? '').trim().toLowerCase()
@@ -2881,12 +2885,16 @@ export default async function DashboardPage({
             }
             liveRoundsHref={
               friendActiveRounds.length > 1
-                ? '/dashboard#friend-active-rounds'
+                ? '/dashboard?focus=friends-live'
                 : friendActiveRounds[0]
                   ? `/rounds/${friendActiveRounds[0].id}/live`
                   : '/dashboard'
             }
           />
+
+          {shouldFocusFriendActiveRounds ? (
+            <ScrollToIdOnLoad targetId="friend-active-rounds" />
+          ) : null}
 
           <InstallAppPrompt />
 
