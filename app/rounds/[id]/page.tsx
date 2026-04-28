@@ -308,6 +308,8 @@ function PremiumLeaderboard({
                 fontSize: 25,
                 lineHeight: 1,
                 fontWeight: 950,
+                color: '#f7fff9',
+                textShadow: '0 2px 8px rgba(0,0,0,0.25)',
               }}
             >
               {leader?.playerName ?? 'Leaderboard'}
@@ -518,6 +520,7 @@ function RoundHero({
                     whiteSpace: 'nowrap',
                   }}
                 >
+                  <span aria-hidden="true">🏠</span>
                   Till startsidan
                 </Link>
                 <Link
@@ -530,6 +533,7 @@ function RoundHero({
                     whiteSpace: 'nowrap',
                   }}
                 >
+                  <span aria-hidden="true">👥</span>
                   Hantera spelare
                 </Link>
               </div>
@@ -758,7 +762,14 @@ export default async function RoundPage({
 
   return (
     <main>
-      <div className="container" style={{ display: 'grid', gap: 16 }}>
+      <div
+        className="container"
+        style={{
+          display: 'grid',
+          gap: 16,
+          paddingTop: 'max(18px, calc(env(safe-area-inset-top) + 10px))',
+        }}
+      >
         <RoundHero
           roundTitle={round.title}
           courseName={course.name}
