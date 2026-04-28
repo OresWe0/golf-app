@@ -1829,7 +1829,6 @@ function ActiveRoundsSection({
 
   return (
     <div
-      id="friend-active-rounds"
       className="card dashboard-mobile-card"
       style={{
         ...dashboardStyles.sectionCard,
@@ -1925,6 +1924,7 @@ function CompletedRoundsSection({
 
   return (
     <div
+      id="friend-active-rounds"
       className="card dashboard-mobile-card"
       style={{
         ...dashboardStyles.sectionCard,
