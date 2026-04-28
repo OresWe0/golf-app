@@ -16,6 +16,7 @@ type HoleLike = {
 
 type RoundPlayer = {
   id: string
+  user_id?: string | null
   display_name?: string
   exact_handicap?: number | null
   playing_handicap?: number | null
@@ -291,6 +292,7 @@ function SummaryHero({
   currentHoleNumber,
   totalHoles,
   roundId,
+  backHref,
 }: {
   roundTitle: string
   courseName: string
@@ -298,6 +300,7 @@ function SummaryHero({
   currentHoleNumber: number
   totalHoles: number
   roundId: string
+  backHref: string
 }) {
   return (
     <section className="summary-hero" style={{ textAlign: 'center', padding: '18px 8px 10px' }}>
@@ -306,7 +309,7 @@ function SummaryHero({
         style={{ display: 'grid', gridTemplateColumns: '56px 1fr 56px', alignItems: 'center', gap: 10 }}
       >
         <Link
-          href={`/rounds/${roundId}?hole=${currentHoleNumber}`}
+          href={backHref}
           aria-label="Tillbaka till rundan"
           className="summary-back-button"
           style={{
@@ -368,7 +371,13 @@ function GameTabs({ scoringMode }: { scoringMode: RoundLike['scoring_mode'] }) {
   )
 }
 
-function CompactLeaderboard({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
+function CompactLeaderboard({
+  leaderboard,
+  avatarByPlayerId,
+}: {
+  leaderboard: LeaderboardEntry[]
+  avatarByPlayerId: Map<string, string | null>
+}) {
   return (
     <section
       className="compact-leaderboard premium-leaderboard"
@@ -431,6 +440,20 @@ function CompactLeaderboard({ leaderboard }: { leaderboard: LeaderboardEntry[] }
             </div>
 
             <div className="premium-leaderboard-player" style={{ minWidth: 0 }}>
+              {entry.position === 1 && avatarByPlayerId.get(entry.playerId) ? (
+                <img
+                  src={avatarByPlayerId.get(entry.playerId) ?? ''}
+                  alt=""
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 999,
+                    objectFit: 'cover',
+                    border: '1px solid #cde3d3',
+                    marginBottom: 6,
+                  }}
+                />
+              ) : null}
               <div
                 className="premium-leaderboard-name"
                 style={{
@@ -696,7 +719,7 @@ export default async function SummaryPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ hole?: string }>
+  searchParams: Promise<{ hole?: string; from?: string }>
 }) {
   const supabase = await createClient()
 
@@ -807,6 +830,7 @@ export default async function SummaryPage({
   const requestedHoleNumber = resolvedSearchParams.hole
     ? parseHoleNumber(resolvedSearchParams.hole)
     : round.current_hole ?? round.start_hole ?? 1
+  const fromView = String(resolvedSearchParams.from ?? '').toLowerCase()
 
   const [
     { data: playersData },
@@ -816,7 +840,7 @@ export default async function SummaryPage({
   ] = await Promise.all([
     dataReadClient
       .from('round_players')
-      .select('id, display_name, exact_handicap, playing_handicap, tee_key, active_from_hole, active_to_hole')
+      .select('id, user_id, display_name, exact_handicap, playing_handicap, tee_key, active_from_hole, active_to_hole')
       .eq('round_id', id)
       .order('sort_order'),
     dataReadClient.from('courses').select('id, name').eq('id', round.course_id).single(),
@@ -869,6 +893,33 @@ export default async function SummaryPage({
     startHole,
     endHole,
   })
+  const playerUserIds = Array.from(
+    new Set(
+      players
+        .map((player) => String(player.user_id ?? '').trim())
+        .filter((id) => id.length > 0)
+    )
+  )
+  const avatarByUserId = new Map<string, string | null>()
+  if (playerUserIds.length > 0) {
+    const { data: profilesRaw } = await dataReadClient
+      .from('profiles')
+      .select('id, avatar_url')
+      .in('id', playerUserIds)
+
+    for (const row of (profilesRaw ?? []) as Array<{ id: string; avatar_url?: string | null }>) {
+      avatarByUserId.set(row.id, row.avatar_url?.trim() || null)
+    }
+  }
+  const avatarByPlayerId = new Map<string, string | null>()
+  for (const player of players) {
+    const userId = String(player.user_id ?? '').trim()
+    avatarByPlayerId.set(player.id, userId ? (avatarByUserId.get(userId) ?? null) : null)
+  }
+  const backHref =
+    fromView === 'live' || isFriendViewer
+      ? `/rounds/${id}/live`
+      : `/rounds/${id}?hole=${currentHole.hole_number}`
 
   return (
     <main className="summary-page" style={{ background: '#f3fbf5', minHeight: '100vh' }}>
@@ -880,10 +931,11 @@ export default async function SummaryPage({
           currentHoleNumber={currentHole.hole_number}
           totalHoles={visibleHoles.length}
           roundId={id}
+          backHref={backHref}
         />
 
         <GameTabs scoringMode={round.scoring_mode} />
-        <CompactLeaderboard leaderboard={leaderboard} />
+        <CompactLeaderboard leaderboard={leaderboard} avatarByPlayerId={avatarByPlayerId} />
 
         <div className="summary-scorecards-wrap" style={{ padding: '14px 0 40px' }}>
           <GamebookScorecards

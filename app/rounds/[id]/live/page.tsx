@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import LiveAutoRefresh from '@/components/live-auto-refresh'
+import LiveCheerForm from '@/components/live-cheer-form'
 import { sendRoundCheer } from './actions'
 import {
   getReceivedStrokesForSelectedHole,
@@ -1512,33 +1513,17 @@ export default async function RoundLivePage({
             </div>
           </div>
 
-          <form action={sendRoundCheer} className="premium-cheer-form">
-            <input type="hidden" name="round_id" value={round.id} />
-            <div className="premium-quick-cheers" aria-label="Snabba hejarop">
-              {[
-                { label: 'Snyggt!', emoji: '👏', message: 'Snyggt kämpat! 🔥' },
-                { label: 'Kämpa!', emoji: '💪', message: 'Kämpa på! 💪' },
-                { label: 'Birdie!', emoji: '🐦', message: 'Nu kommer birdien! 🐦' },
-                { label: 'Stabilt!', emoji: '⛳️', message: 'Stabilt spel ⛳️' },
-                { label: 'Kom igen!', emoji: '🙌', message: 'Kom igen! 🙌' },
-              ].map((item) => (
-                <button key={item.message} type="submit" name="message" value={item.message}>
-                  <span className="premium-cheer-emoji" aria-hidden="true">{item.emoji}</span>
-                  <span className="premium-cheer-label">{item.label}</span>
-                </button>
-              ))}
-            </div>
-            <input
-              className="premium-input"
-              name="message"
-              type="text"
-              maxLength={140}
-              placeholder="Skriv eget hejarop..."
-            />
-            <button type="submit" className="premium-button">
-              Skicka hejarop
-            </button>
-          </form>
+          <LiveCheerForm
+            roundId={round.id}
+            sendAction={sendRoundCheer}
+            quickCheers={[
+              { label: 'Snyggt!', emoji: '👏', message: 'Snyggt kämpat! 🔥' },
+              { label: 'Kämpa!', emoji: '💪', message: 'Kämpa på! 💪' },
+              { label: 'Birdie!', emoji: '🐦', message: 'Nu kommer birdien! 🐦' },
+              { label: 'Stabilt!', emoji: '⛳️', message: 'Stabilt spel ⛳️' },
+              { label: 'Kom igen!', emoji: '🙌', message: 'Kom igen! 🙌' },
+            ]}
+          />
         </section>
 
         <section className="premium-section" aria-labelledby="chat-title">
@@ -1584,7 +1569,7 @@ export default async function RoundLivePage({
       </div>
 
       <div className="premium-bottom-bar" aria-label="Snabbval">
-        <Link className="premium-button secondary" href={`/rounds/${round.id}/summary`}>
+        <Link className="premium-button secondary" href={`/rounds/${round.id}/summary?hole=${currentHole}&from=live`}>
           Scorekort
         </Link>
         <Link className="premium-button" href={`/rounds/${round.id}/live`}>

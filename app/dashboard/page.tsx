@@ -2899,6 +2899,12 @@ export default async function DashboardPage({
         </div>
 
         <div className="dashboard-lower-stack" style={{ display: 'grid', gap: 18 }}>
+          <FriendActiveRoundsSection
+            rounds={friendActiveRounds}
+            coursesById={coursesById}
+            friendNameById={friendNameById}
+          />
+
           <CompletedRoundsSection
             rounds={completedRounds}
             membershipByRoundId={membershipByRoundId}
@@ -2947,12 +2953,6 @@ export default async function DashboardPage({
               </Link>
             </div>
           </div>
-
-          <FriendActiveRoundsSection
-            rounds={friendActiveRounds}
-            coursesById={coursesById}
-            friendNameById={friendNameById}
-          />
 
           <div
             className="card dashboard-mobile-card"

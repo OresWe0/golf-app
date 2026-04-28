@@ -923,6 +923,7 @@ button.danger,
   background: #e6ece8 !important;
   color: #374151 !important;
   font-size: 20px !important;
+  display: none !important;
 }
 
 .compact-leaderboard {
