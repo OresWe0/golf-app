@@ -761,7 +761,7 @@ function DashboardHeader({
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    Följ live
+                    {liveRoundsCount > 1 ? 'Välj runda' : 'Följ live'}
                     <span aria-hidden="true">→</span>
                   </span>
                 </div>
@@ -791,6 +791,7 @@ function DashboardHeader({
                     }}
                   >
                     {liveRoundCourseName} · Hål {liveRound.current_hole ?? 1}
+                    {liveRoundsCount > 1 ? ' · Flera rundor live' : ''}
                   </div>
                 </div>
               </Link>
@@ -2935,7 +2936,7 @@ export default async function DashboardPage({
           >
             <SectionHeader
               title="Din statistik"
-              description="Öppna statistik for filter och full analys."
+              description="Öppna statistik för filter och full analys."
               count={completedRounds.length}
               countTone="slate"
             />
