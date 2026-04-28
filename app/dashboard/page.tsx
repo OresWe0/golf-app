@@ -10,6 +10,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { signOut } from '@/app/login/actions'
 import InstallAppPrompt from '@/components/install-app-prompt'
 import DashboardHeroMenu from '@/components/dashboard-hero-menu'
+import NotificationClearButton from '@/components/notification-clear-button'
 import type { Course, Profile, Round } from '@/lib/types'
 
 const ADMIN_EMAIL = 'sigge@dufvander.se'
@@ -876,7 +877,8 @@ function NotificationsSection({
                 </div>
               </div>
 
-              <form action={markNotificationAsRead}>
+              <NotificationClearButton notificationId={notification.id} markReadAction={markNotificationAsRead} />
+              <form action={markNotificationAsRead} hidden>
                 <input
                   type="hidden"
                   name="notificationId"

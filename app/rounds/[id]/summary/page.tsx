@@ -916,10 +916,7 @@ export default async function SummaryPage({
     const userId = String(player.user_id ?? '').trim()
     avatarByPlayerId.set(player.id, userId ? (avatarByUserId.get(userId) ?? null) : null)
   }
-  const backHref =
-    fromView === 'live' || isFriendViewer
-      ? `/rounds/${id}/live`
-      : `/rounds/${id}?hole=${currentHole.hole_number}`
+  const backHref = '/dashboard'
 
   return (
     <main className="summary-page" style={{ background: '#f3fbf5', minHeight: '100vh' }}>
