@@ -132,6 +132,45 @@ function getScoreColor(strokes: number | null, par: number) {
   return undefined
 }
 
+function getClassicScoreMarker(strokes: number | null, par: number) {
+  if (strokes == null) return null
+  const diff = strokes - par
+
+  if (diff <= -2) {
+    return {
+      borderRadius: 999,
+      borderColor: '#1e5fb8',
+      double: true,
+    }
+  }
+
+  if (diff === -1) {
+    return {
+      borderRadius: 999,
+      borderColor: '#2f7fd8',
+      double: false,
+    }
+  }
+
+  if (diff === 1) {
+    return {
+      borderRadius: 8,
+      borderColor: '#e54857',
+      double: false,
+    }
+  }
+
+  if (diff >= 2) {
+    return {
+      borderRadius: 8,
+      borderColor: '#c73545',
+      double: true,
+    }
+  }
+
+  return null
+}
+
 function buildRowsByHole(scoreRows: HoleScoreRow[], playerId: string) {
   return new Map(
     scoreRows
@@ -544,7 +583,7 @@ function ScorecardTable({
             <td style={labelCellBold}>Res</td>
             {holes.map((hole) => {
               const strokes = rowsByHole.get(hole.hole_number)?.strokes ?? null
-              const bg = getScoreColor(strokes, hole.par)
+              const marker = getClassicScoreMarker(strokes, hole.par)
               return (
                 <td key={hole.hole_number} style={plainCell}>
                   <span style={{
@@ -552,9 +591,10 @@ function ScorecardTable({
                     placeItems: 'center',
                     minWidth: 40,
                     height: 40,
-                    borderRadius: bg === '#f04b56' ? 999 : 0,
-                    background: bg,
-                    color: bg ? '#fff' : '#30383d',
+                    borderRadius: marker?.borderRadius ?? 0,
+                    border: marker ? `2px solid ${marker.borderColor}` : 'none',
+                    boxShadow: marker?.double ? `0 0 0 2px ${marker.borderColor}` : 'none',
+                    color: '#30383d',
                     fontWeight: 950,
                   }}>
                     {strokes ?? '-'}
