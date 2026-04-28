@@ -425,6 +425,7 @@ function RoundHero({
   courseName,
   currentHoleNumber,
   totalHoles,
+  startHole,
   modeLabel,
   par,
   hcpIndex,
@@ -435,12 +436,15 @@ function RoundHero({
   courseName: string
   currentHoleNumber: number
   totalHoles: number
+  startHole: number
   modeLabel: string
   par: number
   hcpIndex: number
   roundId: string
   leaderboard: LeaderboardEntry[]
 }) {
+  const holeIndexInSegment = Math.max(1, currentHoleNumber - startHole + 1)
+
   return (
     <div
       style={{
@@ -480,7 +484,7 @@ function RoundHero({
               >
                 <span className="badge">🏌️ Runda</span>
                 <span className="badge">{modeLabel}</span>
-                <span className="badge">Hål {currentHoleNumber}/{totalHoles}</span>
+                <span className="badge">Hål {holeIndexInSegment}/{totalHoles}</span>
               </div>
 
               <div style={{ display: 'grid', gap: 4 }}>
@@ -503,18 +507,32 @@ function RoundHero({
             </div>
 
             <div style={{ display: 'grid', gap: 8, justifyItems: 'end' }}>
-              <Link
-                className="button secondary"
-                href={`/rounds/${roundId}/players`}
-                style={{
-                  borderRadius: 999,
-                  minHeight: 38,
-                  paddingInline: 14,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Hantera spelare
-              </Link>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <Link
+                  className="button secondary"
+                  href="/dashboard"
+                  style={{
+                    borderRadius: 999,
+                    minHeight: 38,
+                    paddingInline: 14,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Till startsidan
+                </Link>
+                <Link
+                  className="button secondary"
+                  href={`/rounds/${roundId}/players`}
+                  style={{
+                    borderRadius: 999,
+                    minHeight: 38,
+                    paddingInline: 14,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Hantera spelare
+                </Link>
+              </div>
 
               <FinishRoundQuickAction
                 roundId={roundId}
@@ -543,7 +561,7 @@ function RoundHero({
               <div className="muted" style={{ fontSize: 11, fontWeight: 800 }}>
                 Aktuellt hål
               </div>
-              <div style={{ fontSize: 22, fontWeight: 950 }}>Hål {currentHoleNumber}</div>
+              <div style={{ fontSize: 22, fontWeight: 950 }}>Hål {holeIndexInSegment}</div>
             </div>
 
             <div
@@ -746,6 +764,7 @@ export default async function RoundPage({
           courseName={course.name}
           currentHoleNumber={currentHole.hole_number}
           totalHoles={visibleHoles.length}
+          startHole={startHole}
           modeLabel={modeLabel}
           par={currentHole.par}
           hcpIndex={currentHole.hcp_index}

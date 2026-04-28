@@ -1771,7 +1771,13 @@ const dragStartRef = useRef<{ x: number; y: number } | null>(null)
     whiteSpace: 'nowrap',
   }
 
-  const liveProgress = Math.max(0, Math.min(100, (currentHole / totalHoles) * 100))
+  const holeIndexInSegment = Math.max(1, currentHole - startHole + 1)
+  const segmentHoleCount = Math.max(1, endHole - startHole + 1)
+  const holesRemainingInSegment = Math.max(0, endHole - currentHole)
+  const liveProgress = Math.max(
+    0,
+    Math.min(100, (holeIndexInSegment / segmentHoleCount) * 100)
+  )
 
   const clearPostSaveTimeout = () => {
     if (postSaveTimeoutRef.current) {
@@ -2793,7 +2799,7 @@ useEffect(() => {
                     color: '#ffffff',
                   }}
                 >
-                  Hål {currentHole} av {totalHoles}
+                  Hål {holeIndexInSegment} av {totalHoles}
                 </div>
 
                 <div
@@ -2892,7 +2898,7 @@ useEffect(() => {
               <span style={liveHeaderPillStyle}>Par {hole.par}</span>
               <span style={liveHeaderPillStyle}>HCP {hole.hcp_index}</span>
               <span style={liveHeaderPillStyle}>
-                {currentHole === totalHoles ? 'Sista hålet' : `${totalHoles - currentHole} hål kvar`}
+                {currentHole === endHole ? 'Sista hålet' : `${holesRemainingInSegment} hål kvar`}
               </span>
             </div>
 
