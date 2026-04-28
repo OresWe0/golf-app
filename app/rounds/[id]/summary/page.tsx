@@ -374,9 +374,11 @@ function GameTabs({ scoringMode }: { scoringMode: RoundLike['scoring_mode'] }) {
 function CompactLeaderboard({
   leaderboard,
   avatarByPlayerId,
+  scoringMode,
 }: {
   leaderboard: LeaderboardEntry[]
   avatarByPlayerId: Map<string, string | null>
+  scoringMode: RoundLike['scoring_mode']
 }) {
   return (
     <section
@@ -471,13 +473,18 @@ function CompactLeaderboard({
               <div className="premium-leaderboard-meta" style={{ color: '#6b7d72', fontWeight: 800, fontSize: 12 }}>Till par {formatToPar(entry.totalToPar)}</div>
             </div>
 
-            <div className="premium-leaderboard-score-wrap" style={{ textAlign: 'right', minWidth: 72 }}>
+            <div className="premium-leaderboard-score-wrap" style={{ textAlign: 'right', minWidth: 90 }}>
               <div className="premium-leaderboard-score" style={{ fontSize: 24, fontWeight: 950, color: '#1f2937', lineHeight: 1 }}>
-                {entry.totalStrokes ?? '-'}
+                {scoringMode === 'stableford' ? entry.totalPoints : entry.totalStrokes}
               </div>
               <div className="premium-leaderboard-score-label" style={{ marginTop: 4, fontSize: 11, fontWeight: 800, color: '#6b7280' }}>
-                slag
+                {scoringMode === 'stableford' ? 'poäng' : 'slag'}
               </div>
+              {scoringMode === 'stableford' ? (
+                <div style={{ marginTop: 3, fontSize: 11, fontWeight: 800, color: '#7b8a80' }}>
+                  {entry.totalStrokes} slag
+                </div>
+              ) : null}
             </div>
           </div>
         ))}
@@ -932,7 +939,11 @@ export default async function SummaryPage({
         />
 
         <GameTabs scoringMode={round.scoring_mode} />
-        <CompactLeaderboard leaderboard={leaderboard} avatarByPlayerId={avatarByPlayerId} />
+        <CompactLeaderboard
+          leaderboard={leaderboard}
+          avatarByPlayerId={avatarByPlayerId}
+          scoringMode={round.scoring_mode}
+        />
 
         <div className="summary-scorecards-wrap" style={{ padding: '14px 0 40px' }}>
           <GamebookScorecards
