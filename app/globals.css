@@ -56,6 +56,7 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: 1.42;
 }
 
 main {
@@ -721,7 +722,7 @@ button.danger,
   textarea,
   button,
   .button {
-    min-height: 44px;
+    min-height: 46px;
   }
 
   .splash-root {
@@ -730,6 +731,16 @@ button.danger,
 
   .splash-content {
     max-width: 280px;
+  }
+}
+
+@media (max-width: 420px) {
+  .card {
+    border-radius: 18px;
+  }
+
+  .badge {
+    font-size: 12px;
   }
 }
 

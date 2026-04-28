@@ -2680,6 +2680,10 @@ export default async function DashboardPage({
           animation: dashboardLivePulse 1.8s ease-out infinite;
         }
 
+        #friend-active-rounds {
+          scroll-margin-top: calc(env(safe-area-inset-top) + 14px);
+        }
+
         @keyframes dashboardLivePulse {
           0% {
             box-shadow:
@@ -2794,6 +2798,10 @@ export default async function DashboardPage({
           .dashboard-live-hook {
             border-radius: 20px !important;
             padding: 14px 14px !important;
+          }
+
+          #friend-active-rounds {
+            scroll-margin-top: calc(env(safe-area-inset-top) + 10px);
           }
 
           .dashboard-hero {
