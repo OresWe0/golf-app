@@ -1182,3 +1182,123 @@ button.danger,
 .player-scorecard-name {
   letter-spacing: -0.03em !important;
 }
+
+/* ===== MICRO-POLISH: DASHBOARD / LIVE / PROFILE ===== */
+
+.dashboard-hero,
+.premium-hero,
+.profile-card {
+  box-shadow: var(--shadow-elevated) !important;
+}
+
+.dashboard-hero,
+.premium-hero {
+  border: 1px solid rgba(214, 234, 220, 0.36) !important;
+}
+
+.dashboard-live-hook,
+.premium-pill,
+.summary-pill,
+.profile-card .badge {
+  border-radius: var(--radius-pill) !important;
+}
+
+.dashboard-hero-content h1,
+.premium-hero h1,
+.profile-card h1 {
+  letter-spacing: -0.035em !important;
+  line-height: 0.98 !important;
+}
+
+.premium-section,
+.profile-section-card,
+.dashboard-mobile-card {
+  border-radius: 22px !important;
+  border: 1px solid color-mix(in srgb, var(--line-soft) 90%, #d2e1d5) !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+
+.premium-leaderboard,
+.premium-now-card,
+.sub-card,
+.feed-compact-card {
+  border: 1px solid color-mix(in srgb, var(--line-soft) 86%, #d6e3d9) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 8px 20px rgba(15, 23, 42, 0.05) !important;
+}
+
+.premium-live-shell .premium-rank-score,
+.premium-live-shell .premium-player-score {
+  letter-spacing: -0.02em !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.premium-live-shell .premium-muted,
+.profile-shell .muted,
+.dashboard-lower-stack .muted {
+  color: #5f7468 !important;
+}
+
+.premium-button,
+.premium-button.secondary,
+.btn-success,
+.btn-danger,
+.profile-back-link {
+  min-height: var(--tap-size) !important;
+  border-radius: var(--radius-control) !important;
+  font-weight: 850 !important;
+}
+
+.premium-bottom-bar {
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(18, 52, 33, 0.12);
+}
+
+.round-actions-grid .button,
+.friend-row-actions button {
+  min-height: 44px;
+}
+
+@media (max-width: 800px) {
+  .dashboard-hero,
+  .premium-hero {
+    border-radius: 24px !important;
+  }
+
+  .premium-section,
+  .profile-section-card,
+  .dashboard-mobile-card {
+    border-radius: 20px !important;
+  }
+
+  .dashboard-live-hook,
+  .premium-pill,
+  .summary-pill {
+    font-size: 14px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-hero-content h1,
+  .premium-hero h1,
+  .profile-card h1 {
+    font-size: clamp(42px, 12.8vw, 58px) !important;
+  }
+
+  .premium-section-header h2,
+  .section-title {
+    font-size: clamp(28px, 8.8vw, 38px) !important;
+    letter-spacing: -0.03em !important;
+  }
+
+  .premium-section,
+  .profile-section-card,
+  .dashboard-mobile-card {
+    padding: 14px !important;
+  }
+
+  .sub-card,
+  .premium-now-card,
+  .premium-leaderboard {
+    border-radius: 16px !important;
+  }
+}
