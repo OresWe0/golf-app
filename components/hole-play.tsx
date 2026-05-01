@@ -1150,8 +1150,7 @@ function HoleImageModal({
   show,
   onClose,
   previewHoleNumber,
-  startHole,
-  endHole,
+  holeSequence,
   onPrevious,
   onNext,
   holeImageSrc,
@@ -1173,8 +1172,7 @@ function HoleImageModal({
   show: boolean
   onClose: () => void
   previewHoleNumber: number
-  startHole: number
-  endHole: number
+  holeSequence: number[]
   onPrevious: () => void
   onNext: () => void
   holeImageSrc: string
@@ -1194,6 +1192,9 @@ function HoleImageModal({
   onMapTouchEnd: TouchEventHandler<HTMLDivElement>
 }) {
   if (!show) return null
+  const previewIndex = holeSequence.indexOf(previewHoleNumber)
+  const canGoPrevious = previewIndex > 0
+  const canGoNext = previewIndex >= 0 && previewIndex < holeSequence.length - 1
 
   return (
     <div onClick={onClose} style={styles.modalBackdrop}>
@@ -1378,18 +1379,18 @@ function HoleImageModal({
           <button
             type="button"
             onClick={onPrevious}
-            disabled={previewHoleNumber <= startHole}
+            disabled={!canGoPrevious}
             style={{
               border: 'none',
               borderRadius: 18,
               padding: '14px 16px',
               background:
-                previewHoleNumber <= startHole
+                !canGoPrevious
                   ? '#475569'
                   : 'linear-gradient(135deg, #1f6f32 0%, #2f7f37 100%)',
               color: '#fff',
               fontWeight: 900,
-              cursor: previewHoleNumber <= startHole ? 'not-allowed' : 'pointer',
+              cursor: !canGoPrevious ? 'not-allowed' : 'pointer',
             }}
           >
             ← Föregående
@@ -1398,18 +1399,18 @@ function HoleImageModal({
           <button
             type="button"
             onClick={onNext}
-            disabled={previewHoleNumber >= endHole}
+            disabled={!canGoNext}
             style={{
               border: 'none',
               borderRadius: 18,
               padding: '14px 16px',
               background:
-                previewHoleNumber >= endHole
+                !canGoNext
                   ? '#475569'
                   : 'linear-gradient(135deg, #166534 0%, #22c55e 100%)',
               color: '#fff',
               fontWeight: 900,
-              cursor: previewHoleNumber >= endHole ? 'not-allowed' : 'pointer',
+              cursor: !canGoNext ? 'not-allowed' : 'pointer',
             }}
           >
             Nästa →
@@ -1519,6 +1520,7 @@ function BottomBar({
   totalPlayers,
   currentHole,
   endHole,
+  isLastHoleInSequence,
   loading,
   onPrevious,
   onSave,
@@ -1529,6 +1531,7 @@ function BottomBar({
   totalPlayers: number
   currentHole: number
   endHole: number
+  isLastHoleInSequence: boolean
   loading: boolean
   onPrevious: () => void
   onSave: () => void
@@ -1592,7 +1595,7 @@ function BottomBar({
             ? 'Sparar...'
             : !isReadyToAdvance
               ? 'Fyll i alla scorer'
-              : currentHole === endHole
+              : isLastHoleInSequence
                 ? 'Klar – avsluta runda →'
                 : 'Klar – nästa hål →'}
         </button>
@@ -1703,19 +1706,32 @@ const dragStartRef = useRef<{ x: number; y: number } | null>(null)
     ? `/course-images/${activeCourseImageSlug}/${previewHoleNumber}.jpg`
     : ''
 
+  const holeSequence = useMemo(() => {
+    if (totalHoles === 18 && startHole === 10 && endHole === 9) {
+      return [...Array.from({ length: 9 }, (_, index) => 10 + index), ...Array.from({ length: 9 }, (_, index) => 1 + index)]
+    }
+    return Array.from({ length: totalHoles }, (_, index) => startHole + index)
+  }, [totalHoles, startHole, endHole])
+
+  const currentHoleIndex = Math.max(0, holeSequence.indexOf(currentHole))
+  const isFirstHoleInSequence = currentHoleIndex <= 0
+  const isLastHoleInSequence = currentHoleIndex >= holeSequence.length - 1
+  const previousHoleNumber = holeSequence[Math.max(0, currentHoleIndex - 1)] ?? currentHole
+  const nextHoleNumber = holeSequence[Math.min(holeSequence.length - 1, currentHoleIndex + 1)] ?? currentHole
+
   useEffect(() => {
-    if (currentHole < endHole) {
-      router.prefetch('/rounds/' + roundId + '?hole=' + (currentHole + 1))
+    if (!isLastHoleInSequence) {
+      router.prefetch('/rounds/' + roundId + '?hole=' + nextHoleNumber)
     } else {
       router.prefetch('/rounds/' + roundId + '/summary')
     }
 
-    if (currentHole > startHole) {
-      router.prefetch('/rounds/' + roundId + '?hole=' + (currentHole - 1))
+    if (!isFirstHoleInSequence) {
+      router.prefetch('/rounds/' + roundId + '?hole=' + previousHoleNumber)
     }
 
     router.prefetch('/dashboard')
-  }, [router, roundId, currentHole, startHole, endHole])
+  }, [router, roundId, isLastHoleInSequence, nextHoleNumber, isFirstHoleInSequence, previousHoleNumber])
 
   const handleHoleImageError = (value: boolean) => {
     if (!value) {
@@ -1771,9 +1787,9 @@ const dragStartRef = useRef<{ x: number; y: number } | null>(null)
     whiteSpace: 'nowrap',
   }
 
-  const holeIndexInSegment = Math.max(1, currentHole - startHole + 1)
-  const segmentHoleCount = Math.max(1, endHole - startHole + 1)
-  const holesRemainingInSegment = Math.max(0, endHole - currentHole)
+  const holeIndexInSegment = currentHoleIndex + 1
+  const segmentHoleCount = Math.max(1, holeSequence.length)
+  const holesRemainingInSegment = Math.max(0, segmentHoleCount - holeIndexInSegment)
   const liveProgress = Math.max(
     0,
     Math.min(100, (holeIndexInSegment / segmentHoleCount) * 100)
@@ -1929,19 +1945,17 @@ const navigateTo = (target: string, options?: { replace?: boolean }) => {
   const goPrevious = () => {
     if (!canInteract) return
 
-    const target =
-      currentHole > startHole ? `/rounds/${roundId}?hole=${currentHole - 1}` : '/dashboard'
+    const target = !isFirstHoleInSequence ? `/rounds/${roundId}?hole=${previousHoleNumber}` : '/dashboard'
 
-    navigateTo(target, { replace: currentHole === endHole })
+    navigateTo(target, { replace: isLastHoleInSequence })
   }
 
   const goNext = () => {
     if (!canInteract) return
 
-    const target =
-      currentHole === endHole
-        ? `/rounds/${roundId}/summary`
-        : `/rounds/${roundId}?hole=${currentHole + 1}`
+    const target = isLastHoleInSequence
+      ? `/rounds/${roundId}/summary`
+      : `/rounds/${roundId}?hole=${nextHoleNumber}`
 
     navigateTo(target)
   }
@@ -1950,7 +1964,7 @@ const navigateTo = (target: string, options?: { replace?: boolean }) => {
     if (!canInteract) return
     if (!isReadyToAdvance) return
     if (loading || isSavingRef.current || isNavigatingRef.current) return
-    if (currentHole >= endHole) return
+    if (isLastHoleInSequence) return
 
     setFinishModalMode('finish-early')
     setShowFinishModal(true)
@@ -2062,7 +2076,7 @@ const navigateTo = (target: string, options?: { replace?: boolean }) => {
         return
       }
 
-      if (currentHole === endHole) {
+      if (isLastHoleInSequence) {
         isSavingRef.current = false
         setLoading(false)
         setFinishModalMode('saved-last-hole')
@@ -2129,9 +2143,12 @@ const openHoleImage = () => {
   }
 
 const previewPreviousHole = () => {
-  if (previewHoleNumber > startHole) {
+  const previewIndex = holeSequence.indexOf(previewHoleNumber)
+  if (previewIndex > 0) {
+    const targetHole = holeSequence[previewIndex - 1]
+    if (!targetHole) return
     resetMapZoom()
-    setPreviewHoleNumber((prev) => prev - 1)
+    setPreviewHoleNumber(targetHole)
     setHoleImageError(false)
 
     if (playerPosition) {
@@ -2141,9 +2158,12 @@ const previewPreviousHole = () => {
 }
 
 const previewNextHole = () => {
-  if (previewHoleNumber < endHole) {
+  const previewIndex = holeSequence.indexOf(previewHoleNumber)
+  if (previewIndex >= 0 && previewIndex < holeSequence.length - 1) {
+    const targetHole = holeSequence[previewIndex + 1]
+    if (!targetHole) return
     resetMapZoom()
-    setPreviewHoleNumber((prev) => prev + 1)
+    setPreviewHoleNumber(targetHole)
     setHoleImageError(false)
 
     if (playerPosition) {
@@ -2163,14 +2183,15 @@ const previewNextHole = () => {
     const diff = endX - startX
 
     if (showHoleImage) {
-      if (diff > 70 && previewHoleNumber > startHole) previewPreviousHole()
-      if (diff < -70 && previewHoleNumber < endHole) previewNextHole()
+      const previewIndex = holeSequence.indexOf(previewHoleNumber)
+      if (diff > 70 && previewIndex > 0) previewPreviousHole()
+      if (diff < -70 && previewIndex >= 0 && previewIndex < holeSequence.length - 1) previewNextHole()
       touchStartX.current = null
       return
     }
 
-    if (diff > 70 && currentHole > startHole) goPrevious()
-    if (diff < -70 && currentHole < endHole) goNext()
+    if (diff > 70 && !isFirstHoleInSequence) goPrevious()
+    if (diff < -70 && !isLastHoleInSequence) goNext()
 
     touchStartX.current = null
   }
@@ -2296,13 +2317,14 @@ useEffect(() => {
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeHoleImage()
-      if (e.key === 'ArrowLeft' && previewHoleNumber > startHole) previewPreviousHole()
-      if (e.key === 'ArrowRight' && previewHoleNumber < endHole) previewNextHole()
+      const previewIndex = holeSequence.indexOf(previewHoleNumber)
+      if (e.key === 'ArrowLeft' && previewIndex > 0) previewPreviousHole()
+      if (e.key === 'ArrowRight' && previewIndex >= 0 && previewIndex < holeSequence.length - 1) previewNextHole()
     }
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [showHoleImage, previewHoleNumber, startHole, endHole])
+  }, [showHoleImage, previewHoleNumber, holeSequence])
 
   useEffect(() => {
     setActiveCourseImageSlug(safeCourseImageSlug)
@@ -2898,7 +2920,7 @@ useEffect(() => {
               <span style={liveHeaderPillStyle}>Par {hole.par}</span>
               <span style={liveHeaderPillStyle}>HCP {hole.hcp_index}</span>
               <span style={liveHeaderPillStyle}>
-                {currentHole === endHole ? 'Sista hålet' : `${holesRemainingInSegment} hål kvar`}
+                {isLastHoleInSequence ? 'Sista hålet' : `${holesRemainingInSegment} hål kvar`}
               </span>
             </div>
 
@@ -2983,18 +3005,18 @@ useEffect(() => {
           totalPlayers={players.length}
           currentHole={currentHole}
           endHole={endHole}
+          isLastHoleInSequence={isLastHoleInSequence}
           loading={loading}
           onPrevious={goPrevious}
           onSave={() => void saveScores()}
         />
       </div>
 
-<HoleImageModal
+              <HoleImageModal
   show={showHoleImage}
   onClose={closeHoleImage}
   previewHoleNumber={previewHoleNumber}
-  startHole={startHole}
-  endHole={endHole}
+  holeSequence={holeSequence}
   onPrevious={previewPreviousHole}
   onNext={previewNextHole}
   holeImageSrc={holeImageSrc}

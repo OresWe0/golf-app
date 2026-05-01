@@ -102,6 +102,33 @@ function getVisibleHoles(holes: HoleLike[], startHole: number, endHole: number) 
   )
 }
 
+function buildHoleOrder(startHole: number, endHole: number, totalHoles: number) {
+  if (totalHoles <= 0) return []
+  const start = Math.min(Math.max(1, Math.floor(startHole)), totalHoles)
+  const end = Math.min(Math.max(1, Math.floor(endHole)), totalHoles)
+
+  if (start <= end) {
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index)
+  }
+
+  return [
+    ...Array.from({ length: totalHoles - start + 1 }, (_, index) => start + index),
+    ...Array.from({ length: end }, (_, index) => index + 1),
+  ]
+}
+
+function getVisibleHolesByRound(
+  round: RoundLike,
+  holes: HoleLike[],
+  startHole: number,
+  endHole: number
+) {
+  const expectedCount = round.holes_mode === 9 ? 9 : 18
+  const holeOrder = buildHoleOrder(startHole, endHole, holes.length).slice(0, expectedCount)
+  const holeByNumber = new Map(holes.map((hole) => [hole.hole_number, hole] as const))
+  return holeOrder.map((holeNumber) => holeByNumber.get(holeNumber)).filter(Boolean) as HoleLike[]
+}
+
 function isPlayerActiveOnHole(
   player: RoundPlayer,
   holeNumber: number,
@@ -144,6 +171,7 @@ function buildLeaderboard(params: {
     startHole,
     endHole,
   } = params
+  const visibleHoleNumbers = new Set(visibleHoles.map((hole) => hole.hole_number))
 
   const playerById = new Map(players.map((player) => [String(player.id), player]))
 
@@ -151,8 +179,7 @@ function buildLeaderboard(params: {
     const rows = scoreRows.filter(
       (row) =>
         row.round_player_id === player.id &&
-        row.hole_number >= startHole &&
-        row.hole_number <= endHole
+        visibleHoleNumbers.has(row.hole_number)
     )
 
     const totalStrokes = rows.reduce((sum, row) => sum + (row.strokes ?? 0), 0)
@@ -721,7 +748,7 @@ export default async function RoundPage({
   const startHole = round.start_hole ?? 1
   const endHole = round.end_hole ?? holes.length
 
-  const visibleHoles = getVisibleHoles(holes, startHole, endHole)
+  const visibleHoles = getVisibleHolesByRound(round, holes, startHole, endHole)
 
   if (!visibleHoles.length) {
     notFound()

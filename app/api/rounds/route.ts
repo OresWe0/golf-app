@@ -22,6 +22,22 @@ type CourseHole = {
   par: number
 }
 
+function buildHoleOrder(startHole: number, endHole: number, totalHoles: number) {
+  if (totalHoles <= 0) return []
+
+  const start = Math.min(Math.max(1, Math.floor(startHole)), totalHoles)
+  const end = Math.min(Math.max(1, Math.floor(endHole)), totalHoles)
+
+  if (start <= end) {
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index)
+  }
+
+  return [
+    ...Array.from({ length: totalHoles - start + 1 }, (_, index) => start + index),
+    ...Array.from({ length: end }, (_, index) => index + 1),
+  ]
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient()
 
@@ -36,11 +52,25 @@ export async function POST(request: Request) {
   const body = await request.json()
   const players = Array.isArray(body.players) ? (body.players as InputPlayer[]) : []
 
-  const holesMode = body.holesMode === 9 ? 9 : 18
-  const nineHoleSide = body.nineHoleSide === 'back' ? 'back' : 'front'
+  const holesMode = Number(body.holesMode) === 9 ? 9 : 18
+  const roundStartSide = body.nineHoleSide === 'back' ? 'back' : 'front'
 
-  const startHole = holesMode === 18 ? 1 : nineHoleSide === 'front' ? 1 : 10
-  const endHole = holesMode === 18 ? 18 : nineHoleSide === 'front' ? 9 : 18
+  const startHole =
+    holesMode === 18
+      ? roundStartSide === 'back'
+        ? 10
+        : 1
+      : roundStartSide === 'front'
+        ? 1
+        : 10
+  const endHole =
+    holesMode === 18
+      ? roundStartSide === 'back'
+        ? 9
+        : 18
+      : roundStartSide === 'front'
+        ? 9
+        : 18
 
   if (!body.title || !body.courseId || players.length === 0) {
     return NextResponse.json(
@@ -93,11 +123,12 @@ export async function POST(request: Request) {
     )
   }
 
-  const visibleHoles = (holes as CourseHole[]).filter(
-    (hole) => hole.hole_number >= startHole && hole.hole_number <= endHole
-  )
+  const courseHoles = holes as CourseHole[]
+  const expectedHoleNumbers = buildHoleOrder(startHole, endHole, courseHoles.length)
+  const expectedHoleSet = new Set(expectedHoleNumbers)
+  const visibleHoles = courseHoles.filter((hole) => expectedHoleSet.has(hole.hole_number))
 
-  if (visibleHoles.length !== endHole - startHole + 1) {
+  if (visibleHoles.length !== expectedHoleNumbers.length) {
     return NextResponse.json(
       { error: 'Ofullständig håldata för vald slinga.' },
       { status: 400 }
@@ -223,8 +254,8 @@ export async function POST(request: Request) {
         tee_key: teeKey,
         playing_handicap: playingHandicap,
         sort_order: player.sortOrder ?? index + 1,
-        active_from_hole: startHole,
-        active_to_hole: endHole,
+        active_from_hole: holesMode === 18 ? 1 : startHole,
+        active_to_hole: holesMode === 18 ? courseHoles.length : endHole,
       }
     })
   } catch (error) {
@@ -262,7 +293,7 @@ export async function POST(request: Request) {
 
   const scoreRows = []
   for (const roundPlayer of roundPlayers) {
-    for (let holeNumber = startHole; holeNumber <= endHole; holeNumber += 1) {
+    for (const holeNumber of expectedHoleNumbers) {
       scoreRows.push({
         round_id: round.id,
         round_player_id: roundPlayer.id,

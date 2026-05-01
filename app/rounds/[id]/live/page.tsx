@@ -112,6 +112,21 @@ function getModeLabel(round: RoundRow, startHole: number) {
   return startHole === 1 ? '9 hål - Främre 9' : '9 hål - Bakre 9'
 }
 
+function buildHoleOrder(startHole: number, endHole: number, totalHoles: number) {
+  if (totalHoles <= 0) return []
+  const start = Math.min(Math.max(1, Math.floor(startHole)), totalHoles)
+  const end = Math.min(Math.max(1, Math.floor(endHole)), totalHoles)
+
+  if (start <= end) {
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index)
+  }
+
+  return [
+    ...Array.from({ length: totalHoles - start + 1 }, (_, index) => start + index),
+    ...Array.from({ length: end }, (_, index) => index + 1),
+  ]
+}
+
 function getNowLabel() {
   return new Date().toLocaleTimeString('sv-SE', {
     hour: '2-digit',
@@ -202,6 +217,7 @@ function buildLeaderboard(args: {
   currentHole: number
   startHole: number
   endHole: number
+  holeOrder: number[]
 }): LeaderRow[] {
   const {
     players,
@@ -211,21 +227,26 @@ function buildLeaderboard(args: {
     currentHole,
     startHole,
     endHole,
+    holeOrder,
   } = args
+  const currentIndex = Math.max(0, holeOrder.indexOf(currentHole))
+  const playedHoleSet = new Set(holeOrder.slice(0, currentIndex + 1))
 
   const leaderboardBase = players.map((player) => {
     const activeFrom = Math.max(player.active_from_hole ?? startHole, startHole)
     const activeTo = Math.min(player.active_to_hole ?? endHole, endHole)
-    const holeWindowEnd = Math.min(currentHole, activeTo)
+    const activeHoleSet = new Set(
+      holeOrder.filter((holeNumber) => holeNumber >= activeFrom && holeNumber <= activeTo)
+    )
     const activeHoleIndexes = holes
-      .filter((hole) => hole.hole_number >= activeFrom && hole.hole_number <= activeTo)
+      .filter((hole) => activeHoleSet.has(hole.hole_number))
       .map((hole) => hole.hcp_index)
 
     const visibleScores = scores.filter((row) => {
       return (
         row.round_player_id === player.id &&
-        row.hole_number >= activeFrom &&
-        row.hole_number <= holeWindowEnd &&
+        activeHoleSet.has(row.hole_number) &&
+        playedHoleSet.has(row.hole_number) &&
         typeof row.strokes === 'number'
       )
     })
@@ -375,12 +396,19 @@ export default async function RoundLivePage({
   }
 
   const round = roundRaw as RoundRow
+  const isEighteenHoleRound = Number(round.holes_mode) === 18
   const startHole = round.start_hole ?? 1
   const endHole = round.end_hole ?? 18
-  const currentHole = Math.min(
-    Math.max(round.current_hole ?? startHole, startHole),
-    endHole
+  const activeRangeStart = isEighteenHoleRound ? 1 : startHole
+  const activeRangeEnd = isEighteenHoleRound ? 18 : endHole
+  const holeOrder = buildHoleOrder(startHole, endHole, 18).slice(
+    0,
+    Number(round.holes_mode) === 9 ? 9 : 18
   )
+  const holeSet = new Set(holeOrder)
+  const currentHole = holeSet.has(round.current_hole ?? -1)
+    ? (round.current_hole as number)
+    : holeOrder[0] ?? startHole
 
   const viewerEmail = String(user.email ?? '').trim().toLowerCase()
   const viewerIsOwner = round.owner_id === user.id
@@ -460,8 +488,7 @@ export default async function RoundLivePage({
         .from('course_holes')
         .select('hole_number, par, hcp_index')
         .eq('course_id', round.course_id)
-        .gte('hole_number', startHole)
-        .lte('hole_number', endHole)
+        .in('hole_number', holeOrder)
         .order('hole_number'),
       dataReadClient
         .from('round_players')
@@ -560,8 +587,9 @@ export default async function RoundLivePage({
     scores,
     scoringMode: round.scoring_mode,
     currentHole,
-    startHole,
-    endHole,
+    startHole: activeRangeStart,
+    endHole: activeRangeEnd,
+    holeOrder,
   })
 
   const playerUserIds = Array.from(
@@ -587,18 +615,16 @@ export default async function RoundLivePage({
 
   const playerById = new Map(players.map((player) => [player.id, player]))
   const ownerName = ownerProfile?.display_name?.trim() || ownerEmail || 'vän'
-  const currentHolePar = holes.find((hole) => hole.hole_number === currentHole)?.par ?? null
-
-  const playedHoles = holes.filter(
-    (hole) => hole.hole_number >= startHole && hole.hole_number <= currentHole
-  )
-  const currentHoleInfo = holes.find((hole) => hole.hole_number === currentHole) ?? null
-  const nextHoleInfo = holes.find((hole) => hole.hole_number > currentHole) ?? null
-  const totalRoundHoles = Math.max(1, endHole - startHole + 1)
-  const progressPercent = Math.min(
-    100,
-    Math.max(0, Math.round(((currentHole - startHole + 1) / totalRoundHoles) * 100))
-  )
+  const holeByNumber = new Map(holes.map((hole) => [hole.hole_number, hole] as const))
+  const orderedHoles = holeOrder.map((holeNumber) => holeByNumber.get(holeNumber)).filter(Boolean) as HoleRow[]
+  const currentHolePar = holeByNumber.get(currentHole)?.par ?? null
+  const currentHoleIndex = Math.max(0, holeOrder.indexOf(currentHole))
+  const playedHoles = orderedHoles.slice(0, currentHoleIndex + 1)
+  const currentHoleInfo = holeByNumber.get(currentHole) ?? null
+  const nextHoleNumber = holeOrder[currentHoleIndex + 1] ?? null
+  const nextHoleInfo = nextHoleNumber ? holeByNumber.get(nextHoleNumber) ?? null : null
+  const totalRoundHoles = Math.max(1, holeOrder.length)
+  const progressPercent = Math.min(100, Math.max(0, Math.round(((currentHoleIndex + 1) / totalRoundHoles) * 100)))
   const leader = leaderboard[0]
   const secondPlace = leaderboard[1]
   const scoreUnit = round.scoring_mode === 'stableford' ? 'p' : 'slag'
@@ -1359,8 +1385,8 @@ export default async function RoundLivePage({
                 const activeHoleIndexes = holes
                   .filter((h) => {
                     if (!player) return false
-                    const from = Math.max(player.active_from_hole ?? startHole, startHole)
-                    const to = Math.min(player.active_to_hole ?? endHole, endHole)
+                    const from = Math.max(player.active_from_hole ?? activeRangeStart, activeRangeStart)
+                    const to = Math.min(player.active_to_hole ?? activeRangeEnd, activeRangeEnd)
                     return h.hole_number >= from && h.hole_number <= to
                   })
                   .map((h) => h.hcp_index)
@@ -1411,8 +1437,8 @@ export default async function RoundLivePage({
               const activeHoleIndexes = holes
                 .filter((h) => {
                   if (!player) return false
-                  const from = Math.max(player.active_from_hole ?? startHole, startHole)
-                  const to = Math.min(player.active_to_hole ?? endHole, endHole)
+                  const from = Math.max(player.active_from_hole ?? activeRangeStart, activeRangeStart)
+                  const to = Math.min(player.active_to_hole ?? activeRangeEnd, activeRangeEnd)
                   return h.hole_number >= from && h.hole_number <= to
                 })
                 .map((h) => h.hcp_index)

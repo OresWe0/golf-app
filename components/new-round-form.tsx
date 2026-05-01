@@ -266,10 +266,22 @@ export function NewRoundForm({
     courses.find((course) => course.id === courseId)?.name ?? 'Ingen bana vald'
   const roundModeLabel = scoringMode === 'stableford' ? 'Poängbogey' : 'Slagspel'
   const holesModeLabel =
-    holesMode === 18 ? '18 hål' : nineHoleSide === 'front' ? '9 hål · Främre 9' : '9 hål · Bakre 9'
+    holesMode === 18
+      ? nineHoleSide === 'back'
+        ? '18 hål · Start bakre 9'
+        : '18 hål · Start främre 9'
+      : nineHoleSide === 'front'
+        ? '9 hål · Främre 9'
+        : '9 hål · Bakre 9'
 
   const compactHolesLabel =
-    holesMode === 18 ? '18 hal' : nineHoleSide === 'front' ? 'Framre 9' : 'Bakre 9'
+    holesMode === 18
+      ? nineHoleSide === 'back'
+        ? '18 hal · start bak'
+        : '18 hal · start fram'
+      : nineHoleSide === 'front'
+        ? 'Framre 9'
+        : 'Bakre 9'
 
   const dynamicCtaLabel = (() => {
     const others = normalizedPlayersPreview.filter(
@@ -544,7 +556,14 @@ export function NewRoundForm({
       const namesToRemember = setup.players.map((player) => player.name).filter(Boolean)
       saveRecentPlayers(namesToRemember)
 
-      const firstHole = setup.holesMode === 18 ? 1 : setup.nineHoleSide === 'back' ? 10 : 1
+      const apiStartHole = Number(result?.startHole)
+      const normalizedHolesMode = Number(setup.holesMode) === 9 ? 9 : 18
+      const fallbackStartHole =
+        normalizedHolesMode === 18 ? 1 : setup.nineHoleSide === 'back' ? 10 : 1
+      const firstHole =
+        Number.isFinite(apiStartHole) && apiStartHole >= 1
+          ? Math.floor(apiStartHole)
+          : fallbackStartHole
       router.push(`/rounds/${result.roundId}?hole=${firstHole}`)
     } catch {
       setError('Kunde inte skapa rundan.')
@@ -941,7 +960,7 @@ export function NewRoundForm({
           <div>
             <h3 style={{ marginTop: 0, marginBottom: 8 }}>Rundinställningar</h3>
             <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>
-              Välj antal hål och om ni startar fram eller bak när ni kör nio.
+              Välj antal hål och vilken sida ni startar på.
             </p>
           </div>
 
@@ -990,9 +1009,9 @@ export function NewRoundForm({
               </div>
             </div>
 
-            {holesMode === 9 ? (
+            {holesMode === 9 || holesMode === 18 ? (
               <div>
-                <label>Vilka 9 hål?</label>
+                <label>{holesMode === 18 ? 'Starta på' : 'Vilka 9 hål?'}</label>
                 <div
                   style={{
                     display: 'grid',
@@ -1015,7 +1034,7 @@ export function NewRoundForm({
                       cursor: 'pointer',
                     }}
                   >
-                    Främre 9
+                    {holesMode === 18 ? 'Främre 9 (hål 1)' : 'Främre 9'}
                   </button>
 
                   <button
@@ -1032,7 +1051,7 @@ export function NewRoundForm({
                       cursor: 'pointer',
                     }}
                   >
-                    Bakre 9
+                    {holesMode === 18 ? 'Bakre 9 (hål 10)' : 'Bakre 9'}
                   </button>
                 </div>
               </div>

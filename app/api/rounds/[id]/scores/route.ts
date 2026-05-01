@@ -8,6 +8,21 @@ type ScoreUpdate = {
   strokes: number | null
 }
 
+function buildHoleOrder(startHole: number, endHole: number, totalHoles: number) {
+  if (totalHoles <= 0) return []
+  const start = Math.min(Math.max(1, Math.floor(startHole)), totalHoles)
+  const end = Math.min(Math.max(1, Math.floor(endHole)), totalHoles)
+
+  if (start <= end) {
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index)
+  }
+
+  return [
+    ...Array.from({ length: totalHoles - start + 1 }, (_, index) => start + index),
+    ...Array.from({ length: end }, (_, index) => index + 1),
+  ]
+}
+
 type FeedEventType = 'birdie' | 'eagle' | 'hole_in_one'
 
 function getFeedEventType(strokes: number, par: number): FeedEventType | null {
@@ -396,7 +411,7 @@ export async function POST(
 
     const { data: round, error: roundError } = await supabase
       .from('rounds')
-      .select('id, owner_id, start_hole, end_hole, current_hole, status, course_id')
+      .select('id, owner_id, start_hole, end_hole, current_hole, status, course_id, holes_mode')
       .eq('id', id)
       .single()
 
@@ -433,8 +448,11 @@ export async function POST(
 
     const startHole = round.start_hole ?? 1
     const endHole = round.end_hole ?? 18
+    const totalHolesInRound = Number(round.holes_mode) === 9 ? 9 : 18
+    const holeOrder = buildHoleOrder(startHole, endHole, 18)
+    const holeOrderSet = new Set(holeOrder)
 
-    if (holeNumber < startHole || holeNumber > endHole) {
+    if (!holeOrderSet.has(holeNumber)) {
       return fail(
         requestId,
         'hole_range',
@@ -570,16 +588,11 @@ export async function POST(
       }
     }
 
-    const requestedNextHole = holeNumber < endHole ? holeNumber + 1 : endHole
-    const requestedStatus = holeNumber >= endHole ? 'completed' : 'active'
-
-    const currentRoundHole =
-      typeof round.current_hole === 'number' && Number.isFinite(round.current_hole)
-        ? round.current_hole
-        : startHole
-
-    const safeNextHole = Math.max(currentRoundHole, requestedNextHole)
-    const nextStatus = round.status === 'completed' ? 'completed' : requestedStatus
+    const currentIndex = holeOrder.indexOf(holeNumber)
+    const lastIndex = Math.max(0, totalHolesInRound - 1)
+    const isLastHoleInSequence = currentIndex >= lastIndex
+    const safeNextHole = isLastHoleInSequence ? holeNumber : holeOrder[currentIndex + 1] ?? holeNumber
+    const nextStatus = round.status === 'completed' || isLastHoleInSequence ? 'completed' : 'active'
 
     const { error: updateRoundError } = await supabase
       .from('rounds')
@@ -624,5 +637,4 @@ export async function POST(
     return fail(requestId, 'unhandled_exception', message, 500, { roundId: id })
   }
 }
-
 
