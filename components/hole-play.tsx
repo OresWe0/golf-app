@@ -1790,6 +1790,10 @@ const dragStartRef = useRef<{ x: number; y: number } | null>(null)
   const holeIndexInSegment = currentHoleIndex + 1
   const segmentHoleCount = Math.max(1, holeSequence.length)
   const holesRemainingInSegment = Math.max(0, segmentHoleCount - holeIndexInSegment)
+  const isBackNineStartEighteen = totalHoles === 18 && startHole === 10 && endHole === 9
+  const liveHoleTitle = isBackNineStartEighteen
+    ? `Hål ${currentHole} (${holeIndexInSegment}/${totalHoles})`
+    : `Hål ${holeIndexInSegment} av ${totalHoles}`
   const liveProgress = Math.max(
     0,
     Math.min(100, (holeIndexInSegment / segmentHoleCount) * 100)
@@ -2821,7 +2825,7 @@ useEffect(() => {
                     color: '#ffffff',
                   }}
                 >
-                  Hål {holeIndexInSegment} av {totalHoles}
+                  {liveHoleTitle}
                 </div>
 
                 <div

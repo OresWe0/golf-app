@@ -473,6 +473,13 @@ function RoundHero({
   leaderboard: LeaderboardEntry[]
 }) {
   const holeIndexInSegment = Math.max(1, currentHoleNumber - startHole + 1)
+  const isBackNineStartEighteen = totalHoles === 18 && startHole === 10
+  const holeBadgeText = isBackNineStartEighteen
+    ? `Hål ${currentHoleNumber} (${holeIndexInSegment}/${totalHoles})`
+    : `Hål ${holeIndexInSegment}/${totalHoles}`
+  const currentHoleLabel = isBackNineStartEighteen
+    ? `Hål ${currentHoleNumber}`
+    : `Hål ${holeIndexInSegment}`
 
   return (
     <div
@@ -513,7 +520,7 @@ function RoundHero({
               >
                 <span className="badge">🏌️ Runda</span>
                 <span className="badge">{modeLabel}</span>
-                <span className="badge">Hål {holeIndexInSegment}/{totalHoles}</span>
+                <span className="badge">{holeBadgeText}</span>
               </div>
 
               <div style={{ display: 'grid', gap: 4 }}>
@@ -592,7 +599,7 @@ function RoundHero({
               <div className="muted" style={{ fontSize: 11, fontWeight: 800 }}>
                 Aktuellt hål
               </div>
-              <div style={{ fontSize: 22, fontWeight: 950 }}>Hål {holeIndexInSegment}</div>
+              <div style={{ fontSize: 22, fontWeight: 950 }}>{currentHoleLabel}</div>
             </div>
 
             <div
