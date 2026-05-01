@@ -1258,6 +1258,112 @@ button.danger,
   min-height: 44px;
 }
 
+/* ===== PREMIUM HARDENING PASS ===== */
+
+.round-hero {
+  border-radius: 26px !important;
+  box-shadow: 0 22px 46px rgba(20, 77, 43, 0.12) !important;
+}
+
+.round-hero .title {
+  letter-spacing: -0.035em !important;
+  line-height: 0.95 !important;
+}
+
+.round-hero .badge {
+  background: linear-gradient(180deg, #f1f8f2 0%, #e9f3ea 100%) !important;
+  border-color: #d2e6d5 !important;
+}
+
+.premium-live-shell .premium-hero,
+.dashboard-hero {
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-live-shell .premium-hero::after,
+.dashboard-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(5, 17, 12, 0.26) 0%, rgba(5, 17, 12, 0.10) 34%, rgba(5, 17, 12, 0.08) 100%);
+}
+
+.dashboard-hero-content,
+.premium-live-shell .premium-hero-grid,
+.premium-live-shell .premium-hero-kicker,
+.premium-live-shell .premium-hero-subtitle {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-hero-content h1,
+.premium-live-shell .premium-hero h1,
+.premium-live-shell .premium-rank-name,
+.premium-live-shell .premium-player-name {
+  color: #f8fffb !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+}
+
+.dashboard-live-hook,
+.premium-live-shell .premium-glass-card,
+.premium-live-shell .premium-now-card {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.summary-scorecards-wrap,
+.dashboard-lower-stack,
+.profile-shell {
+  gap: 16px !important;
+}
+
+.summary-scorecards-wrap .player-scorecard,
+.profile-section-card .sub-card,
+.dashboard-mobile-card {
+  border-radius: 20px !important;
+}
+
+.scorecard-table th,
+.scorecard-table td,
+.table th,
+.table td {
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-shell .section-title,
+.premium-section-header h2,
+.summary-title,
+.dashboard-lower-stack h2 {
+  letter-spacing: -0.03em !important;
+}
+
+.profile-shell .sub-card-title,
+.premium-muted,
+.summary-course,
+.dashboard-lower-stack .muted {
+  letter-spacing: -0.01em;
+}
+
+.button.secondary,
+.premium-button.secondary,
+.profile-back-link {
+  background: linear-gradient(180deg, #fbfdfb 0%, #edf5ef 100%) !important;
+}
+
+@media (max-width: 900px) {
+  .round-hero {
+    border-radius: 22px !important;
+  }
+
+  .summary-scorecards-wrap,
+  .dashboard-lower-stack,
+  .profile-shell {
+    gap: 14px !important;
+  }
+}
+
 @media (max-width: 800px) {
   .dashboard-hero,
   .premium-hero {
@@ -1300,5 +1406,19 @@ button.danger,
   .premium-now-card,
   .premium-leaderboard {
     border-radius: 16px !important;
+  }
+
+  .round-hero .title {
+    font-size: clamp(40px, 12vw, 54px) !important;
+  }
+
+  .round-hero .badge {
+    font-size: 13px !important;
+  }
+
+  .dashboard-live-hook,
+  .premium-live-shell .premium-glass-card,
+  .premium-live-shell .premium-now-card {
+    border-radius: 18px !important;
   }
 }
