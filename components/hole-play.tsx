@@ -1225,7 +1225,7 @@ function HoleImageModal({
           <div>
             <div style={{ fontWeight: 900, fontSize: 18 }}>Hål {previewHoleNumber}</div>
 
-            {distanceStatus === 'loading' && (
+            {false && distanceStatus === 'loading' && (
               <div
                 style={{
                   marginTop: 6,
@@ -1238,7 +1238,7 @@ function HoleImageModal({
               </div>
             )}
 
-            {distanceStatus === 'ready' &&
+            {false && distanceStatus === 'ready' &&
             distanceToFront != null &&
             distanceToCenter != null &&
             distanceToBack != null ? (
@@ -1292,7 +1292,7 @@ function HoleImageModal({
               </div>
             ) : null}
 
-            {distanceStatus === 'error' && (
+            {false && distanceStatus === 'error' && (
               <div
                 style={{
                   marginTop: 6,
